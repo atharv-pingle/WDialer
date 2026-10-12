@@ -1,6 +1,11 @@
 package com.coolappstore.everdialer.by.svhp.view.screen.settings
 
 import com.ramcosta.composedestinations.generated.destinations.CustomFontScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.CallLogsSettingsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.DialpadSettingsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.ContactInfoSettingsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.FavouritesSettingsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.NavigationSettingsScreenDestination
 import com.coolappstore.everdialer.by.svhp.view.theme.AppFontHelper
 import android.app.Activity
 import android.net.Uri
@@ -151,6 +156,7 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
     var colorfulAvatars     by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_COLORFUL_AVATARS, true)) }
     var showAvatarsInCalls    by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_SHOW_AVATARS_CALLS, true)) }
     var showAvatarsInContacts by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_SHOW_AVATARS_CONTACTS, true)) }
+    var showAvatarSms         by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_SMS_SHOW_AVATAR, true)) }
     var showPicture         by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_SHOW_PICTURE, true)) }
     var iconOnlyNav         by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_ICON_ONLY_NAV, false)) }
     var scrollIndication    by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_SCROLL_INDICATION, true)) }
@@ -2059,6 +2065,70 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                                     modifier = Modifier.settingsSearchHighlight("calls_section_elements", highlightedKey) { highlightedKey = null },
                                     onClick = { showCallUIDialog = true }
                                 )
+                            }
+                        }
+                    }
+
+                // ── UI Element Visibility ────────────────────────────
+                    RivoAnimatedSection(delayMs = 130L) {
+                        Column {
+                            Text("UI Elements", style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(start = 12.dp, bottom = 8.dp))
+                            RivoExpressiveCard {
+                                RivoListItem(
+                                    headline = "Call Logs",
+                                    supporting = "Customize call log grouping, SIM icons, call counts, formatting and auto-deletion",
+                                    leadingIcon = Icons.Outlined.Call,
+                                    iconContainerColor = ColorGreen,
+                                    trailingIcon = Icons.Default.ChevronRight,
+                                    modifier = Modifier.settingsSearchHighlight("call_logs_settings_link", highlightedKey) { highlightedKey = null },
+                                    onClick = { navigator.navigate(CallLogsSettingsScreenDestination()) }
+                                )
+                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                RivoListItem(
+                                    headline = "Dialpad",
+                                    supporting = "Customize dialpad memory, search list call logs, and startup behavior",
+                                    leadingIcon = Icons.Outlined.Dialpad,
+                                    iconContainerColor = ColorBlue,
+                                    trailingIcon = Icons.Default.ChevronRight,
+                                    modifier = Modifier.settingsSearchHighlight("dialpad_settings_link", highlightedKey) { highlightedKey = null },
+                                    onClick = { navigator.navigate(DialpadSettingsScreenDestination()) }
+                                )
+                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                RivoListItem(
+                                    headline = "Contact info",
+                                    supporting = "Customize contact info display and duplicate numbers",
+                                    leadingIcon = Icons.Outlined.Person,
+                                    iconContainerColor = ColorPurple,
+                                    trailingIcon = Icons.Default.ChevronRight,
+                                    modifier = Modifier.settingsSearchHighlight("contact_info_settings_link", highlightedKey) { highlightedKey = null },
+                                    onClick = { navigator.navigate(ContactInfoSettingsScreenDestination()) }
+                                )
+                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                RivoListItem(
+                                    headline = "Favourites",
+                                    supporting = "Customize favourites layout and view mode",
+                                    leadingIcon = Icons.Outlined.Star,
+                                    iconContainerColor = Color(0xFFE91E63),
+                                    trailingIcon = Icons.Default.ChevronRight,
+                                    modifier = Modifier.settingsSearchHighlight("favourites_settings_link", highlightedKey) { highlightedKey = null },
+                                    onClick = { navigator.navigate(FavouritesSettingsScreenDestination()) }
+                                )
+                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                RivoListItem(
+                                    headline = "Navigation",
+                                    supporting = "Customize tab sections, default tab, and bottom bar appearance",
+                                    leadingIcon = Icons.Default.ViewWeek,
+                                    iconContainerColor = ColorIndigo,
+                                    trailingIcon = Icons.Default.ChevronRight,
+                                    modifier = Modifier.settingsSearchHighlight("navigation_settings_link", highlightedKey) { highlightedKey = null },
+                                    onClick = { navigator.navigate(NavigationSettingsScreenDestination()) }
+                                )
                                 HorizontalDivider(Modifier.padding(horizontal = 16.dp),
                                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                                 RivoListItem(
@@ -2073,17 +2143,6 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                                 HorizontalDivider(Modifier.padding(horizontal = 16.dp),
                                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                                 RivoListItem(
-                                    headline = "Tab Sections",
-                                    supporting = "Toggle and drag to reorder tabs in the navigation bar",
-                                    leadingIcon = Icons.Default.ViewWeek,
-                                    iconContainerColor = ColorIndigo,
-                                    trailingIcon = Icons.Default.ChevronRight,
-                                    modifier = Modifier.settingsSearchHighlight("tab_sections", highlightedKey) { highlightedKey = null },
-                                    onClick = { showTabSectionsDialog = true }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoListItem(
                                     headline = "Contact Info Elements",
                                     supporting = "Toggle and drag to reorder elements in contact details",
                                     leadingIcon = Icons.Default.Contacts,
@@ -2091,332 +2150,6 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                                     trailingIcon = Icons.Default.ChevronRight,
                                     modifier = Modifier.settingsSearchHighlight("contact_info_elements", highlightedKey) { highlightedKey = null },
                                     onClick = { showContactInfoElementsDialog = true }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoListItem(
-                                    headline = "Default Tab Section",
-                                    supporting = "Choose which tab opens when the app starts (currently: ${tabOptions.firstOrNull { it.key == defaultTab }?.label ?: "Calls"})",
-                                    leadingIcon = Icons.Default.Tab,
-                                    iconContainerColor = ColorIndigo,
-                                    trailingIcon = Icons.Default.ChevronRight,
-                                    modifier = Modifier.settingsSearchHighlight("default_tab_section", highlightedKey) { highlightedKey = null },
-                                    onClick = { showDefaultTabDialog = true }
-                                )
-                            }
-                        }
-                    }
-
-                // ── UI Element Visibility ────────────────────────────
-                    RivoAnimatedSection(delayMs = 130L) {
-                        Column {
-                            Text("UI Elements", style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(start = 12.dp, bottom = 8.dp))
-                            RivoExpressiveCard {
-                                RivoSwitchListItem(
-                                    headline = "Scroll Indication",
-                                    supporting = "Show a floating line indicator below tabs when horizontally scrollable",
-                                    leadingIcon = Icons.Outlined.LinearScale,
-                                    iconContainerColor = ColorIndigo,
-                                    checked = scrollIndication,
-                                    modifier = Modifier.settingsSearchHighlight("scroll_indication", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        scrollIndication = it
-                                        prefs.setBoolean(PreferenceManager.KEY_SCROLL_INDICATION, it)
-                                    }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Pill Style Navigation",
-                                    supporting = "Show a floating pill-style nav bar instead of the standard bottom bar",
-                                    leadingIcon = Icons.Outlined.ViewStream,
-                                    iconContainerColor = ColorTeal,
-                                    checked = pillNav,
-                                    modifier = Modifier.settingsSearchHighlight("pill_style_nav", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        pillNav = it
-                                        prefs.setBoolean(PreferenceManager.KEY_PILL_NAV, it)
-                                    }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Group numbers in call logs based on latest calls",
-                                    supporting = "Sort call logs by latest calls made and group numbers, showing total call count",
-                                    leadingIcon = Icons.Outlined.Layers,
-                                    iconContainerColor = ColorBlue,
-                                    checked = groupCallsByLatest,
-                                    modifier = Modifier.settingsSearchHighlight("group_calls_by_latest", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        groupCallsByLatest = it
-                                        prefs.setBoolean(PreferenceManager.KEY_GROUP_CALLS_BY_LATEST, it)
-                                        if (it) {
-                                            showTotalCallsMade = true
-                                            prefs.setBoolean(PreferenceManager.KEY_SHOW_TOTAL_CALLS_MADE, true)
-                                        } else {
-                                            showTotalCallsMade = false
-                                            prefs.setBoolean(PreferenceManager.KEY_SHOW_TOTAL_CALLS_MADE, false)
-                                        }
-                                    }
-                                )
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                                    shape = RoundedCornerShape(14.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.Info,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Text(
-                                            text = "In call logs, long pressing the all button will show a menu to choose grouped based on number or by date.",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Show Sims In Call Logs",
-                                    supporting = "Show a SIM icon with its number on calls in Call Logs",
-                                    leadingIcon = Icons.Outlined.SimCard,
-                                    iconContainerColor = ColorGreen,
-                                    checked = showSimsInCallLogs,
-                                    modifier = Modifier.settingsSearchHighlight("show_sims_call_logs", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        showSimsInCallLogs = it
-                                        prefs.setBoolean(PreferenceManager.KEY_SHOW_SIMS_IN_CALL_LOGS, it)
-                                    }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Show total number of calls made",
-                                    supporting = "Show the total call count for each contact or number in Call Logs",
-                                    leadingIcon = Icons.Outlined.Call,
-                                    iconContainerColor = ColorPurple,
-                                    checked = showTotalCallsMade,
-                                    modifier = Modifier.settingsSearchHighlight("show_total_calls_made", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        showTotalCallsMade = it
-                                        prefs.setBoolean(PreferenceManager.KEY_SHOW_TOTAL_CALLS_MADE, it)
-                                    }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                 RivoSwitchListItem(
-                                     headline = "Hide Duplicate Numbers In A Contact",
-                                     supporting = "Show only one of multiple identical or matching numbers saved under the same contact",
-                                     leadingIcon = Icons.Outlined.FilterNone,
-                                     iconContainerColor = ColorPurple,
-                                     checked = hideDuplicateNumbersInContact,
-                                     modifier = Modifier.settingsSearchHighlight("hide_duplicate_numbers_in_contact", highlightedKey) { highlightedKey = null },
-                                     onCheckedChange = {
-                                         hideDuplicateNumbersInContact = it
-                                         prefs.setBoolean(PreferenceManager.KEY_HIDE_DUPLICATE_NUMBERS_IN_CONTACT, it)
-                                     }
-                                 )
-                                 HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                 RivoSwitchListItem(
-                                     headline = "Name non contacts as Unknown",
-                                    supporting = if (nameNonContactsAsUnknown) "Show \"Unknown\" as the name for numbers not in your contacts" else "Directly show the phone number instead of \"Unknown\"",
-                                    leadingIcon = Icons.Outlined.PersonOff,
-                                    iconContainerColor = ColorTeal,
-                                    checked = nameNonContactsAsUnknown,
-                                    modifier = Modifier.settingsSearchHighlight("name_non_contacts_as_unknown", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        nameNonContactsAsUnknown = it
-                                        prefs.setBoolean(PreferenceManager.KEY_NAME_NON_CONTACTS_AS_UNKNOWN, it)
-                                    }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Dialpad Memory",
-                                    supporting = "Keep the typed number in the Dialpad after closing it or calling",
-                                    leadingIcon = Icons.Outlined.Dialpad,
-                                    iconContainerColor = ColorBlue,
-                                    checked = dialpadMemory,
-                                    modifier = Modifier.settingsSearchHighlight("dialpad_memory", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        dialpadMemory = it
-                                        prefs.setBoolean(PreferenceManager.KEY_DIALPAD_MEMORY, it)
-                                    }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Show call logs in the dialpad search list",
-                                    supporting = "Show recent call logs in the search list when nothing is typed or searched",
-                                    leadingIcon = Icons.Outlined.History,
-                                    iconContainerColor = ColorTeal,
-                                    checked = showCallLogsInDialpadSearchList,
-                                    modifier = Modifier.settingsSearchHighlight("show_call_logs_in_dialpad_search_list", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        showCallLogsInDialpadSearchList = it
-                                        prefs.setBoolean(PreferenceManager.KEY_SHOW_CALL_LOGS_IN_DIALPAD_SEARCH_LIST, it)
-                                    }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Show numbers in call logs",
-                                    supporting = "Show phone numbers below contact names in call logs. When disabled, numbers are hidden for saved contacts",
-                                    leadingIcon = Icons.Outlined.Numbers,
-                                    iconContainerColor = ColorBlue,
-                                    checked = showNumbersInCallLogs,
-                                    modifier = Modifier.settingsSearchHighlight("show_numbers_in_call_logs", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        showNumbersInCallLogs = it
-                                        prefs.setBoolean(PreferenceManager.KEY_SHOW_NUMBERS_IN_CALL_LOGS, it)
-                                    }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Auto Delete Unknown No in call log",
-                                    supporting = if (autoDeleteUnknownEnabled)
-                                        "Deletes call log entries from unsaved numbers older than $autoDeleteUnknownValue ${if (autoDeleteUnknownUnit == "hours") "hour(s)" else "day(s)"}"
-                                    else "Set a duration below, then turn this on to remove old call log entries from numbers not in your contacts",
-                                    leadingIcon = Icons.Outlined.AutoDelete,
-                                    iconContainerColor = ColorRed,
-                                    checked = autoDeleteUnknownEnabled,
-                                    modifier = Modifier.settingsSearchHighlight("auto_delete_unknown_calllog", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = { enabled ->
-                                        autoDeleteUnknownEnabled = enabled
-                                        prefs.setBoolean(PreferenceManager.KEY_AUTO_DELETE_UNKNOWN_CALLS_ENABLED, enabled)
-                                        if (enabled) {
-                                            // Use whatever duration the user has already set in the
-                                            // input below, and stamp "now" as the cutoff — only call log
-                                            // entries from *after* this moment are ever eligible for
-                                            // auto-deletion, so existing history is never touched.
-                                            val n = autoDeleteUnknownValue.toIntOrNull()?.coerceAtLeast(1) ?: 1
-                                            autoDeleteUnknownValue = n.toString()
-                                            prefs.setInt(PreferenceManager.KEY_AUTO_DELETE_UNKNOWN_CALLS_VALUE, n)
-                                            prefs.setString(PreferenceManager.KEY_AUTO_DELETE_UNKNOWN_CALLS_UNIT, autoDeleteUnknownUnit)
-                                            prefs.setLong(PreferenceManager.KEY_AUTO_DELETE_UNKNOWN_CALLS_ENABLED_AT, System.currentTimeMillis())
-                                        }
-                                    }
-                                )
-                                // Always visible — regardless of the switch state — so the user can set
-                                // the duration and unit BEFORE ever turning the feature on.
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    modifier = Modifier.fillMaxWidth().padding(start = 68.dp, end = 16.dp, bottom = 14.dp, top = 2.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = autoDeleteUnknownValue,
-                                        onValueChange = { raw ->
-                                            val digitsOnly = raw.filter { it.isDigit() }.take(4)
-                                            autoDeleteUnknownValue = digitsOnly
-                                            val n = digitsOnly.toIntOrNull()
-                                            if (n != null && n > 0) {
-                                                prefs.setInt(PreferenceManager.KEY_AUTO_DELETE_UNKNOWN_CALLS_VALUE, n)
-                                            }
-                                        },
-                                        singleLine = true,
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                                        keyboardActions = KeyboardActions(onDone = { keyboardController?.hide() }),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.width(90.dp)
-                                    )
-                                    FilterChip(
-                                        selected = autoDeleteUnknownUnit == "days",
-                                        onClick = {
-                                            autoDeleteUnknownUnit = "days"
-                                            prefs.setString(PreferenceManager.KEY_AUTO_DELETE_UNKNOWN_CALLS_UNIT, "days")
-                                        },
-                                        label = { Text("Days") }
-                                    )
-                                    FilterChip(
-                                        selected = autoDeleteUnknownUnit == "hours",
-                                        onClick = {
-                                            autoDeleteUnknownUnit = "hours"
-                                            prefs.setString(PreferenceManager.KEY_AUTO_DELETE_UNKNOWN_CALLS_UNIT, "hours")
-                                        },
-                                        label = { Text("Hours") }
-                                    )
-                                }
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Call Time Format in call logs",
-                                    supporting = if (callTimeFormat24h) "Showing call times in 24-hour format" else "Showing call times in 12-hour format",
-                                    leadingIcon = Icons.Outlined.Schedule,
-                                    iconContainerColor = ColorAmber,
-                                    checked = callTimeFormat24h,
-                                    modifier = Modifier.settingsSearchHighlight("call_time_format", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        callTimeFormat24h = it
-                                        prefs.setBoolean(PreferenceManager.KEY_CALL_TIME_FORMAT_24H, it)
-                                    }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Talk time in call logs",
-                                    supporting = if (showTalkTimeInCallLogs) "Showing call duration for answered calls below the time" else "Call duration hidden in call logs",
-                                    leadingIcon = Icons.Outlined.Timer,
-                                    iconContainerColor = ColorGreen,
-                                    checked = showTalkTimeInCallLogs,
-                                    modifier = Modifier.settingsSearchHighlight("talk_time_in_call_logs", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        showTalkTimeInCallLogs = it
-                                        prefs.setBoolean(PreferenceManager.KEY_SHOW_TALK_TIME_IN_CALL_LOGS, it)
-                                    }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Icon-Only Bottom Bar",
-                                    supporting = "Removes text labels from navigation",
-                                    leadingIcon = Icons.Outlined.ViewStream,
-                                    iconContainerColor = ColorTeal,
-                                    checked = iconOnlyNav,
-                                    modifier = Modifier.settingsSearchHighlight("icon_only_bottom_bar", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = { iconOnlyNav = it; prefs.setBoolean(PreferenceManager.KEY_ICON_ONLY_NAV, it) }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Open Dialpad by Default",
-                                    supporting = "Show dialpad automatically when app starts",
-                                    leadingIcon = Icons.Outlined.Dialpad,
-                                    iconContainerColor = ColorAmber,
-                                    checked = openDialpadDefault,
-                                    modifier = Modifier.settingsSearchHighlight("open_dialpad_default", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        openDialpadDefault = it
-                                        prefs.setBoolean(PreferenceManager.KEY_OPEN_DIALPAD_DEFAULT, it)
-                                    }
-                                )
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoSwitchListItem(
-                                    headline = "Show favourites in list",
-                                    supporting = "Display favourite contacts in a vertical list instead of a grid",
-                                    leadingIcon = Icons.Outlined.FormatListBulleted,
-                                    iconContainerColor = Color(0xFFE91E63),
-                                    checked = favoritesInList,
-                                    modifier = Modifier.settingsSearchHighlight("favorites_in_list", highlightedKey) { highlightedKey = null },
-                                    onCheckedChange = {
-                                        favoritesInList = it
-                                        prefs.setBoolean(PreferenceManager.KEY_FAVORITES_IN_LIST, it)
-                                    }
                                 )
                                 if (!rateReviewSecretActive) {
                                     HorizontalDivider(Modifier.padding(horizontal = 16.dp),
@@ -2486,6 +2219,20 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                                     checked = showFirstLetter,
                                     modifier = Modifier.settingsSearchHighlight("avatar_first_letter", highlightedKey) { highlightedKey = null },
                                     onCheckedChange = { showFirstLetter = it; prefs.setBoolean(PreferenceManager.KEY_SHOW_FIRST_LETTER, it) }
+                                )
+                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                RivoSwitchListItem(
+                                    headline = "Show avatar in SMS",
+                                    supporting = "Display contact avatar in SMS messages list",
+                                    leadingIcon = Icons.Outlined.AccountCircle,
+                                    iconContainerColor = ColorPurple,
+                                    checked = showAvatarSms,
+                                    modifier = Modifier.settingsSearchHighlight("sms_show_avatar", highlightedKey) { highlightedKey = null },
+                                    onCheckedChange = {
+                                        showAvatarSms = it
+                                        prefs.setBoolean(PreferenceManager.KEY_SMS_SHOW_AVATAR, it)
+                                    }
                                 )
                             }
                         }

@@ -311,6 +311,7 @@
         </service>
 
 
+        <!-- SMS Launcher Aliases: Default Icon -->
         <activity-alias
             android:name=".SmsLauncherAliasEverSms"
             android:targetActivity=".MainActivity"
@@ -381,6 +382,219 @@
             </intent-filter>
         </activity-alias>
 
+        <!-- SMS Launcher Aliases: Google Icon -->
+        <activity-alias
+            android:name=".SmsLauncherAliasEverSms_Google"
+            android:targetActivity=".MainActivity"
+            android:label="Ever SMS"
+            android:icon="@mipmap/ic_launcher_sms_google"
+            android:roundIcon="@mipmap/ic_launcher_sms_google_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".SmsLauncherAliasEverMessages_Google"
+            android:targetActivity=".MainActivity"
+            android:label="Ever Messages"
+            android:icon="@mipmap/ic_launcher_sms_google"
+            android:roundIcon="@mipmap/ic_launcher_sms_google_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".SmsLauncherAliasSms_Google"
+            android:targetActivity=".MainActivity"
+            android:label="SMS"
+            android:icon="@mipmap/ic_launcher_sms_google"
+            android:roundIcon="@mipmap/ic_launcher_sms_google_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".SmsLauncherAliasMessages_Google"
+            android:targetActivity=".MainActivity"
+            android:label="Messages"
+            android:icon="@mipmap/ic_launcher_sms_google"
+            android:roundIcon="@mipmap/ic_launcher_sms_google_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".SmsLauncherAliasChats_Google"
+            android:targetActivity=".MainActivity"
+            android:label="Chats"
+            android:icon="@mipmap/ic_launcher_sms_google"
+            android:roundIcon="@mipmap/ic_launcher_sms_google_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- SMS Launcher Aliases: NOTHING Icon -->
+        <activity-alias
+            android:name=".SmsLauncherAliasEverSms_Nothing"
+            android:targetActivity=".MainActivity"
+            android:label="Ever SMS"
+            android:icon="@mipmap/ic_launcher_sms_nothing"
+            android:roundIcon="@mipmap/ic_launcher_sms_nothing_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".SmsLauncherAliasEverMessages_Nothing"
+            android:targetActivity=".MainActivity"
+            android:label="Ever Messages"
+            android:icon="@mipmap/ic_launcher_sms_nothing"
+            android:roundIcon="@mipmap/ic_launcher_sms_nothing_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".SmsLauncherAliasSms_Nothing"
+            android:targetActivity=".MainActivity"
+            android:label="SMS"
+            android:icon="@mipmap/ic_launcher_sms_nothing"
+            android:roundIcon="@mipmap/ic_launcher_sms_nothing_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".SmsLauncherAliasMessages_Nothing"
+            android:targetActivity=".MainActivity"
+            android:label="Messages"
+            android:icon="@mipmap/ic_launcher_sms_nothing"
+            android:roundIcon="@mipmap/ic_launcher_sms_nothing_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".SmsLauncherAliasChats_Nothing"
+            android:targetActivity=".MainActivity"
+            android:label="Chats"
+            android:icon="@mipmap/ic_launcher_sms_nothing"
+            android:roundIcon="@mipmap/ic_launcher_sms_nothing_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- SMS Launcher Aliases: LineageOS Icon -->
+        <activity-alias
+            android:name=".SmsLauncherAliasEverSms_LineageOS"
+            android:targetActivity=".MainActivity"
+            android:label="Ever SMS"
+            android:icon="@mipmap/ic_launcher_sms_lineageos"
+            android:roundIcon="@mipmap/ic_launcher_sms_lineageos_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".SmsLauncherAliasEverMessages_LineageOS"
+            android:targetActivity=".MainActivity"
+            android:label="Ever Messages"
+            android:icon="@mipmap/ic_launcher_sms_lineageos"
+            android:roundIcon="@mipmap/ic_launcher_sms_lineageos_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".SmsLauncherAliasSms_LineageOS"
+            android:targetActivity=".MainActivity"
+            android:label="SMS"
+            android:icon="@mipmap/ic_launcher_sms_lineageos"
+            android:roundIcon="@mipmap/ic_launcher_sms_lineageos_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".SmsLauncherAliasMessages_LineageOS"
+            android:targetActivity=".MainActivity"
+            android:label="Messages"
+            android:icon="@mipmap/ic_launcher_sms_lineageos"
+            android:roundIcon="@mipmap/ic_launcher_sms_lineageos_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".SmsLauncherAliasChats_LineageOS"
+            android:targetActivity=".MainActivity"
+            android:label="Chats"
+            android:icon="@mipmap/ic_launcher_sms_lineageos"
+            android:roundIcon="@mipmap/ic_launcher_sms_lineageos_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
         <activity-alias
             android:name=".SmsLauncherAlias"
             android:targetActivity=".MainActivity"
@@ -394,6 +608,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
+
 
         <activity-alias
             android:name=".MainActivityDefaultIcon"

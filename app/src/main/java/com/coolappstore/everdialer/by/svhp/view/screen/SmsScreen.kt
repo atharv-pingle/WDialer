@@ -152,19 +152,10 @@ fun SmsScreen(
 
     val colorScheme = MaterialTheme.colorScheme
     val leftSwipeActionItem = remember(swipeLeftAction, colorScheme) {
-        when (swipeLeftAction) {
-            "delete" -> SwipeActionItem("delete", "Delete", Icons.Default.Delete, colorScheme.error, colorScheme.onError, isDestructive = true)
-            "read" -> SwipeActionItem("read", "Mark Read", Icons.Outlined.MarkChatRead, colorScheme.secondary, colorScheme.onSecondary, isDestructive = false)
-            else -> null
-        }
+        SwipeActionHelper.resolveActionItem(swipeLeftAction, colorScheme)
     }
     val rightSwipeActionItem = remember(swipeRightAction, colorScheme) {
-        when (swipeRightAction) {
-            "call" -> SwipeActionItem("call", "Call", Icons.Default.Call, colorScheme.primary, colorScheme.onPrimary, isDestructive = false)
-            "read" -> SwipeActionItem("read", "Mark Read", Icons.Outlined.MarkChatRead, colorScheme.secondary, colorScheme.onSecondary, isDestructive = false)
-            "delete" -> SwipeActionItem("delete", "Delete", Icons.Default.Delete, colorScheme.error, colorScheme.onError, isDestructive = true)
-            else -> null
-        }
+        SwipeActionHelper.resolveActionItem(swipeRightAction, colorScheme)
     }
 
     val haptic = LocalHapticFeedback.current

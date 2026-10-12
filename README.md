@@ -1,8 +1,8 @@
-# Ever Dialer
+# Ever Dialer And Ever SMS
 <br>
 
 <img src="https://raw.githubusercontent.com/hari161008/Website-For-Everlasting-Android-Tweak/main/Ever%20Dialer/Assets/Banner%20and%20Icon/Ever%20Dialer%20Banner.png" width="100%" />
-Ever Dialer is the best replacement of Google dialer and <a href="https://play.google.com/store/apps/details?id=com.hb.dialer.free">True Phone</a> which has 230+ FEATURES !! it can RECORD CALLS without announcements and without root, it has Material You design with dynamic colours, aesthetic, smooth and fluid animations, open source, heavily and much more customizable like <a href="https://play.google.com/store/apps/details?id=com.hb.dialer.free">True Phone</a>, NO ADS, some more extra features like taking notes of each contact or taking a quick note from a window when you are on a call and finally IT's 100% FREEEE !!!!
+Ever Dialer is the best replacement of Google dialer and <a href="https://play.google.com/store/apps/details?id=com.hb.dialer.free">True Phone</a> which has 230+ FEATURES !! it can RECORD CALLS without announcements and without root, it has Material You design with dynamic colours, aesthetic, smooth and fluid animations, open source, heavily and much more customizable like <a href="https://play.google.com/store/apps/details?id=com.hb.dialer.free">True Phone</a>, NO ADS, some more extra features like taking notes of each contact or taking a quick note from a window when you are on a call, It has a dedicated SMS feature which shows in the app drawer list too and finally IT's 100% FREEEE !!!!
 <br><br>
 <b>Note:</b> Since this app requires Shizuku for some features, the Shizuku service stops automatically in the Official Shizuku App. To prevent this happening, Uninstall the Original Shizuku and Install this <b>Shizuku Fork (<a href="https://github.com/thedjchi/Shizuku">Click Here</a>) </b> and after installed, then run shizuku normally and make sure that you go to shizuku app, on the top right, click settings icon and click <b>"Watchdog"</b> which prevents Shizuku service from Stopping !!)
 
@@ -448,9 +448,10 @@ GitHub: [Download](https://github.com/hari161008/Ever-Dialer/releases) ⬇️
 ┈➤ [Network Switch](https://github.com/aunchagaonkar/NetworkSwitch)<br><br>
 ┈➤ [Raise To Answer](https://github.com/TheLastProject/RaiseToAnswer)<br><br>
 ┈➤ [Wallpaper Export](https://github.com/cvzi/WallpaperExport)<br><br>
-┈➤ [LineageOS Dialer](https://github.com/Lineageos/android_packages_apps_Dialer)
+┈➤ [LineageOS Dialer](https://github.com/Lineageos/android_packages_apps_Dialer)<br><br>
+┈➤ [LineageOS Messaging](https://github.com/LineageOS/android_packages_apps_Messaging)
 
-# Fonts Used
+# Fonts Used And Their Licenses Available In Their Respective Website
 
 ┈➤ [Playwrite USA Modern](https://fonts.google.com/specimen/Playwrite+US+Modern)<br><br>
 ┈➤ [Comfortaa](https://fonts.google.com/specimen/Comfortaa)<br><br>

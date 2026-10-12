@@ -102,11 +102,21 @@ class PreferenceManager(context: Context) {
 
     fun getDefaultSwipeAction(section: String, direction: String): String = "none"
 
-    fun getSwipeAction(section: String, direction: String): String =
-        getString("swipe_action_${section}_${direction}", getDefaultSwipeAction(section, direction)) ?: getDefaultSwipeAction(section, direction)
+    fun getSwipeAction(section: String, direction: String): String {
+        if (section == "sms") {
+            val key = if (direction == "left") KEY_SMS_SWIPE_LEFT_ACTION else KEY_SMS_SWIPE_RIGHT_ACTION
+            return getString(key, "none") ?: "none"
+        }
+        return getString("swipe_action_${section}_${direction}", getDefaultSwipeAction(section, direction)) ?: getDefaultSwipeAction(section, direction)
+    }
 
-    fun setSwipeAction(section: String, direction: String, action: String) =
+    fun setSwipeAction(section: String, direction: String, action: String) {
+        if (section == "sms") {
+            val key = if (direction == "left") KEY_SMS_SWIPE_LEFT_ACTION else KEY_SMS_SWIPE_RIGHT_ACTION
+            setString(key, action)
+        }
         setString("swipe_action_${section}_${direction}", action)
+    }
 
     /** Per-contact "Choose Default Number" preference (Contact Info, just below "Choose Sim") for
      *  contacts saved with 2+ phone numbers. When set to one of the contact's numbers, the header
@@ -708,6 +718,7 @@ class PreferenceManager(context: Context) {
         const val KEY_SMS_SELECTED_FILTER          = "sms_selected_filter" // "all", "contacts", "unknown"
         const val KEY_SMS_LAUNCHER_ICON_ENABLED     = "sms_launcher_icon_enabled"
         const val KEY_SMS_LAUNCHER_APP_NAME         = "sms_launcher_app_name"
+        const val KEY_SMS_SELECTED_APP_ICON         = "sms_selected_app_icon"
         const val KEY_PINNED_SMS_THREADS            = "pinned_sms_threads"
         const val KEY_PINNED_SMS_MESSAGES           = "pinned_sms_messages"
         const val KEY_STARRED_SMS_MESSAGES          = "starred_sms_messages"

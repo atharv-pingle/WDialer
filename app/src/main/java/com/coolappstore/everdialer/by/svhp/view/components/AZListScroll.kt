@@ -509,6 +509,14 @@ fun ContactListItem(
                     }
                 }
                 "call_chat_via" -> showCallChatViaPicker = true
+                "search_truecaller" -> {
+                    if (numToCall.isNotBlank()) {
+                        val isLaunched = com.coolappstore.everdialer.by.svhp.controller.util.openTruecaller(context, numToCall)
+                        if (!isLaunched) {
+                            Toast.makeText(context, "Truecaller is not installed", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
                 "fake_call" -> showFakeCallSheet = true
                 "move_contact" -> showMoveDialog = true
             }

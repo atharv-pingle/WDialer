@@ -70,32 +70,50 @@ fun SwipeableItemContainer(
     val offsetX = remember { Animatable(0f) }
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
-    // Reduced sensitivity: threshold is farther (125.dp) so user must swipe more deliberately
+    // Reduced sensitivity: threshold is farther (125.dp) so user must swipe deliberately
     val threshold = with(density) { 125.dp.toPx() }
     val maxDrag = with(density) { 200.dp.toPx() }
 
     val swipeModifier = if (enabled && ((leftAction != null && leftAction.key != "none") || (rightAction != null && rightAction.key != "none"))) {
-        Modifier.pointerInput(enabled, leftAction, rightAction, threshold, maxDrag) {
+        Modifier.pointerInput(enabled, leftAction, rightAction, threshold, maxDrag, isRtl) {
             val touchSlop = viewConfiguration.touchSlop
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
-                var totalDx = 0f
                 var isDragging = false
                 var hapticFired = false
-                var canDragRight = rightAction != null && rightAction.key != "none"
-                var canDragLeft = leftAction != null && leftAction.key != "none"
+                val canDragRight = rightAction != null && rightAction.key != "none"
+                val canDragLeft = leftAction != null && leftAction.key != "none"
 
                 do {
                     val event = awaitPointerEvent()
                     val change = event.changes.firstOrNull { it.id == down.id } ?: break
+
+                    if (change.isConsumed && !isDragging) {
+                        // Vertical scroll or parent component claimed the gesture
+                        break
+                    }
+
                     if (change.pressed) {
+                        val totalDx = change.position.x - down.position.x
+                        val totalDy = change.position.y - down.position.y
                         val dx = change.position.x - change.previousPosition.x
-                        val dy = change.position.y - change.previousPosition.y
-                        totalDx += dx
 
                         if (!isDragging) {
-                            if (abs(totalDx) > touchSlop && abs(totalDx) > abs(change.position.y - down.position.y) * 1.2f) {
-                                val allowed = (totalDx > 0 && canDragRight) || (totalDx < 0 && canDragLeft)
+                            // If user is scrolling vertically up/down, cancel swipe gesture immediately
+                            if (abs(totalDy) > touchSlop && abs(totalDy) >= abs(totalDx)) {
+                                break
+                            }
+
+                            // Require deliberate horizontal movement:
+                            // 1. Horizontal movement exceeds touchSlop * 1.25f
+                            // 2. Clear horizontal orientation (horizontal movement at least twice vertical)
+                            // 3. User is moving in a direction with an active action configured
+                            if (abs(totalDx) > touchSlop * 1.25f && abs(totalDx) > abs(totalDy) * 2f) {
+                                val allowed = if (!isRtl) {
+                                    (totalDx > 0 && canDragRight) || (totalDx < 0 && canDragLeft)
+                                } else {
+                                    (totalDx < 0 && canDragRight) || (totalDx > 0 && canDragLeft)
+                                }
                                 if (allowed) {
                                     isDragging = true
                                     change.consume()
@@ -104,12 +122,16 @@ fun SwipeableItemContainer(
                         } else {
                             change.consume()
                             val current = offsetX.value
-                            val target = if (totalDx > 0 && canDragRight) {
-                                (current + dx).coerceIn(0f, maxDrag)
-                            } else if (totalDx < 0 && canDragLeft) {
-                                (current + dx).coerceIn(-maxDrag, 0f)
+                            val target = if (!isRtl) {
+                                (current + dx).coerceIn(
+                                    if (canDragLeft) -maxDrag else 0f,
+                                    if (canDragRight) maxDrag else 0f
+                                )
                             } else {
-                                current
+                                (current + dx).coerceIn(
+                                    if (canDragRight) -maxDrag else 0f,
+                                    if (canDragLeft) maxDrag else 0f
+                                )
                             }
 
                             coroutineScope.launch { offsetX.snapTo(target) }
@@ -128,10 +150,18 @@ fun SwipeableItemContainer(
 
                 if (isDragging) {
                     val finalX = offsetX.value
-                    if (finalX >= threshold && canDragRight) {
-                        onSwipeRight?.invoke()
-                    } else if (finalX <= -threshold && canDragLeft) {
-                        onSwipeLeft?.invoke()
+                    if (!isRtl) {
+                        if (finalX >= threshold && canDragRight) {
+                            onSwipeRight?.invoke()
+                        } else if (finalX <= -threshold && canDragLeft) {
+                            onSwipeLeft?.invoke()
+                        }
+                    } else {
+                        if (finalX <= -threshold && canDragRight) {
+                            onSwipeRight?.invoke()
+                        } else if (finalX >= threshold && canDragLeft) {
+                            onSwipeLeft?.invoke()
+                        }
                     }
 
                     coroutineScope.launch {
@@ -157,13 +187,23 @@ fun SwipeableItemContainer(
     ) {
         val currentX = offsetX.value
 
+        // In LTR:
+        //   currentX > 0: user dragged right -> reveals Start (left) edge -> rightAction
+        //   currentX < 0: user dragged left  -> reveals End (right) edge  -> leftAction
+        // In RTL:
+        //   currentX < 0: user dragged left  -> reveals Start (right) edge -> rightAction
+        //   currentX > 0: user dragged right -> reveals End (left) edge   -> leftAction
+        val isRevealingRightAction = if (!isRtl) currentX > 0 else currentX < 0
+        val isRevealingLeftAction = if (!isRtl) currentX < 0 else currentX > 0
+
         // Background action reveal
-        if (currentX > 0 && rightAction != null && rightAction.key != "none") {
-            val isTriggered = currentX >= threshold
-            val progress = (currentX / threshold).coerceIn(0f, 1f)
+        if (isRevealingRightAction && rightAction != null && rightAction.key != "none") {
+            val currentDisplacement = abs(currentX)
+            val isTriggered = currentDisplacement >= threshold
+            val progress = (currentDisplacement / threshold).coerceIn(0f, 1f)
             val slowVisibility = (progress * progress).coerceIn(0f, 1f)
 
-            // Slowly visible background tint that smoothly activates to full dynamic color when swiped more far
+            // Slowly visible background tint that smoothly activates to full dynamic color when swiped farther
             val targetBgColor = if (isTriggered) {
                 rightAction.backgroundColor
             } else {
@@ -197,8 +237,8 @@ fun SwipeableItemContainer(
                 modifier = Modifier
                     .matchParentSize()
                     .background(animatedBg)
-                    .then(if (isRtl) Modifier.padding(end = 24.dp) else Modifier.padding(start = 24.dp)),
-                contentAlignment = if (isRtl) Alignment.CenterEnd else Alignment.CenterStart
+                    .padding(start = 24.dp),
+                contentAlignment = Alignment.CenterStart
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -223,9 +263,10 @@ fun SwipeableItemContainer(
                     )
                 }
             }
-        } else if (currentX < 0 && leftAction != null && leftAction.key != "none") {
-            val isTriggered = abs(currentX) >= threshold
-            val progress = (abs(currentX) / threshold).coerceIn(0f, 1f)
+        } else if (isRevealingLeftAction && leftAction != null && leftAction.key != "none") {
+            val currentDisplacement = abs(currentX)
+            val isTriggered = currentDisplacement >= threshold
+            val progress = (currentDisplacement / threshold).coerceIn(0f, 1f)
             val slowVisibility = (progress * progress).coerceIn(0f, 1f)
 
             val targetBgColor = if (isTriggered) {
@@ -261,8 +302,8 @@ fun SwipeableItemContainer(
                 modifier = Modifier
                     .matchParentSize()
                     .background(animatedBg)
-                    .then(if (isRtl) Modifier.padding(start = 24.dp) else Modifier.padding(end = 24.dp)),
-                contentAlignment = if (isRtl) Alignment.CenterStart else Alignment.CenterEnd
+                    .padding(end = 24.dp),
+                contentAlignment = Alignment.CenterEnd
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

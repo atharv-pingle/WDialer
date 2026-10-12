@@ -616,10 +616,10 @@ fun CallLogTile(
                     ).show()
                 }
                 "search_truecaller" -> {
-                    try {
-                        val uri = Uri.parse("https://www.truecaller.com/search/in/${log.number}")
-                        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                    } catch (_: Exception) {}
+                    val isLaunched = com.coolappstore.everdialer.by.svhp.controller.util.openTruecaller(context, log.number)
+                    if (!isLaunched) {
+                        Toast.makeText(context, "Truecaller is not installed", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }

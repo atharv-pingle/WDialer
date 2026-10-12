@@ -321,12 +321,14 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
         }
     }
 
+    val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
+
     Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(nestedScrollConnection)
-            .pointerInput(Unit) {
+            .pointerInput(isRtl) {
                 // Use PointerEventPass.Final so children (LazyColumn) get events first.
                 // Only trigger navigation when the horizontal movement clearly dominates
                 // vertical movement, preventing accidental swipes during scrolling.
@@ -358,7 +360,8 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
                                         navController = navController,
                                         currentRoute = RecentScreenDestination.route,
                                         goForward = dx < 0,
-                                        prefs = prefs
+                                        prefs = prefs,
+                                        isRtl = isRtl
                                     )
                                 }
                             }

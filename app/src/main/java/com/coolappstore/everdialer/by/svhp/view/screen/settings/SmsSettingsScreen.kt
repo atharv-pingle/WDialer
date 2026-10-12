@@ -397,7 +397,7 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
                                 // Prevent Screenshots
-                                RivoSwitchListItem(
+                                 RivoSwitchListItem(
                                     headline = "Prevent screenshots",
                                     supporting = "Block screen captures and screen recording in SMS",
                                     leadingIcon = Icons.Outlined.Security,
@@ -405,13 +405,6 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
                                     checked = disableScreenshots,
                                     onCheckedChange = { checked ->
                                         prefs.setBoolean(PreferenceManager.KEY_SMS_DISABLE_SCREENSHOTS, checked)
-                                        (context as? Activity)?.window?.let { window ->
-                                            if (checked) {
-                                                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                                            } else {
-                                                window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                                            }
-                                        }
                                     }
                                 )
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))

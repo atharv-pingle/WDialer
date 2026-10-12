@@ -150,11 +150,13 @@ fun ContactScreen(navController: NavController, navigator: DestinationsNavigator
         }
     }
 
+    val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
+
     Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
+            .pointerInput(isRtl) {
                 awaitPointerEventScope {
                     while (true) {
                         val down = awaitPointerEvent(PointerEventPass.Final).changes.firstOrNull() ?: continue
@@ -176,7 +178,8 @@ fun ContactScreen(navController: NavController, navigator: DestinationsNavigator
                                         navController = navController,
                                         currentRoute = ContactScreenDestination.route,
                                         goForward = dx < 0,
-                                        prefs = prefs_ui
+                                        prefs = prefs_ui,
+                                        isRtl = isRtl
                                     )
                                 }
                             }

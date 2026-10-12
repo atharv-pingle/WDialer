@@ -106,13 +106,13 @@ fun SwipeableItemContainer(
 
                             // Require deliberate horizontal movement:
                             // 1. Horizontal movement exceeds touchSlop * 1.25f
-                            // 2. Clear horizontal orientation (horizontal movement at least twice vertical)
+                            // 2. clear horizontal orientation (horizontal movement at least twice vertical)
                             // 3. User is moving in a direction with an active action configured
                             if (abs(totalDx) > touchSlop * 1.25f && abs(totalDx) > abs(totalDy) * 2f) {
                                 val allowed = if (!isRtl) {
                                     (totalDx > 0 && canDragRight) || (totalDx < 0 && canDragLeft)
                                 } else {
-                                    (totalDx < 0 && canDragRight) || (totalDx > 0 && canDragLeft)
+                                    (totalDx > 0 && canDragLeft) || (totalDx < 0 && canDragRight)
                                 }
                                 if (allowed) {
                                     isDragging = true
@@ -122,17 +122,11 @@ fun SwipeableItemContainer(
                         } else {
                             change.consume()
                             val current = offsetX.value
-                            val target = if (!isRtl) {
-                                (current + dx).coerceIn(
-                                    if (canDragLeft) -maxDrag else 0f,
-                                    if (canDragRight) maxDrag else 0f
-                                )
-                            } else {
-                                (current + dx).coerceIn(
-                                    if (canDragRight) -maxDrag else 0f,
-                                    if (canDragLeft) maxDrag else 0f
-                                )
-                            }
+                            val effectiveDx = if (isRtl) -dx else dx
+                            val target = (current + effectiveDx).coerceIn(
+                                if (canDragLeft) -maxDrag else 0f,
+                                if (canDragRight) maxDrag else 0f
+                            )
 
                             coroutineScope.launch { offsetX.snapTo(target) }
 
@@ -150,18 +144,10 @@ fun SwipeableItemContainer(
 
                 if (isDragging) {
                     val finalX = offsetX.value
-                    if (!isRtl) {
-                        if (finalX >= threshold && canDragRight) {
-                            onSwipeRight?.invoke()
-                        } else if (finalX <= -threshold && canDragLeft) {
-                            onSwipeLeft?.invoke()
-                        }
-                    } else {
-                        if (finalX <= -threshold && canDragRight) {
-                            onSwipeRight?.invoke()
-                        } else if (finalX >= threshold && canDragLeft) {
-                            onSwipeLeft?.invoke()
-                        }
+                    if (finalX >= threshold && canDragRight) {
+                        onSwipeRight?.invoke()
+                    } else if (finalX <= -threshold && canDragLeft) {
+                        onSwipeLeft?.invoke()
                     }
 
                     coroutineScope.launch {
@@ -187,14 +173,10 @@ fun SwipeableItemContainer(
     ) {
         val currentX = offsetX.value
 
-        // In LTR:
-        //   currentX > 0: user dragged right -> reveals Start (left) edge -> rightAction
-        //   currentX < 0: user dragged left  -> reveals End (right) edge  -> leftAction
-        // In RTL:
-        //   currentX < 0: user dragged left  -> reveals Start (right) edge -> rightAction
-        //   currentX > 0: user dragged right -> reveals End (left) edge   -> leftAction
-        val isRevealingRightAction = if (!isRtl) currentX > 0 else currentX < 0
-        val isRevealingLeftAction = if (!isRtl) currentX < 0 else currentX > 0
+        // currentX > 0: user dragged rightwards -> reveals left side of container -> rightAction
+        // currentX < 0: user dragged leftwards  -> reveals right side of container -> leftAction
+        val isRevealingRightAction = currentX > 0
+        val isRevealingLeftAction = currentX < 0
 
         // Background action reveal
         if (isRevealingRightAction && rightAction != null && rightAction.key != "none") {
@@ -233,12 +215,13 @@ fun SwipeableItemContainer(
                 label = "rightScale"
             )
 
+            // Revealed on the physical left of the container (Absolute Alignment)
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .background(animatedBg)
-                    .padding(start = 24.dp),
-                contentAlignment = Alignment.CenterStart
+                    .padding(start = if (!isRtl) 24.dp else 0.dp, end = if (isRtl) 24.dp else 0.dp),
+                contentAlignment = if (!isRtl) Alignment.CenterStart else Alignment.CenterEnd
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -298,12 +281,13 @@ fun SwipeableItemContainer(
                 label = "leftScale"
             )
 
+            // Revealed on the physical right of the container (Absolute Alignment)
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .background(animatedBg)
-                    .padding(end = 24.dp),
-                contentAlignment = Alignment.CenterEnd
+                    .padding(end = if (!isRtl) 24.dp else 0.dp, start = if (isRtl) 24.dp else 0.dp),
+                contentAlignment = if (!isRtl) Alignment.CenterEnd else Alignment.CenterStart
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -334,7 +318,7 @@ fun SwipeableItemContainer(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .offset { IntOffset(if (isRtl) -offsetX.value.roundToInt() else offsetX.value.roundToInt(), 0) }
                 .then(swipeModifier)
         ) {
             content()

@@ -583,6 +583,23 @@ class MainActivity : FragmentActivity() {
                     val navBackStack by navController.currentBackStackEntryAsState()
                     val currentDest = navBackStack?.destination
                     val prefs2 = remember { GlobalContext.get().get<PreferenceManager>() }
+                    val disableSmsScreenshots = remember(settingsVer) {
+                        prefs2.getBoolean(PreferenceManager.KEY_SMS_DISABLE_SCREENSHOTS, false)
+                    }
+                    LaunchedEffect(currentDest?.route, disableSmsScreenshots) {
+                        val route = currentDest?.route
+                        val isSmsSection = route != null && (
+                            route.startsWith("sms_screen") ||
+                            route.startsWith("sms_chat_screen") ||
+                            route.startsWith("new_message_screen") ||
+                            route.startsWith("blocked_sms_screen")
+                        )
+                        if (disableSmsScreenshots && isSmsSection) {
+                            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                        } else {
+                            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                        }
+                    }
                     val showNotesRail = remember(settingsVer) { prefs2.getBoolean(PreferenceManager.KEY_TAB_SHOW_NOTES, true) }
                     val showRecordingsRail = remember(settingsVer) { prefs2.getBoolean(PreferenceManager.KEY_TAB_SHOW_RECORDINGS, true) }
 

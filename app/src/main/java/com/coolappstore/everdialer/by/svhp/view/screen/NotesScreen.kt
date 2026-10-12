@@ -242,11 +242,12 @@ fun NotesScreen(navController: NavController, navigator: DestinationsNavigator, 
     val coroutineScope = rememberCoroutineScope()
 
     val pillNav = remember { prefs.getBoolean(PreferenceManager.KEY_PILL_NAV, true) }
+    val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
     Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
+            .pointerInput(isRtl) {
                 awaitPointerEventScope {
                     while (true) {
                         val down = awaitPointerEvent(PointerEventPass.Final).changes.firstOrNull() ?: continue
@@ -268,7 +269,8 @@ fun NotesScreen(navController: NavController, navigator: DestinationsNavigator, 
                                         navController = navController,
                                         currentRoute = NotesScreenDestination.route,
                                         goForward = dx < 0,
-                                        prefs = prefs
+                                        prefs = prefs,
+                                        isRtl = isRtl
                                     )
                                 }
                             }

@@ -222,7 +222,7 @@ GitHub: [Download](https://github.com/hari161008/Ever-Dialer/releases) ⬇️
 89. 📌 **Pinned Chats & Starred Messages** – Pin important conversation threads to the top of the SMS list and star key messages for instant retrieval.
 90. 🔇 **Mute Conversation Notifications** – Mute specific conversations or sender addresses without deleting thread history.
 91. 📱 **Mobile Numbers Only Filter** – Smart composer filter that hides landlines and VoIP numbers when selecting contacts to message.
-92. 🎨 **45 Launcher Permutations for Ever SMS** – Option to enable a separate, dedicated app drawer icon for SMS with 5 app titles (*Ever SMS*, *Ever Messages*, *SMS*, *Messages*, *Chats*) and 9 launcher icons (*Default*, *Bubble Blue*, *Purple Velvet*, *AMOLED Dark*, *Coral Sunset*, *Neon Mint*, *Google*, *NOTHING*, *LineageOS*).
+92. 🎨 **55 Launcher Permutations for Ever SMS** – Option to enable a separate, dedicated app drawer icon for SMS with 5 app titles (*Ever SMS*, *Ever Messages*, *SMS*, *Messages*, *Chats*) and 11 launcher icons (*Default*, *Google*, *NOTHING*, *LineageOS*, *Windows Phone*, *Bubble Blue*, *Purple Velvet*, *GrapheneOS*, *Coral Sunset*, *Neon Mint*, *Yellow*).
 93. 🔔 **Direct Reply & Quick Action Notifications** – Reply inline, mark as read, or delete messages directly from Android system notification heads-up.
 94. 📦 **Multi-Message Batch Selection Mode** – Select multiple messages in a chat thread to copy, forward, or delete in bulk.
 95. 🚫 **Dedicated Blocked SMS Senders Manager** – View, manage, and unblock SMS senders independently from telephony call blocks.

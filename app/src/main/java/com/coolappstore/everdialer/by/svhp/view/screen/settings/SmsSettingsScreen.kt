@@ -104,7 +104,7 @@ private fun updateSmsLauncherAlias(
         "Chats" to "Chats"
     )
     val appNames = listOf("Ever SMS", "Ever Messages", "SMS", "Messages", "Chats")
-    val icons = listOf("default", "google", "nothing", "lineageos", "bubble_blue", "purple", "amoled", "coral", "neon_green")
+    val icons = listOf("default", "google", "nothing", "lineageos", "windows_phone", "bubble_blue", "purple", "amoled", "coral", "neon_green", "yellow")
 
     // Determine target alias
     val nameSuffix = nameKeyMap[appName] ?: "EverSms"
@@ -112,11 +112,13 @@ private fun updateSmsLauncherAlias(
         "google" -> "_Google"
         "nothing" -> "_Nothing"
         "lineageos" -> "_LineageOS"
+        "windows_phone" -> "_WindowsPhone"
         "bubble_blue" -> "_BubbleBlue"
         "purple" -> "_Purple"
         "amoled" -> "_Amoled"
         "coral" -> "_Coral"
         "neon_green" -> "_NeonGreen"
+        "yellow" -> "_Yellow"
         else -> ""
     }
     val targetAlias = "${context.packageName}.SmsLauncherAlias${nameSuffix}${iconSuffix}"
@@ -139,11 +141,13 @@ private fun updateSmsLauncherAlias(
                 "google" -> "_Google"
                 "nothing" -> "_Nothing"
                 "lineageos" -> "_LineageOS"
+                "windows_phone" -> "_WindowsPhone"
                 "bubble_blue" -> "_BubbleBlue"
                 "purple" -> "_Purple"
                 "amoled" -> "_Amoled"
                 "coral" -> "_Coral"
                 "neon_green" -> "_NeonGreen"
+                "yellow" -> "_Yellow"
                 else -> ""
             }
             val aliasComponentStr = "${context.packageName}.SmsLauncherAlias${curNameSuffix}${curIconSuffix}"
@@ -466,14 +470,16 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
 
                                 // SMS App Icon
                                 val smsAppIconLabel = when (smsAppIcon) {
-                                    "bubble_blue" -> "Bubble Blue"
-                                    "purple" -> "Purple Velvet"
-                                    "amoled" -> "AMOLED Dark"
-                                    "coral" -> "Coral Sunset"
-                                    "neon_green" -> "Neon Mint"
                                     "google" -> "Google"
                                     "nothing" -> "NOTHING"
                                     "lineageos" -> "LineageOS"
+                                    "windows_phone" -> "Windows Phone"
+                                    "bubble_blue" -> "Bubble Blue"
+                                    "purple" -> "Purple Velvet"
+                                    "amoled" -> "GrapheneOS"
+                                    "coral" -> "Coral Sunset"
+                                    "neon_green" -> "Neon Mint"
+                                    "yellow" -> "Yellow"
                                     else -> "Default"
                                 }
                                 RivoListItem(

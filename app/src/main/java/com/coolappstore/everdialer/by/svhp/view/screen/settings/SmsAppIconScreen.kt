@@ -62,14 +62,16 @@ data class SmsAppIconEntry(
 
 internal fun buildSmsIcons(context: android.content.Context) = listOf(
     SmsAppIconEntry("default", "Default", context.resources.getIdentifier("ic_launcher_sms", "mipmap", context.packageName)),
-    SmsAppIconEntry("bubble_blue", "Bubble Blue", context.resources.getIdentifier("ic_launcher_sms_bubble_blue", "mipmap", context.packageName)),
-    SmsAppIconEntry("purple", "Purple Velvet", context.resources.getIdentifier("ic_launcher_sms_purple", "mipmap", context.packageName)),
-    SmsAppIconEntry("amoled", "AMOLED Dark", context.resources.getIdentifier("ic_launcher_sms_amoled", "mipmap", context.packageName)),
-    SmsAppIconEntry("coral", "Coral Sunset", context.resources.getIdentifier("ic_launcher_sms_coral", "mipmap", context.packageName)),
-    SmsAppIconEntry("neon_green", "Neon Mint", context.resources.getIdentifier("ic_launcher_sms_neon_green", "mipmap", context.packageName)),
     SmsAppIconEntry("google", "Google", context.resources.getIdentifier("ic_launcher_sms_google", "mipmap", context.packageName)),
     SmsAppIconEntry("nothing", "NOTHING", context.resources.getIdentifier("ic_launcher_sms_nothing", "mipmap", context.packageName)),
-    SmsAppIconEntry("lineageos", "LineageOS", context.resources.getIdentifier("ic_launcher_sms_lineageos", "mipmap", context.packageName))
+    SmsAppIconEntry("lineageos", "LineageOS", context.resources.getIdentifier("ic_launcher_sms_lineageos", "mipmap", context.packageName)),
+    SmsAppIconEntry("windows_phone", "Windows Phone", context.resources.getIdentifier("ic_launcher_sms_windows_phone", "mipmap", context.packageName)),
+    SmsAppIconEntry("bubble_blue", "Bubble Blue", context.resources.getIdentifier("ic_launcher_sms_bubble_blue", "mipmap", context.packageName)),
+    SmsAppIconEntry("purple", "Purple Velvet", context.resources.getIdentifier("ic_launcher_sms_purple", "mipmap", context.packageName)),
+    SmsAppIconEntry("amoled", "GrapheneOS", context.resources.getIdentifier("ic_launcher_sms_amoled", "mipmap", context.packageName)),
+    SmsAppIconEntry("coral", "Coral Sunset", context.resources.getIdentifier("ic_launcher_sms_coral", "mipmap", context.packageName)),
+    SmsAppIconEntry("neon_green", "Neon Mint", context.resources.getIdentifier("ic_launcher_sms_neon_green", "mipmap", context.packageName)),
+    SmsAppIconEntry("yellow", "Yellow", context.resources.getIdentifier("ic_launcher_sms_yellow", "mipmap", context.packageName))
 )
 
 internal fun updateSmsLauncherAliasFull(
@@ -87,18 +89,20 @@ internal fun updateSmsLauncherAliasFull(
         "Chats" to "Chats"
     )
     val appNames = listOf("Ever SMS", "Ever Messages", "SMS", "Messages", "Chats")
-    val icons = listOf("default", "google", "nothing", "lineageos", "bubble_blue", "purple", "amoled", "coral", "neon_green")
+    val icons = listOf("default", "google", "nothing", "lineageos", "windows_phone", "bubble_blue", "purple", "amoled", "coral", "neon_green", "yellow")
 
     val nameSuffix = nameKeyMap[appName] ?: "EverSms"
     val iconSuffix = when (iconKey) {
         "google" -> "_Google"
         "nothing" -> "_Nothing"
         "lineageos" -> "_LineageOS"
+        "windows_phone" -> "_WindowsPhone"
         "bubble_blue" -> "_BubbleBlue"
         "purple" -> "_Purple"
         "amoled" -> "_Amoled"
         "coral" -> "_Coral"
         "neon_green" -> "_NeonGreen"
+        "yellow" -> "_Yellow"
         else -> ""
     }
     val targetAlias = "${context.packageName}.SmsLauncherAlias${nameSuffix}${iconSuffix}"
@@ -121,11 +125,13 @@ internal fun updateSmsLauncherAliasFull(
                 "google" -> "_Google"
                 "nothing" -> "_Nothing"
                 "lineageos" -> "_LineageOS"
+                "windows_phone" -> "_WindowsPhone"
                 "bubble_blue" -> "_BubbleBlue"
                 "purple" -> "_Purple"
                 "amoled" -> "_Amoled"
                 "coral" -> "_Coral"
                 "neon_green" -> "_NeonGreen"
+                "yellow" -> "_Yellow"
                 else -> ""
             }
             val aliasComponentStr = "${context.packageName}.SmsLauncherAlias${curNameSuffix}${curIconSuffix}"

@@ -56,6 +56,7 @@ import com.coolappstore.everdialer.by.svhp.view.theme.settingsMotionBlur
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.BlockedSmsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SmsAppIconScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -103,7 +104,7 @@ private fun updateSmsLauncherAlias(
         "Chats" to "Chats"
     )
     val appNames = listOf("Ever SMS", "Ever Messages", "SMS", "Messages", "Chats")
-    val icons = listOf("default", "google", "nothing", "lineageos")
+    val icons = listOf("default", "google", "nothing", "lineageos", "bubble_blue", "purple", "amoled", "coral", "neon_green")
 
     // Determine target alias
     val nameSuffix = nameKeyMap[appName] ?: "EverSms"
@@ -111,6 +112,11 @@ private fun updateSmsLauncherAlias(
         "google" -> "_Google"
         "nothing" -> "_Nothing"
         "lineageos" -> "_LineageOS"
+        "bubble_blue" -> "_BubbleBlue"
+        "purple" -> "_Purple"
+        "amoled" -> "_Amoled"
+        "coral" -> "_Coral"
+        "neon_green" -> "_NeonGreen"
         else -> ""
     }
     val targetAlias = "${context.packageName}.SmsLauncherAlias${nameSuffix}${iconSuffix}"
@@ -133,6 +139,11 @@ private fun updateSmsLauncherAlias(
                 "google" -> "_Google"
                 "nothing" -> "_Nothing"
                 "lineageos" -> "_LineageOS"
+                "bubble_blue" -> "_BubbleBlue"
+                "purple" -> "_Purple"
+                "amoled" -> "_Amoled"
+                "coral" -> "_Coral"
+                "neon_green" -> "_NeonGreen"
                 else -> ""
             }
             val aliasComponentStr = "${context.packageName}.SmsLauncherAlias${curNameSuffix}${curIconSuffix}"
@@ -248,7 +259,6 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
 
     // Dialog state controllers
     var showAppNameDialog by remember { mutableStateOf(false) }
-    var showAppIconDialog by remember { mutableStateOf(false) }
     var showTextSizeDialog by remember { mutableStateOf(false) }
     var showSendDelayDialog by remember { mutableStateOf(false) }
     var showSignatureDialog by remember { mutableStateOf(false) }
@@ -456,6 +466,11 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
 
                                 // SMS App Icon
                                 val smsAppIconLabel = when (smsAppIcon) {
+                                    "bubble_blue" -> "Bubble Blue"
+                                    "purple" -> "Purple Velvet"
+                                    "amoled" -> "AMOLED Dark"
+                                    "coral" -> "Coral Sunset"
+                                    "neon_green" -> "Neon Mint"
                                     "google" -> "Google"
                                     "nothing" -> "NOTHING"
                                     "lineageos" -> "LineageOS"
@@ -470,7 +485,7 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
                                     modifier = if (!smsLauncherIconEnabled) Modifier.alpha(0.4f) else Modifier,
                                     onClick = {
                                         if (smsLauncherIconEnabled) {
-                                            showAppIconDialog = true
+                                            navigator.navigate(SmsAppIconScreenDestination)
                                         }
                                     }
                                 )
@@ -924,87 +939,6 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
             },
             confirmButton = {
                 TextButton(onClick = { showAppNameDialog = false }) { Text("Cancel") }
-            }
-        )
-    }
-
-    if (showAppIconDialog) {
-        data class SmsIconEntry(val key: String, val label: String, val resId: Int)
-        val smsIcons = remember {
-            listOf(
-                SmsIconEntry("default", "Default", context.resources.getIdentifier("ic_launcher_sms", "mipmap", context.packageName)),
-                SmsIconEntry("google", "Google", context.resources.getIdentifier("ic_launcher_sms_google", "mipmap", context.packageName)),
-                SmsIconEntry("nothing", "NOTHING", context.resources.getIdentifier("ic_launcher_sms_nothing", "mipmap", context.packageName)),
-                SmsIconEntry("lineageos", "LineageOS", context.resources.getIdentifier("ic_launcher_sms_lineageos", "mipmap", context.packageName))
-            )
-        }
-        val smsIconBitmaps = remember {
-            smsIcons.associate { entry ->
-                entry.key to loadSmsBitmapFromRes(context, entry.resId)?.asImageBitmap()
-            }
-        }
-
-        AlertDialog(
-            onDismissRequest = { showAppIconDialog = false },
-            title = { Text("App Icon") },
-            text = {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    smsIcons.forEach { entry ->
-                        val isSelected = smsAppIcon == entry.key
-                        val bitmap = smsIconBitmaps[entry.key]
-
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable {
-                                    prefs.setString(PreferenceManager.KEY_SMS_SELECTED_APP_ICON, entry.key)
-                                    updateSmsLauncherAlias(context, smsLauncherIconEnabled, smsAppName, entry.key)
-                                    showAppIconDialog = false
-                                }
-                                .padding(4.dp)
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(60.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .then(
-                                        if (isSelected) Modifier.border(2.5.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
-                                        else Modifier
-                                    )
-                            ) {
-                                if (bitmap != null) {
-                                    Image(
-                                        bitmap = bitmap,
-                                        contentDescription = entry.label,
-                                        modifier = Modifier
-                                            .size(52.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            Text(
-                                text = entry.label,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showAppIconDialog = false }) { Text("Cancel") }
             }
         )
     }

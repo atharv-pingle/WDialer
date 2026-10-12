@@ -169,12 +169,18 @@ class SmsViewModel(
     }
 
     fun deleteThread(threadId: Long, onResult: ((Boolean) -> Unit)? = null) {
+        // Optimistically remove from state immediately for zero-delay UI update
+        _conversations.value = _conversations.value.filter { it.threadId != threadId }
         viewModelScope.launch(Dispatchers.IO) {
             val success = smsRepository.deleteThread(threadId)
             if (success) {
                 if (activeThreadId == threadId) {
                     clearActiveThread()
                 }
+                debounceJob?.cancel()
+                fetchConversations()
+            } else {
+                // If deletion failed, re-fetch to restore state
                 fetchConversations()
             }
             onResult?.invoke(success)

@@ -144,7 +144,12 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
     val contactsViewModel: ContactsViewModel = koinActivityViewModel()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
+    var initialPermissionChecked by remember { mutableStateOf(false) }
     LaunchedEffect(permState.status) {
+        if (!initialPermissionChecked) {
+            initialPermissionChecked = true
+            return@LaunchedEffect
+        }
         if (permState.status == PermissionStatus.Granted) {
             callLogViewModel.refreshLogs()
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
@@ -645,8 +650,35 @@ fun CallLogFullContent(
             }
         }
 
+        val contactsById = remember(contacts) {
+            contacts.associateBy { it.id }
+        }
+        val contactsByDigits = remember(contacts) {
+            val map = HashMap<String, com.coolappstore.everdialer.by.svhp.modal.data.Contact>(contacts.size * 2)
+            for (c in contacts) {
+                for (n in c.phoneNumbers) {
+                    val d = com.coolappstore.everdialer.by.svhp.controller.util.normalizeNumberDigits(n)
+                    if (d.isNotEmpty()) {
+                        map[d] = c
+                        if (d.length >= 7) {
+                            map[d.takeLast(7)] = c
+                        }
+                    }
+                }
+            }
+            map
+        }
+
         val avatarConfig = com.coolappstore.everdialer.by.svhp.view.components.rememberAvatarDisplayConfig(prefs, settingsVersion)
-        val callLogDisplayConfig = remember(settingsVersion, groupCallsByLatest, hiddenIds) {
+        val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
+        val isSaturatedActive = remember(settingsVersion, isDark) { prefs.isSaturatedForTheme(isDark) }
+        val colorScheme = MaterialTheme.colorScheme
+        val leftSwipeKey = remember(settingsVersion) { prefs.getSwipeAction("call_logs", "left") }
+        val rightSwipeKey = remember(settingsVersion) { prefs.getSwipeAction("call_logs", "right") }
+        val leftSwipeAction = remember(leftSwipeKey, colorScheme) { com.coolappstore.everdialer.by.svhp.controller.util.SwipeActionHelper.resolveActionItem(leftSwipeKey, colorScheme) }
+        val rightSwipeAction = remember(rightSwipeKey, colorScheme) { com.coolappstore.everdialer.by.svhp.controller.util.SwipeActionHelper.resolveActionItem(rightSwipeKey, colorScheme) }
+
+        val callLogDisplayConfig = remember(settingsVersion, groupCallsByLatest, hiddenIds, isSaturatedActive, leftSwipeKey, rightSwipeKey, leftSwipeAction, rightSwipeAction) {
             val fakeCallInContextMenu = prefs.getBoolean(com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager.KEY_FAKE_CALL_IN_CONTEXT_MENU, false)
             val use24HourTime = prefs.getBoolean(com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager.KEY_CALL_TIME_FORMAT_24H, false)
             val showTalkTime = prefs.getBoolean(com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager.KEY_SHOW_TALK_TIME_IN_CALL_LOGS, false)
@@ -674,7 +706,12 @@ fun CallLogFullContent(
                 sim1Color = sim1Color,
                 sim2Color = sim2Color,
                 isScrollAnimEnabled = isScrollAnimEnabled,
-                showNumbersInCallLogs = showNumbersInCallLogs
+                showNumbersInCallLogs = showNumbersInCallLogs,
+                isSaturatedActive = isSaturatedActive,
+                leftSwipeKey = leftSwipeKey,
+                rightSwipeKey = rightSwipeKey,
+                leftSwipeAction = leftSwipeAction,
+                rightSwipeAction = rightSwipeAction
             )
         }
 
@@ -720,7 +757,9 @@ fun CallLogFullContent(
             val previous = lastKnownTopEntryKey
             lastKnownTopEntryKey = topEntryKey
             if (previous != null && topEntryKey != null && topEntryKey != previous &&
-                listState.firstVisibleItemIndex <= 1
+                listState.firstVisibleItemIndex == 0 &&
+                listState.firstVisibleItemScrollOffset == 0 &&
+                !listState.isScrollInProgress
             ) {
                 listState.animateScrollToItem(0)
             }
@@ -1233,6 +1272,12 @@ fun CallLogFullContent(
                                                     )
                                                 }
                                                 val contactKey = lg.contactId?.takeIf { it.isNotBlank() } ?: lg.number.filter { it.isDigit() }.ifEmpty { lg.number }
+                                                val matchedContact = if (!lg.contactId.isNullOrBlank() && lg.contactId != "0" && lg.contactId != "-1" && lg.contactId != "null") {
+                                                    contactsById[lg.contactId]
+                                                } else if (lg.number.isNotBlank()) {
+                                                    val digits = com.coolappstore.everdialer.by.svhp.controller.util.normalizeNumberDigits(lg.number)
+                                                    contactsByDigits[digits] ?: if (digits.length >= 7) contactsByDigits[digits.takeLast(7)] else null
+                                                } else null
                                                 CallLogTile(
                                                     log = lg,
                                                     config = callLogDisplayConfig,
@@ -1240,6 +1285,7 @@ fun CallLogFullContent(
                                                     isSelected = selectedLogs.contains("${lg.number}|${lg.date}"),
                                                     selectionMode = selectionMode,
                                                     navigator = navigator,
+                                                    matchedContact = matchedContact,
                                                     onSelectToggle = { log ->
                                                         val key = "${log.number}|${log.date}"
                                                         onSelectedLogsChange(if (selectedLogs.contains(key)) selectedLogs - key else selectedLogs + key)

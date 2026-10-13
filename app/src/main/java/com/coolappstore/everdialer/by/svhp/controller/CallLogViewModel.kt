@@ -254,10 +254,15 @@ class CallLogViewModel(
             do {
                 pendingRefresh = false
                 val result = callLogRepo.getCallLogs()
+                val prevCached = cachedLogs
                 cachedLogs = result
-                CallLogsCache.write(getApplication(), result)
+                if (prevCached.isEmpty() || prevCached != result) {
+                    CallLogsCache.write(getApplication(), result)
+                }
                 withContext(Dispatchers.Main) {
-                    _allCallLogs.value = result
+                    if (_allCallLogs.value != result) {
+                        _allCallLogs.value = result
+                    }
                 }
             } while (pendingRefresh)
 

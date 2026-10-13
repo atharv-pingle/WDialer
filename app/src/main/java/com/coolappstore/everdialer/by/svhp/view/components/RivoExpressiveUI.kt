@@ -1195,12 +1195,20 @@ fun RivoScrollAnimatedItem(
     }
 
     if (scrollAnimEnabled) {
-        // Use a key that changes each time this composable enters composition,
-        // ensuring LaunchedEffect(Unit) inside RivoAnimatedSection always fires
-        // fresh — both on first load and when the item scrolls back into view.
-        val animKey = remember { Any() }
-        key(animKey) {
-            RivoAnimatedSection(delayMs = delayMs, modifier = modifier, content = content)
+        val alphaAnim = remember { Animatable(0.2f) }
+        LaunchedEffect(Unit) {
+            if (delayMs > 0L) kotlinx.coroutines.delay(delayMs)
+            alphaAnim.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(120, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+            )
+        }
+        Box(
+            modifier = modifier.graphicsLayer {
+                alpha = alphaAnim.value
+            }
+        ) {
+            content()
         }
     } else {
         Box(modifier = modifier) { content() }

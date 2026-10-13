@@ -1,7 +1,9 @@
 package com.coolappstore.everdialer.by.svhp.modal.data
 
+import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
 
+@Immutable
 @Serializable
 data class CallLogEntry(
     val number: String,

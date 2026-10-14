@@ -125,7 +125,8 @@ private val settingsSectionKeyGroups: List<List<String>> = listOf(
     listOf("silence_unknown", "blocked_numbers"),
     listOf("create_backup", "restore_backup"),
     listOf("app_language"),
-    listOf("about_app")
+    listOf("about_app"),
+    listOf("debug_settings")
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -2241,6 +2242,26 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                         SectionLabel("About")
                         RivoExpressiveCard {
                             RivoListItem(headline = "About Ever Dialer", supporting = "Version $APP_VERSION · Developer info", leadingIcon = Icons.Outlined.Info, iconContainerColor = ColorBluGrey, trailingIcon = Icons.Default.ChevronRight, modifier = Modifier.settingsSearchHighlight("about_app", highlightedSettingKey) { highlightedSettingKey = null }, onClick = { navigator.navigate(AboutAppScreenDestination()) })
+                        }
+                    }
+                }
+            }
+
+            // ── Debug ────────────────────────────────────────────────────────
+            item {
+                RivoAnimatedSection(delayMs = 320L) {
+                    Column {
+                        SectionLabel("Debug")
+                        RivoExpressiveCard {
+                            RivoListItem(
+                                headline = "Debug",
+                                supporting = "Developer & experimental options",
+                                leadingIcon = Icons.Outlined.BugReport,
+                                iconContainerColor = ColorOrange,
+                                trailingIcon = Icons.Default.ChevronRight,
+                                modifier = Modifier.settingsSearchHighlight("debug_settings", highlightedSettingKey) { highlightedSettingKey = null },
+                                onClick = { navigator.navigate(DebugSettingsScreenDestination()) }
+                            )
                         }
                     }
                 }

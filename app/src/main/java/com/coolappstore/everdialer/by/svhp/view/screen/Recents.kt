@@ -151,9 +151,21 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
             return@LaunchedEffect
         }
         if (permState.status == PermissionStatus.Granted) {
-            callLogViewModel.refreshLogs()
+            val isNewCallLogs = prefs.getBoolean(PreferenceManager.KEY_NEW_CALL_LOGS_LOGIC, false)
+            val isNewContacts = prefs.getBoolean(PreferenceManager.KEY_NEW_CONTACTS_LOGIC, false)
+            if (isNewCallLogs) {
+                callLogViewModel.refreshIfStale()
+            } else {
+                callLogViewModel.refreshLogs()
+            }
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
-                contactsViewModel.fetchContacts()
+                if (isNewContacts) {
+                    if (contactsViewModel.allContacts.value.isEmpty()) {
+                        contactsViewModel.fetchContacts()
+                    }
+                } else {
+                    contactsViewModel.fetchContacts()
+                }
             }
         }
     }
@@ -161,9 +173,21 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                callLogViewModel.refreshLogs()
+                val isNewCallLogs = prefs.getBoolean(PreferenceManager.KEY_NEW_CALL_LOGS_LOGIC, false)
+                val isNewContacts = prefs.getBoolean(PreferenceManager.KEY_NEW_CONTACTS_LOGIC, false)
+                if (isNewCallLogs) {
+                    callLogViewModel.refreshIfStale()
+                } else {
+                    callLogViewModel.refreshLogs()
+                }
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
-                    contactsViewModel.fetchContacts()
+                    if (isNewContacts) {
+                        if (contactsViewModel.allContacts.value.isEmpty()) {
+                            contactsViewModel.fetchContacts()
+                        }
+                    } else {
+                        contactsViewModel.fetchContacts()
+                    }
                 }
             }
         }
@@ -571,6 +595,8 @@ fun CallLogFullContent(
         val viewModel: CallLogViewModel = koinActivityViewModel()
         val contactsViewModel: com.coolappstore.everdialer.by.svhp.controller.ContactsViewModel = koinActivityViewModel()
         val logs by viewModel.allCallLogs.collectAsState()
+        val isFullHistoryLoaded by viewModel.isFullHistoryLoaded.collectAsState()
+        val isLoadingMore by viewModel.isLoadingMore.collectAsState()
         val contacts by contactsViewModel.allContacts.collectAsState()
         val selectedFilter by viewModel.selectedFilter.collectAsState()
         val context = LocalContext.current
@@ -592,14 +618,15 @@ fun CallLogFullContent(
             if (raw.isBlank()) emptySet() else raw.split(",").filter { it.isNotBlank() }.toSet()
         }
 
-        val filteredLogs = remember(logs, selectedFilter, hiddenIds, contacts) {
+        val favoriteContactIds = remember(contacts) { contacts.filter { it.isFavorite }.map { it.id }.toSet() }
+        val favoritePhoneNumbers = remember(contacts) { contacts.filter { it.isFavorite }.flatMap { it.phoneNumbers }.toSet() }
+
+        val filteredLogs = remember(logs, selectedFilter, hiddenIds, favoriteContactIds, favoritePhoneNumbers) {
             val base = if (hiddenIds.isEmpty()) logs else logs.filter { it.contactId == null || it.contactId !in hiddenIds }
             when (selectedFilter) {
                 CallLogFilter.All -> base
                 CallLogFilter.Contacts -> base.filter { it.name != null && it.name != it.number && !it.isCallerIdName }
                 CallLogFilter.Favourites -> {
-                    val favoriteContactIds = contacts.filter { it.isFavorite }.map { it.id }.toSet()
-                    val favoritePhoneNumbers = contacts.filter { it.isFavorite }.flatMap { it.phoneNumbers }.toSet()
                     base.filter { log ->
                         (log.contactId != null && log.contactId in favoriteContactIds) ||
                         log.number in favoritePhoneNumbers
@@ -764,6 +791,7 @@ fun CallLogFullContent(
                 listState.animateScrollToItem(0)
             }
         }
+
 
         if (showSimPicker && pendingNumber != null) {
             SimPickerDialog(

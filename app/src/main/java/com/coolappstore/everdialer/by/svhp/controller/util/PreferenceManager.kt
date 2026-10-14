@@ -624,6 +624,8 @@ class PreferenceManager(context: Context) {
         // describing the order tabs appear in the bottom navigation bar.
         const val KEY_TAB_ORDER                = "tab_order"
         const val KEY_MISSED_CALL_RESET_TIME   = "missed_call_reset_time"
+        const val KEY_NEW_CALL_LOGS_LOGIC      = "new_call_logs_logic"
+        const val KEY_NEW_CONTACTS_LOGIC       = "new_contacts_logic"
         const val DEFAULT_TAB_ORDER            = "favorites,calls,contacts,sms,groups,recordings,notes,dialpad"
         // Biometrics
         const val KEY_BIOMETRICS_TYPE          = "biometrics_type"         // "system" | "pin" | "password" | ""

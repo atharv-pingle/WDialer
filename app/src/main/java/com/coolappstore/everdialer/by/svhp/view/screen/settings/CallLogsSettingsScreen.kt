@@ -1,5 +1,8 @@
 package com.coolappstore.everdialer.by.svhp.view.screen.settings
 
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -7,16 +10,20 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.CallMissed
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.coolappstore.everdialer.by.svhp.controller.util.MissedCallDurationStore
 import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
 import com.coolappstore.everdialer.by.svhp.view.components.RivoAnimatedSection
 import com.coolappstore.everdialer.by.svhp.view.components.RivoExpressiveCard
@@ -44,6 +51,7 @@ fun CallLogsSettingsScreen(
     navigator: DestinationsNavigator,
     highlightKey: String? = null
 ) {
+    val context = LocalContext.current
     val prefs = koinInject<PreferenceManager>()
     val keyboardController = LocalSoftwareKeyboardController.current
     var highlightedKey by remember { mutableStateOf(highlightKey) }
@@ -58,6 +66,10 @@ fun CallLogsSettingsScreen(
     var autoDeleteUnknownUnit by remember { mutableStateOf(prefs.getString(PreferenceManager.KEY_AUTO_DELETE_UNKNOWN_CALLS_UNIT, "days") ?: "days") }
     var callTimeFormat24h by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_TIME_FORMAT_24H, false)) }
     var showTalkTimeInCallLogs by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_SHOW_TALK_TIME_IN_CALL_LOGS, false)) }
+    var showMissedCallDuration by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_SHOW_MISSED_CALL_DURATION, false)) }
+    var autoResetMissedCallDurationEnabled by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_ENABLED, false)) }
+    var autoResetMissedCallDurationValue by remember { mutableStateOf(prefs.getInt(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_VALUE, 24).toString()) }
+    var autoResetMissedCallDurationUnit by remember { mutableStateOf(prefs.getString(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_UNIT, "hours") ?: "hours") }
 
     Scaffold(
         modifier = Modifier.settingsMotionBlur(),
@@ -227,6 +239,128 @@ fun CallLogsSettingsScreen(
                                 prefs.setBoolean(PreferenceManager.KEY_SHOW_TALK_TIME_IN_CALL_LOGS, it)
                             }
                         )
+                        HorizontalDivider(
+                            Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+                        RivoSwitchListItem(
+                            headline = "Missed Call Duration",
+                            supporting = if (showMissedCallDuration) "Showing ringing duration for missed calls below the time" else "Missed call duration hidden in call logs",
+                            leadingIcon = Icons.AutoMirrored.Filled.CallMissed,
+                            iconContainerColor = ColorRed,
+                            checked = showMissedCallDuration,
+                            modifier = Modifier.settingsSearchHighlight("missed_call_duration", highlightedKey) { highlightedKey = null },
+                            onCheckedChange = {
+                                showMissedCallDuration = it
+                                prefs.setBoolean(PreferenceManager.KEY_SHOW_MISSED_CALL_DURATION, it)
+                            }
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    autoResetMissedCallDurationEnabled = !autoResetMissedCallDurationEnabled
+                                    prefs.setBoolean(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_ENABLED, autoResetMissedCallDurationEnabled)
+                                    if (autoResetMissedCallDurationEnabled) {
+                                        val n = autoResetMissedCallDurationValue.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                                        autoResetMissedCallDurationValue = n.toString()
+                                        prefs.setInt(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_VALUE, n)
+                                        prefs.setString(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_UNIT, autoResetMissedCallDurationUnit)
+                                    }
+                                }
+                                .padding(start = 24.dp, end = 16.dp, top = 6.dp, bottom = 4.dp)
+                        ) {
+                            Checkbox(
+                                checked = autoResetMissedCallDurationEnabled,
+                                onCheckedChange = { checked ->
+                                    autoResetMissedCallDurationEnabled = checked
+                                    prefs.setBoolean(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_ENABLED, checked)
+                                    if (checked) {
+                                        val n = autoResetMissedCallDurationValue.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                                        autoResetMissedCallDurationValue = n.toString()
+                                        prefs.setInt(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_VALUE, n)
+                                        prefs.setString(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_UNIT, autoResetMissedCallDurationUnit)
+                                    }
+                                }
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "Reset missed call duration every",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 68.dp, end = 16.dp, bottom = 8.dp, top = 2.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = autoResetMissedCallDurationValue,
+                                onValueChange = { raw ->
+                                    val digitsOnly = raw.filter { it.isDigit() }.take(4)
+                                    autoResetMissedCallDurationValue = digitsOnly
+                                    val n = digitsOnly.toIntOrNull()
+                                    if (n != null && n > 0) {
+                                        prefs.setInt(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_VALUE, n)
+                                    }
+                                },
+                                enabled = autoResetMissedCallDurationEnabled,
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(onDone = { keyboardController?.hide() }),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.width(90.dp)
+                            )
+                            FilterChip(
+                                selected = autoResetMissedCallDurationUnit == "hours",
+                                onClick = {
+                                    autoResetMissedCallDurationUnit = "hours"
+                                    prefs.setString(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_UNIT, "hours")
+                                },
+                                enabled = autoResetMissedCallDurationEnabled,
+                                label = { Text("Hours") }
+                            )
+                            FilterChip(
+                                selected = autoResetMissedCallDurationUnit == "days",
+                                onClick = {
+                                    autoResetMissedCallDurationUnit = "days"
+                                    prefs.setString(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_UNIT, "days")
+                                },
+                                enabled = autoResetMissedCallDurationEnabled,
+                                label = { Text("Days") }
+                            )
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 68.dp, end = 16.dp, bottom = 14.dp, top = 4.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    MissedCallDurationStore.clear(context)
+                                    prefs.setLong(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_LAST_RESET, System.currentTimeMillis())
+                                    prefs.notifyChanged()
+                                    Toast.makeText(context, "Missed call duration reset", Toast.LENGTH_SHORT).show()
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Reset right now")
+                            }
+                        }
                         HorizontalDivider(
                             Modifier.padding(horizontal = 16.dp),
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)

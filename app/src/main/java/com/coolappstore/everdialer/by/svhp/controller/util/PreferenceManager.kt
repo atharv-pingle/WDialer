@@ -556,6 +556,13 @@ class PreferenceManager(context: Context) {
         const val KEY_CALL_TIME_FORMAT_24H  = "call_time_format_24h"
         // Talk Time in call logs — false = off (default), true = on
         const val KEY_SHOW_TALK_TIME_IN_CALL_LOGS = "show_talk_time_in_call_logs"
+        // Missed Call Duration in call logs — false = off (default), true = on
+        const val KEY_SHOW_MISSED_CALL_DURATION = "show_missed_call_duration_in_call_logs"
+        // Auto reset missed call duration
+        const val KEY_AUTO_RESET_MISSED_CALL_DURATION_ENABLED = "auto_reset_missed_call_duration_enabled"
+        const val KEY_AUTO_RESET_MISSED_CALL_DURATION_VALUE = "auto_reset_missed_call_duration_value"
+        const val KEY_AUTO_RESET_MISSED_CALL_DURATION_UNIT = "auto_reset_missed_call_duration_unit"
+        const val KEY_AUTO_RESET_MISSED_CALL_DURATION_LAST_RESET = "auto_reset_missed_call_duration_last_reset"
         // Whether the ongoing-call screen smoothly slides away when a call ends. Default true;
         // when false, the call screen should close immediately instead.
         const val KEY_HANGUP_ANIMATION      = "hangup_animation"
@@ -698,6 +705,7 @@ class PreferenceManager(context: Context) {
         const val KEY_SEARCH_FILTER_SETTINGS        = "search_filter_settings"
         const val KEY_SEARCH_FILTER_ORDER           = "search_filter_order"
 
+        const val KEY_SMS_ENABLED                   = "sms_enabled"
         const val KEY_SMS_CHAT_TEXT_SIZE            = "sms_chat_text_size"
         const val DEFAULT_SMS_CHAT_TEXT_SIZE        = 16f
 

@@ -340,7 +340,7 @@ fun FavoritesScreen(navController: NavController, navigator: DestinationsNavigat
 
                 ScrollHapticsGridEffect(gridState = gridState)
                 val gridColumns = if (favoritesInList) GridCells.Fixed(1) else GridCells.Adaptive(minSize = 100.dp)
-                val contentPadding = if (favoritesInList) PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp) else PaddingValues(12.dp)
+                val contentPadding = if (favoritesInList) PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp) else PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 100.dp)
                 val verticalSpacing = if (favoritesInList) 8.dp else 12.dp
                 val horizontalSpacing = if (favoritesInList) 0.dp else 12.dp
 

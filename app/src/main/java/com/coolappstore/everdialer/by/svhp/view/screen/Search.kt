@@ -93,30 +93,32 @@ fun SearchScreen(
     navigator: DestinationsNavigator,
     initialQuery: String? = null
 ) {
-    val permState = rememberPermissionState(Manifest.permission.READ_CONTACTS)
-    val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
-    val showButton by remember { derivedStateOf { listState.firstVisibleItemIndex > 2 } }
+    com.coolappstore.everdialer.by.svhp.view.theme.ExpandingScreenContainer(onClose = { navigator.navigateUp() }) { closeWithAnimation ->
+        val permState = rememberPermissionState(Manifest.permission.READ_CONTACTS)
+        val listState = rememberLazyListState()
 
-    DisposableEffect(Unit) {
-        onDispose {
-            NavBarVisibilityState.hideForSettingsEntry = false
+        DisposableEffect(Unit) {
+            NavBarVisibilityState.hideForSettingsEntry = true
+            onDispose {
+                NavBarVisibilityState.hideForSettingsEntry = false
+            }
         }
-    }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.surface
-    ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-            ContactSearchContent(
-                navigator = navigator,
-                navController = navController,
-                isGranted = permState.status == PermissionStatus.Granted,
-                onRequestPermission = { permState.launchPermissionRequest() },
-                listState = listState,
-                initialQuery = initialQuery
-            )
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = MaterialTheme.colorScheme.surface
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+                ContactSearchContent(
+                    navigator = navigator,
+                    navController = navController,
+                    isGranted = permState.status == PermissionStatus.Granted,
+                    onRequestPermission = { permState.launchPermissionRequest() },
+                    listState = listState,
+                    initialQuery = initialQuery,
+                    onBack = { closeWithAnimation() }
+                )
+            }
         }
     }
 }
@@ -140,7 +142,8 @@ fun ContactSearchContent(
     isGranted: Boolean,
     onRequestPermission: () -> Unit,
     listState: androidx.compose.foundation.lazy.LazyListState,
-    initialQuery: String? = null
+    initialQuery: String? = null,
+    onBack: () -> Unit = { navigator.navigateUp() }
 ) {
     if (!isGranted) {
         PermissionDeniedView(
@@ -396,7 +399,7 @@ fun ContactSearchContent(
                     modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                     placeholder = { Text("Universal Search", color = searchBarPlaceholder) },
                     leadingIcon = {
-                        IconButton(onClick = { navigator.navigateUp() }) {
+                        IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = searchBarFg)
                         }
                     },

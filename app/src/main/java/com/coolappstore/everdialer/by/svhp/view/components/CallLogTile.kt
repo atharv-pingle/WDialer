@@ -95,6 +95,7 @@ private val SimCardNotchShape = GenericShape { size, _ ->
 data class CallLogDisplayConfig(
     val use24HourTime: Boolean = false,
     val showTalkTime: Boolean = false,
+    val showMissedCallDuration: Boolean = false,
     val groupCallsByLatest: Boolean = false,
     val showTotalCallsMade: Boolean = false,
     val showSims: Boolean = true,
@@ -271,7 +272,8 @@ fun CallLogTileSimple(
         CallLog.Calls.BLOCKED_TYPE  -> Icons.Default.Block
         else                        -> Icons.Default.Call
     }
-    val ringDurationText = if ((isMissed || isBlocked) && log.duration > 0) "${log.duration}s rang" else null
+    val showMissedCallDuration = remember(settingsVer) { prefs.getBoolean(PreferenceManager.KEY_SHOW_MISSED_CALL_DURATION, false) }
+    val ringDurationText = if (isBlocked && log.duration > 0) "${log.duration}s rang" else if (isMissed && showMissedCallDuration && log.duration > 0) "${log.duration}s rang" else null
     val durationText = if (isMissed || isBlocked) ringDurationText else if (log.duration > 0) android.text.format.DateUtils.formatElapsedTime(log.duration) else null
 
     RivoListItem(
@@ -399,6 +401,7 @@ fun CallLogTile(
     val showAvatars: Boolean
     val use24HourTime: Boolean
     val showTalkTime: Boolean
+    val showMissedCallDuration: Boolean
     val groupCallsByLatest: Boolean
     val showTotalCallsMade: Boolean
     val hideNames: Boolean
@@ -414,6 +417,7 @@ fun CallLogTile(
         showAvatars = config.showAvatars
         use24HourTime = config.use24HourTime
         showTalkTime = config.showTalkTime
+        showMissedCallDuration = config.showMissedCallDuration
         groupCallsByLatest = config.groupCallsByLatest
         showTotalCallsMade = config.showTotalCallsMade
         hideNames = config.hideNames
@@ -428,6 +432,7 @@ fun CallLogTile(
         showAvatars = prefs.getBoolean(PreferenceManager.KEY_SHOW_AVATARS_CALLS, true)
         use24HourTime = prefs.getBoolean(PreferenceManager.KEY_CALL_TIME_FORMAT_24H, false)
         showTalkTime = prefs.getBoolean(PreferenceManager.KEY_SHOW_TALK_TIME_IN_CALL_LOGS, false)
+        showMissedCallDuration = prefs.getBoolean(PreferenceManager.KEY_SHOW_MISSED_CALL_DURATION, false)
         groupCallsByLatest = prefs.getBoolean(PreferenceManager.KEY_GROUP_CALLS_BY_LATEST, false)
         showTotalCallsMade = groupCallsByLatest || prefs.getBoolean(PreferenceManager.KEY_SHOW_TOTAL_CALLS_MADE, false)
         hideNames = prefs.getBoolean(PreferenceManager.KEY_CONTACTS_HIDER_HIDE_NAMES, false)
@@ -642,6 +647,8 @@ fun CallLogTile(
                     val dateText = formatCallLogDate(log.date)
                     if (isBlocked && log.duration > 0) {
                         "$dateText • ${log.duration}s"
+                    } else if (isMissed && showMissedCallDuration && log.duration > 0) {
+                        "$dateText • ${log.duration}s"
                     } else if (showTalkTime && !isMissed) {
                         val durationText = formatDuration(log.duration)
                         "$dateText • $durationText"
@@ -649,8 +656,10 @@ fun CallLogTile(
                         dateText
                     }
                 } else {
-                    if (isMissed || isBlocked) {
+                    if (isBlocked) {
                         if (log.duration > 0) "${log.duration}s" else null
+                    } else if (isMissed) {
+                        if (showMissedCallDuration && log.duration > 0) "${log.duration}s" else null
                     } else if (showTalkTime) {
                         formatDuration(log.duration)
                     } else null

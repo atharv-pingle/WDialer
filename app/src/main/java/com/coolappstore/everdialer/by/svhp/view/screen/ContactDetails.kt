@@ -56,6 +56,7 @@ import androidx.compose.ui.Modifier
 import com.ramcosta.composedestinations.generated.destinations.ContactEditScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.CustomBackgroundPickerScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.RecordingsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SmsChatScreenDestination
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.coolappstore.evercallrecorder.by.svhp.ui.viewmodels.HomeViewModel
 import com.coolappstore.everdialer.by.svhp.view.components.findMatchingRecording
@@ -404,9 +405,20 @@ fun ContactDetailsScreen(
         when (action) {
             "sms" -> {
                 if (number.isNotBlank() && number != "Unknown") {
-                    try {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("sms:$number")))
-                    } catch (_: Exception) {}
+                    if (com.coolappstore.everdialer.by.svhp.controller.util.DefaultSmsManager.isDefaultSms(context)) {
+                        navigator.navigate(
+                            SmsChatScreenDestination(
+                                threadId = -1L,
+                                address = number,
+                                contactName = contact?.name,
+                                photoUri = contact?.photoUri
+                            )
+                        )
+                    } else {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("sms:$number")))
+                        } catch (_: Exception) {}
+                    }
                 }
             }
             "whatsapp" -> {
@@ -1387,12 +1399,23 @@ fun ContactDetailsScreen(
                                             iconTint = Color(0xFF4CAF50),
                                             onClick = {
                                                 selectedNumberForMenu = null
-                                                val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$menuNum")).apply {
-                                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                                if (com.coolappstore.everdialer.by.svhp.controller.util.DefaultSmsManager.isDefaultSms(context)) {
+                                                    navigator.navigate(
+                                                        SmsChatScreenDestination(
+                                                            threadId = -1L,
+                                                            address = menuNum,
+                                                            contactName = contact?.name,
+                                                            photoUri = contact?.photoUri
+                                                        )
+                                                    )
+                                                } else {
+                                                    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$menuNum")).apply {
+                                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                                    }
+                                                    try {
+                                                        context.startActivity(intent)
+                                                    } catch (_: Throwable) {}
                                                 }
-                                                try {
-                                                    context.startActivity(intent)
-                                                } catch (_: Throwable) {}
                                             }
                                         )
                                         RivoDropdownMenuItem(

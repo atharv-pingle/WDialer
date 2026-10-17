@@ -184,6 +184,7 @@ class CallLogRepository(
         }
 
         pruneAutoDeletedUnknownCalls(exactIndex, suffixIndex)
+        com.coolappstore.everdialer.by.svhp.controller.util.MissedCallDurationStore.checkAutoReset(context, prefs)
 
         val rawCalls = readRawCallLogRows(limit)
         val dedupedCalls = dedupeDuplicateProviderRows(rawCalls)

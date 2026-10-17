@@ -1561,17 +1561,18 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
     val keyboardController = LocalSoftwareKeyboardController.current
 
     // ── Screen ────────────────────────────────────────────────────────────────
-    Scaffold(
-        modifier = Modifier.settingsMotionBlur(),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            com.coolappstore.everdialer.by.svhp.view.components.SettingsPillTopAppBar(
-                title = com.coolappstore.everdialer.by.svhp.controller.util.tr("Settings"),
-                onBackClick = { navigator.navigateUp() }
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.surface
-    ) { padding ->
+    com.coolappstore.everdialer.by.svhp.view.theme.ExpandingScreenContainer(onClose = { navigator.navigateUp() }) { closeWithAnimation ->
+        Scaffold(
+            modifier = Modifier.settingsMotionBlur(),
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            topBar = {
+                com.coolappstore.everdialer.by.svhp.view.components.SettingsPillTopAppBar(
+                    title = com.coolappstore.everdialer.by.svhp.controller.util.tr("Settings"),
+                    onBackClick = { closeWithAnimation() }
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        ) { padding ->
         val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         LazyColumn(
             state = listState,
@@ -2271,6 +2272,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
 
             item { Spacer(modifier = Modifier.height(80.dp)) }
         }
+    }
     }
 }
 

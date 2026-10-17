@@ -65,8 +65,11 @@ import com.coolappstore.everdialer.by.svhp.modal.data.SmsConversation
 import com.coolappstore.everdialer.by.svhp.view.components.RivoAvatar
 import com.coolappstore.everdialer.by.svhp.view.components.RivoDropdownMenu
 import com.coolappstore.everdialer.by.svhp.view.components.RivoDropdownMenuItem
+import com.coolappstore.everdialer.by.svhp.view.components.RivoScrollAnimatedItem
 import com.coolappstore.everdialer.by.svhp.view.components.ScrollHapticsEffect
 import com.coolappstore.everdialer.by.svhp.view.components.TopBar
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.EaseInOutCubic
 import com.coolappstore.everdialer.by.svhp.view.theme.TabTransitionStyle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -103,6 +106,9 @@ fun SmsScreen(
     val contactsVM: ContactsViewModel = koinActivityViewModel()
     val allContacts by contactsVM.allContacts.collectAsState()
     val settingsVer by prefs.settingsChanged.collectAsState()
+    val isSmsEnabled = remember(settingsVer) {
+        prefs.getBoolean(PreferenceManager.KEY_SMS_ENABLED, false)
+    }
 
     var isDefaultSms by remember { mutableStateOf(DefaultSmsManager.isDefaultSms(context)) }
     var hasSmsPermissions by remember {
@@ -131,7 +137,11 @@ fun SmsScreen(
 
     val rawConversations by smsVM.filteredConversations.collectAsState()
     val isLoading by smsVM.isLoading.collectAsState()
+    val hasInitialLoaded by smsVM.hasInitialLoaded.collectAsState()
     val searchQuery by smsVM.searchQuery.collectAsState()
+    val isScrollAnimEnabled = remember(settingsVer) {
+        prefs.getBoolean(PreferenceManager.KEY_SCROLL_ANIMATION, true)
+    }
 
     // Quik preference: unread at top
     val unreadAtTop = remember(settingsVer) {
@@ -409,6 +419,7 @@ fun SmsScreen(
                                 }
                                 // Quik Settings
                                 IconButton(onClick = {
+                                    com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.recordNormalized(0.92f, 0.06f)
                                     navigator.navigate(SmsSettingsScreenDestination())
                                 }) {
                                     Icon(
@@ -482,7 +493,7 @@ fun SmsScreen(
         },
         floatingActionButton = {
             AnimatedVisibility(
-                visible = !isSelectionMode,
+                visible = !isSelectionMode && isSmsEnabled,
                 enter = fadeIn(androidx.compose.animation.core.tween(400)) + scaleIn(androidx.compose.animation.core.tween(400), initialScale = 0.8f),
                 exit = fadeOut(androidx.compose.animation.core.tween(400)) + scaleOut(androidx.compose.animation.core.tween(400), targetScale = 0.8f)
             ) {
@@ -496,7 +507,7 @@ fun SmsScreen(
                 val pillNav = remember(settingsVer) { prefs.getBoolean(PreferenceManager.KEY_PILL_NAV, true) }
                 val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
                 val baseModifier = Modifier
-                    .then(if (pillNav) Modifier.navigationBarsPadding().padding(bottom = 92.dp) else Modifier)
+                    .then(if (pillNav) Modifier.navigationBarsPadding().padding(bottom = 92.dp) else Modifier.navigationBarsPadding().padding(bottom = 80.dp))
                     .then(if (isLandscape) Modifier.navigationBarsPadding().padding(bottom = 8.dp) else Modifier)
 
                 FloatingActionButton(
@@ -576,7 +587,7 @@ fun SmsScreen(
                 state = currentListState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp + navBarBottom),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
                 // Default SMS App Warning Banner
                 if (!isDefaultSms) {
@@ -635,7 +646,7 @@ fun SmsScreen(
                 }
 
                 // Permissions prompt banner
-                if (!hasSmsPermissions) {
+                if (isSmsEnabled && !hasSmsPermissions) {
                     item(key = "banner_permissions") {
                         Surface(
                             onClick = {
@@ -682,63 +693,234 @@ fun SmsScreen(
                     }
                 }
 
-                if (currentFilter == "starred") {
-                    // Starred Messages Subsection
-                    if (starredMessages.isEmpty() && !isLoading) {
-                        item(key = "empty_state_starred") {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 60.dp),
-                                contentAlignment = Alignment.Center
+                if (!isSmsEnabled) {
+                    item(key = "sms_disabled_state") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 60.dp, horizontal = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                    modifier = Modifier.size(72.dp)
                                 ) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.surfaceVariant,
-                                        modifier = Modifier.size(72.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                Icons.Default.StarOutline,
-                                                contentDescription = null,
-                                                tint = Color(0xFFFFB300),
-                                                modifier = Modifier.size(36.dp)
-                                            )
-                                        }
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            Icons.Outlined.Sms,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(36.dp)
+                                        )
                                     }
-                                    Text(
-                                        "No starred messages",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        "Star important messages by long pressing them in any chat",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                }
+                                Text(
+                                    "SMS is disabled",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    "Turn on SMS in settings to view and send messages",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Button(
+                                    onClick = {
+                                        navigator.navigate(SmsSettingsScreenDestination())
+                                    },
+                                    shape = RoundedCornerShape(100)
+                                ) {
+                                    Text("Open SMS Settings")
+                                }
+                            }
+                        }
+                    }
+                } else if (currentFilter == "starred") {
+                    // Starred Messages Subsection
+                    if (starredMessages.isEmpty()) {
+                        if (isLoading || !hasInitialLoaded) {
+                            item(key = "loading_state_starred") {
+                                SmsLoadingView()
+                            }
+                        } else {
+                            item(key = "empty_state_starred") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 60.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.surfaceVariant,
+                                            modifier = Modifier.size(72.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    Icons.Default.StarOutline,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFFFFB300),
+                                                    modifier = Modifier.size(36.dp)
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            "No starred messages",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            "Star important messages by long pressing them in any chat",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         }
                     } else {
-                        items(
+                        itemsIndexed(
                             items = starredMessages,
-                            key = { "starred_${it.message.id}" }
-                        ) { item ->
+                            key = { _, it -> "starred_${it.message.id}" }
+                        ) { index, item ->
+                            val isFirst = index == 0
+                            val isLast = index == starredMessages.size - 1
+                            val cornerRadius = 28.dp
+                            val topStart = if (isFirst) cornerRadius else 0.dp
+                            val topEnd = if (isFirst) cornerRadius else 0.dp
+                            val bottomStart = if (isLast) cornerRadius else 0.dp
+                            val bottomEnd = if (isLast) cornerRadius else 0.dp
+                            val itemShape = RoundedCornerShape(
+                                topStart = topStart,
+                                topEnd = topEnd,
+                                bottomStart = bottomStart,
+                                bottomEnd = bottomEnd
+                            )
                             var showStarredMenu by remember { mutableStateOf(false) }
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                                    contentColor = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .combinedClickable(
+                            RivoScrollAnimatedItem(enabled = isScrollAnimEnabled) {
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    Surface(
+                                        shape = itemShape,
+                                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                        contentColor = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .combinedClickable(
+                                                onClick = {
+                                                    navigator.navigate(
+                                                        SmsChatScreenDestination(
+                                                            threadId = item.message.threadId,
+                                                            address = item.message.address,
+                                                            contactName = item.contactName,
+                                                            photoUri = item.photoUri
+                                                        )
+                                                    )
+                                                },
+                                                onLongClick = {
+                                                    showStarredMenu = true
+                                                }
+                                            )
+                                    ) {
+                                        Column {
+                                            if (!isFirst) {
+                                                HorizontalDivider(
+                                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                                    thickness = 0.5.dp
+                                                )
+                                            }
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(14.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                if (showAvatar) {
+                                                    RivoAvatar(
+                                                        name = item.contactName ?: item.message.address,
+                                                        photoUri = item.photoUri,
+                                                        autoColorAvatars = autoColor,
+                                                        obeySolidIcons = false,
+                                                        size = 48.dp
+                                                    )
+                                                    Spacer(Modifier.width(14.dp))
+                                                }
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text(
+                                                            text = item.contactName ?: item.message.address,
+                                                            style = MaterialTheme.typography.titleMedium,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            color = MaterialTheme.colorScheme.onSurface,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis,
+                                                            modifier = Modifier.weight(1f, fill = false)
+                                                        )
+                                                        Spacer(Modifier.width(8.dp))
+                                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                                            Icon(
+                                                                Icons.Default.Star,
+                                                                contentDescription = "Starred",
+                                                                tint = Color(0xFFFFB300),
+                                                                modifier = Modifier.size(16.dp)
+                                                            )
+                                                            Spacer(Modifier.width(4.dp))
+                                                            Text(
+                                                                text = if (item.message.date <= 0) "" else formatTimeOnly(item.message.date, use24HourTime),
+                                                                style = MaterialTheme.typography.labelSmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                                            )
+                                                        }
+                                                    }
+                                                    Spacer(Modifier.height(4.dp))
+                                                    Text(
+                                                        text = item.message.body.ifBlank { "MMS Message" },
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        maxLines = 2,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    RivoDropdownMenu(
+                                        expanded = showStarredMenu,
+                                        onDismissRequest = { showStarredMenu = false }
+                                    ) {
+                                        RivoDropdownMenuItem(
+                                            text = "Unstar message",
+                                            icon = Icons.Default.StarOutline,
+                                            iconTint = Color(0xFFFFB300),
                                             onClick = {
+                                                showStarredMenu = false
+                                                prefs.setSmsMessageStarred(item.message.id, false)
+                                                smsVM.refreshStarredMessages(prefs.getStarredSmsMessages())
+                                            }
+                                        )
+                                        RivoDropdownMenuItem(
+                                            text = "Open in chat",
+                                            icon = Icons.AutoMirrored.Outlined.Chat,
+                                            onClick = {
+                                                showStarredMenu = false
                                                 navigator.navigate(
                                                     SmsChatScreenDestination(
                                                         threadId = item.message.threadId,
@@ -747,117 +929,32 @@ fun SmsScreen(
                                                         photoUri = item.photoUri
                                                     )
                                                 )
-                                            },
-                                            onLongClick = {
-                                                showStarredMenu = true
                                             }
                                         )
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(14.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        if (showAvatar) {
-                                            RivoAvatar(
-                                                name = item.contactName ?: item.message.address,
-                                                photoUri = item.photoUri,
-                                                autoColorAvatars = autoColor,
-                                                obeySolidIcons = false,
-                                                size = 48.dp
-                                            )
-                                            Spacer(Modifier.width(14.dp))
-                                        }
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(
-                                                    text = item.contactName ?: item.message.address,
-                                                    style = MaterialTheme.typography.titleMedium,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    modifier = Modifier.weight(1f, fill = false)
-                                                )
-                                                Spacer(Modifier.width(8.dp))
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Icon(
-                                                        Icons.Default.Star,
-                                                        contentDescription = "Starred",
-                                                        tint = Color(0xFFFFB300),
-                                                        modifier = Modifier.size(16.dp)
-                                                    )
-                                                    Spacer(Modifier.width(4.dp))
-                                                    Text(
-                                                        text = if (item.message.date <= 0) "" else formatTimeOnly(item.message.date, use24HourTime),
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                                    )
-                                                }
-                                            }
-                                            Spacer(Modifier.height(4.dp))
-                                            Text(
-                                                text = item.message.body.ifBlank { "MMS Message" },
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                maxLines = 2,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
                                     }
                                 }
-
-                                RivoDropdownMenu(
-                                    expanded = showStarredMenu,
-                                    onDismissRequest = { showStarredMenu = false }
-                                ) {
-                                    RivoDropdownMenuItem(
-                                        text = "Unstar message",
-                                        icon = Icons.Default.StarOutline,
-                                        iconTint = Color(0xFFFFB300),
-                                        onClick = {
-                                            showStarredMenu = false
-                                            prefs.setSmsMessageStarred(item.message.id, false)
-                                            smsVM.refreshStarredMessages(prefs.getStarredSmsMessages())
-                                        }
-                                    )
-                                    RivoDropdownMenuItem(
-                                        text = "Open in chat",
-                                        icon = Icons.AutoMirrored.Outlined.Chat,
-                                        onClick = {
-                                            showStarredMenu = false
-                                            navigator.navigate(
-                                                SmsChatScreenDestination(
-                                                    threadId = item.message.threadId,
-                                                    address = item.message.address,
-                                                    contactName = item.contactName,
-                                                    photoUri = item.photoUri
-                                                )
-                                            )
-                                        }
-                                    )
-                                }
                             }
+                            if (isLast) Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
                 } else {
-                    // Empty state for conversations
-                    if (currentConversations.isEmpty() && !isLoading) {
-                        item(key = "empty_state_$currentFilter") {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 60.dp)
-                                    .animateItem(
-                                        fadeInSpec = tween(260, easing = FastOutSlowInEasing),
-                                        placementSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioLowBouncy),
-                                        fadeOutSpec = tween(180, easing = FastOutLinearInEasing)
-                                    ),
+                    // Empty or loading state for conversations
+                    if (currentConversations.isEmpty()) {
+                        if (isLoading || !hasInitialLoaded) {
+                            item(key = "loading_state_$currentFilter") {
+                                SmsLoadingView()
+                            }
+                        } else {
+                            item(key = "empty_state_$currentFilter") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 60.dp)
+                                        .animateItem(
+                                            fadeInSpec = tween(260, easing = FastOutSlowInEasing),
+                                            placementSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioLowBouncy),
+                                            fadeOutSpec = tween(180, easing = FastOutLinearInEasing)
+                                        ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(
@@ -893,6 +990,7 @@ fun SmsScreen(
                             }
                         }
                     }
+                }
 
                     // Conversation items grouped by date header
                     currentGrouped.forEach { (header, convsInGroup) ->
@@ -912,11 +1010,24 @@ fun SmsScreen(
                             }
                         }
 
-                        items(
+                        itemsIndexed(
                             items = convsInGroup,
-                            key = { it.threadId },
-                            contentType = { "conversationItem" }
-                        ) { conv ->
+                            key = { _, it -> it.threadId },
+                            contentType = { _, _ -> "conversationItem" }
+                        ) { index, conv ->
+                            val isFirst = index == 0
+                            val isLast = index == convsInGroup.size - 1
+                            val cornerRadius = 28.dp
+                            val topStart = if (isFirst) cornerRadius else 0.dp
+                            val topEnd = if (isFirst) cornerRadius else 0.dp
+                            val bottomStart = if (isLast) cornerRadius else 0.dp
+                            val bottomEnd = if (isLast) cornerRadius else 0.dp
+                            val itemShape = RoundedCornerShape(
+                                topStart = topStart,
+                                topEnd = topEnd,
+                                bottomStart = bottomStart,
+                                bottomEnd = bottomEnd
+                            )
                             val isSelected = selectedThreadIds.contains(conv.threadId)
                             val isPinned = pinnedThreads.contains(conv.threadId)
                             val isMuted = prefs.isSmsMuted(conv.address)
@@ -930,142 +1041,161 @@ fun SmsScreen(
                                 }
                             }
 
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                SwipeableItemContainer(
-                                    modifier = Modifier.animateItem(
-                                        fadeInSpec = null,
-                                        placementSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioLowBouncy),
-                                        fadeOutSpec = tween(450, easing = FastOutLinearInEasing)
-                                    ),
-                                    leftAction = leftSwipeActionItem,
-                                    rightAction = rightSwipeActionItem,
-                                    onSwipeLeft = { handleSwipeAction(swipeLeftAction) },
-                                    onSwipeRight = { handleSwipeAction(swipeRightAction) },
-                                    enabled = !isSelectionMode,
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    ConversationItemRow(
-                                        conversation = conv,
-                                        timeStr = if (conv.date <= 0) "" else formatTimeOnly(conv.date, use24HourTime),
-                                        isSelected = isSelected,
-                                        isSelectionMode = isSelectionMode,
-                                        autoColor = autoColor,
-                                        showAvatar = showAvatar,
-                                        isPinned = isPinned,
-                                        isMuted = isMuted,
-                                        onClick = {
-                                            if (isSelectionMode) {
-                                                if (isSelected) selectedThreadIds.remove(conv.threadId)
-                                                else selectedThreadIds.add(conv.threadId)
-                                            } else {
-                                                if (conv.threadId > 0) {
-                                                    smsVM.loadThreadMessages(conv.threadId)
-                                                }
-                                                navigator.navigate(
-                                                    SmsChatScreenDestination(
-                                                        threadId = conv.threadId,
-                                                        address = conv.address,
-                                                        contactName = conv.contactName,
-                                                        photoUri = conv.photoUri
-                                                    )
+                            RivoScrollAnimatedItem(enabled = isScrollAnimEnabled) {
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    Surface(
+                                        shape = itemShape,
+                                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column {
+                                            if (!isFirst) {
+                                                HorizontalDivider(
+                                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                                    thickness = 0.5.dp
                                                 )
                                             }
-                                        },
-                                        onLongClick = {
-                                            if (isSelectionMode) {
-                                                if (isSelected) selectedThreadIds.remove(conv.threadId)
-                                                else selectedThreadIds.add(conv.threadId)
-                                            } else {
-                                                showConversationMenu = true
-                                            }
-                                        },
-                                        onAvatarClick = {
-                                            if (!isSelectionMode) {
-                                                navigator.navigate(
-                                                    ContactDetailsScreenDestination(
-                                                        phoneNumber = conv.address
-                                                    )
+                                            SwipeableItemContainer(
+                                                modifier = Modifier.animateItem(
+                                                    fadeInSpec = tween(400, easing = FastOutSlowInEasing),
+                                                    placementSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioLowBouncy),
+                                                    fadeOutSpec = tween(450, easing = FastOutLinearInEasing)
+                                                ),
+                                                leftAction = leftSwipeActionItem,
+                                                rightAction = rightSwipeActionItem,
+                                                onSwipeLeft = { handleSwipeAction(swipeLeftAction) },
+                                                onSwipeRight = { handleSwipeAction(swipeRightAction) },
+                                                enabled = !isSelectionMode,
+                                                shape = itemShape
+                                            ) {
+                                                ConversationItemRow(
+                                                    conversation = conv,
+                                                    timeStr = if (conv.date <= 0) "" else formatTimeOnly(conv.date, use24HourTime),
+                                                    isSelected = isSelected,
+                                                    isSelectionMode = isSelectionMode,
+                                                    autoColor = autoColor,
+                                                    showAvatar = showAvatar,
+                                                    isPinned = isPinned,
+                                                    isMuted = isMuted,
+                                                    shape = itemShape,
+                                                    onClick = {
+                                                        if (isSelectionMode) {
+                                                            if (isSelected) selectedThreadIds.remove(conv.threadId)
+                                                            else selectedThreadIds.add(conv.threadId)
+                                                        } else {
+                                                            if (conv.threadId > 0) {
+                                                                smsVM.loadThreadMessages(conv.threadId)
+                                                            }
+                                                            navigator.navigate(
+                                                                SmsChatScreenDestination(
+                                                                    threadId = conv.threadId,
+                                                                    address = conv.address,
+                                                                    contactName = conv.contactName,
+                                                                    photoUri = conv.photoUri
+                                                                )
+                                                            )
+                                                        }
+                                                    },
+                                                    onLongClick = {
+                                                        if (isSelectionMode) {
+                                                            if (isSelected) selectedThreadIds.remove(conv.threadId)
+                                                            else selectedThreadIds.add(conv.threadId)
+                                                        } else {
+                                                            showConversationMenu = true
+                                                        }
+                                                    },
+                                                    onAvatarClick = {
+                                                        if (!isSelectionMode) {
+                                                            navigator.navigate(
+                                                                ContactDetailsScreenDestination(
+                                                                    phoneNumber = conv.address
+                                                                )
+                                                            )
+                                                        }
+                                                    }
                                                 )
                                             }
                                         }
-                                    )
-                                }
+                                    }
 
-                                RivoDropdownMenu(
-                                    expanded = showConversationMenu,
-                                    onDismissRequest = { showConversationMenu = false }
-                                ) {
-                                    RivoDropdownMenuItem(
-                                        text = if (isPinned) "Unpin chat" else "Pin chat",
-                                        icon = Icons.Default.PushPin,
-                                        iconTint = MaterialTheme.colorScheme.primary,
-                                        onClick = {
-                                            showConversationMenu = false
-                                            prefs.setSmsThreadPinned(conv.threadId, !isPinned)
-                                        }
-                                    )
-                                    RivoDropdownMenuItem(
-                                        text = if (isMuted) "Unmute notifications" else "Mute notifications",
-                                        icon = if (isMuted) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
-                                        iconTint = if (isMuted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        onClick = {
-                                            showConversationMenu = false
-                                            prefs.setSmsMuted(conv.address, !isMuted)
-                                            Toast.makeText(context, if (isMuted) "Unmuted ${conv.contactName ?: conv.address}" else "Muted notifications from ${conv.contactName ?: conv.address}", Toast.LENGTH_SHORT).show()
-                                        }
-                                    )
-                                    RivoDropdownMenuItem(
-                                        text = "Block number",
-                                        icon = Icons.Outlined.Block,
-                                        iconTint = MaterialTheme.colorScheme.error,
-                                        isDestructive = true,
-                                        onClick = {
-                                            showConversationMenu = false
-                                            com.coolappstore.everdialer.by.svhp.controller.util.BlockedNumbersManager.block(context, prefs, conv.address)
-                                            Toast.makeText(context, "Blocked ${conv.contactName ?: conv.address}", Toast.LENGTH_SHORT).show()
-                                        }
-                                    )
-                                    RivoDropdownMenuItem(
-                                        text = if (conv.isRead) "Mark as unread" else "Mark as read",
-                                        icon = if (conv.isRead) Icons.Outlined.MarkChatUnread else Icons.Outlined.MarkChatRead,
-                                        onClick = {
-                                            showConversationMenu = false
-                                            smsVM.markThreadAsRead(conv.threadId)
-                                        }
-                                    )
-                                    RivoDropdownMenuItem(
-                                        text = "Call",
-                                        icon = Icons.Default.Call,
-                                        iconTint = Color(0xFF4CAF50),
-                                        onClick = {
-                                            showConversationMenu = false
-                                            makeCall(context, conv.address, null)
-                                        }
-                                    )
-                                    RivoDropdownMenuItem(
-                                        text = "Select",
-                                        icon = Icons.Default.CheckBox,
-                                        onClick = {
-                                            showConversationMenu = false
-                                            selectedThreadIds.add(conv.threadId)
-                                        }
-                                    )
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                                    )
-                                    RivoDropdownMenuItem(
-                                        text = "Delete",
-                                        icon = Icons.Outlined.Delete,
-                                        iconTint = MaterialTheme.colorScheme.error,
-                                        isDestructive = true,
-                                        onClick = {
-                                            showConversationMenu = false
-                                            threadToDelete = conv
-                                        }
-                                    )
+                                    RivoDropdownMenu(
+                                        expanded = showConversationMenu,
+                                        onDismissRequest = { showConversationMenu = false }
+                                    ) {
+                                        RivoDropdownMenuItem(
+                                            text = if (isPinned) "Unpin chat" else "Pin chat",
+                                            icon = Icons.Default.PushPin,
+                                            iconTint = MaterialTheme.colorScheme.primary,
+                                            onClick = {
+                                                showConversationMenu = false
+                                                prefs.setSmsThreadPinned(conv.threadId, !isPinned)
+                                            }
+                                        )
+                                        RivoDropdownMenuItem(
+                                            text = if (isMuted) "Unmute notifications" else "Mute notifications",
+                                            icon = if (isMuted) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
+                                            iconTint = if (isMuted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            onClick = {
+                                                showConversationMenu = false
+                                                prefs.setSmsMuted(conv.address, !isMuted)
+                                                Toast.makeText(context, if (isMuted) "Unmuted ${conv.contactName ?: conv.address}" else "Muted notifications from ${conv.contactName ?: conv.address}", Toast.LENGTH_SHORT).show()
+                                            }
+                                        )
+                                        RivoDropdownMenuItem(
+                                            text = "Block number",
+                                            icon = Icons.Outlined.Block,
+                                            iconTint = MaterialTheme.colorScheme.error,
+                                            isDestructive = true,
+                                            onClick = {
+                                                showConversationMenu = false
+                                                com.coolappstore.everdialer.by.svhp.controller.util.BlockedNumbersManager.block(context, prefs, conv.address)
+                                                Toast.makeText(context, "Blocked ${conv.contactName ?: conv.address}", Toast.LENGTH_SHORT).show()
+                                            }
+                                        )
+                                        RivoDropdownMenuItem(
+                                            text = if (conv.isRead) "Mark as unread" else "Mark as read",
+                                            icon = if (conv.isRead) Icons.Outlined.MarkChatUnread else Icons.Outlined.MarkChatRead,
+                                            onClick = {
+                                                showConversationMenu = false
+                                                smsVM.markThreadAsRead(conv.threadId)
+                                            }
+                                        )
+                                        RivoDropdownMenuItem(
+                                            text = "Call",
+                                            icon = Icons.Default.Call,
+                                            iconTint = Color(0xFF4CAF50),
+                                            onClick = {
+                                                showConversationMenu = false
+                                                makeCall(context, conv.address, null)
+                                            }
+                                        )
+                                        RivoDropdownMenuItem(
+                                            text = "Select",
+                                            icon = Icons.Default.CheckBox,
+                                            onClick = {
+                                                showConversationMenu = false
+                                                selectedThreadIds.add(conv.threadId)
+                                            }
+                                        )
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                        )
+                                        RivoDropdownMenuItem(
+                                            text = "Delete",
+                                            icon = Icons.Outlined.Delete,
+                                            iconTint = MaterialTheme.colorScheme.error,
+                                            isDestructive = true,
+                                            onClick = {
+                                                showConversationMenu = false
+                                                threadToDelete = conv
+                                            }
+                                        )
+                                    }
                                 }
                             }
+                            if (isLast) Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
                 }
@@ -1207,6 +1337,7 @@ private fun ConversationItemRow(
     showAvatar: Boolean = true,
     isPinned: Boolean = false,
     isMuted: Boolean = false,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp),
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onAvatarClick: () -> Unit
@@ -1214,7 +1345,7 @@ private fun ConversationItemRow(
     val targetBgColor = when {
         isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
         !conversation.isRead -> MaterialTheme.colorScheme.surfaceContainerHigh
-        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        else -> Color.Transparent
     }
     val animatedBgColor by androidx.compose.animation.animateColorAsState(
         targetValue = targetBgColor,
@@ -1223,7 +1354,7 @@ private fun ConversationItemRow(
     )
 
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = shape,
         color = animatedBgColor,
         contentColor = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier
@@ -1350,5 +1481,105 @@ private fun ConversationItemRow(
         }
     }
 }
+
+@Composable
+private fun SmsLoadingView() {
+    val infiniteTransition = rememberInfiniteTransition(label = "smsLoading")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "smsLoadingScale"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "smsLoadingAlpha"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 60.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                modifier = Modifier
+                    .size(76.dp)
+                    .graphicsLayer {
+                        scaleX = pulseScale
+                        scaleY = pulseScale
+                        alpha = pulseAlpha
+                    }
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.Chat,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                repeat(3) { index ->
+                    val dotScale by infiniteTransition.animateFloat(
+                        initialValue = 0.5f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(900, delayMillis = index * 200, easing = EaseInOutCubic),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "dot$index"
+                    )
+                    val dotAlpha by infiniteTransition.animateFloat(
+                        initialValue = 0.35f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(900, delayMillis = index * 200, easing = EaseInOutCubic),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "dotAlpha$index"
+                    )
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .size(8.dp)
+                            .graphicsLayer {
+                                scaleX = dotScale
+                                scaleY = dotScale
+                                alpha = dotAlpha
+                            }
+                    ) {}
+                }
+            }
+
+            Text(
+                text = "Loading messages…",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = pulseAlpha)
+            )
+        }
+    }
+}
+
 
 

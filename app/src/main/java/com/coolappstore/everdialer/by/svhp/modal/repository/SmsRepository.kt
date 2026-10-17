@@ -37,9 +37,35 @@ class SmsRepository(
     }
 
     // In-memory cache for contact resolution: phone number -> (displayName, photoUri)
-    private val contactLookupCache = ConcurrentHashMap<String, Pair<String, String?>>()
+    // Caches both positive matches and negative lookups (null, null) to eliminate repeated IPC queries
+    private val NO_CONTACT = Pair<String?, String?>(null, null)
+    private val contactLookupCache = ConcurrentHashMap<String, Pair<String?, String?>>()
+    private val threadAddressCache = ConcurrentHashMap<Long, String>()
+
+    private var contactsObserverRegistered = false
+    private val contactsObserver = object : android.database.ContentObserver(
+        android.os.Handler(android.os.Looper.getMainLooper())
+    ) {
+        override fun onChange(selfChange: Boolean) {
+            contactLookupCache.clear()
+        }
+    }
+
+    private fun ensureContactObserver() {
+        if (!contactsObserverRegistered) {
+            try {
+                contentResolver.registerContentObserver(
+                    ContactsContract.Contacts.CONTENT_URI,
+                    true,
+                    contactsObserver
+                )
+                contactsObserverRegistered = true
+            } catch (_: Throwable) {}
+        }
+    }
 
     private fun ensureContactCache() {
+        ensureContactObserver()
         if (contactLookupCache.isNotEmpty()) return
         try {
             val projection = arrayOf(
@@ -62,7 +88,7 @@ class SmsRepository(
                     val name = if (nameCol >= 0) cursor.getString(nameCol) else null
                     val photo = if (photoCol >= 0) cursor.getString(photoCol) else null
                     if (!rawNum.isNullOrBlank() && !name.isNullOrBlank()) {
-                        val pair = Pair(name, photo)
+                        val pair = Pair<String?, String?>(name, photo)
                         contactLookupCache[rawNum] = pair
                         val normalized = rawNum.replace("[^0-9+]".toRegex(), "")
                         if (normalized.isNotBlank()) {
@@ -162,6 +188,8 @@ class SmsRepository(
                     // If canonical address table didn't have the address, resolve from latest SMS/MMS in this thread
                     if (primaryAddress.isBlank()) {
                         primaryAddress = resolveAddressForThread(threadId)
+                    } else {
+                        threadAddressCache[threadId] = primaryAddress
                     }
 
                     val isRead = if (readCol >= 0) cursor.getInt(readCol) == 1 else true
@@ -256,6 +284,7 @@ class SmsRepository(
     }
 
     private fun resolveAddressForThread(threadId: Long): String {
+        threadAddressCache[threadId]?.let { return it }
         try {
             contentResolver.query(
                 Telephony.Sms.CONTENT_URI,
@@ -265,8 +294,11 @@ class SmsRepository(
                 "${Telephony.Sms.DATE} DESC"
             )?.use { cursor ->
                 if (cursor.moveToFirst()) {
-                    val addr = cursor.getString(0)
-                    if (!addr.isNullOrBlank()) return addr
+                    val addr = cursor.getString(0) ?: ""
+                    if (addr.isNotBlank()) {
+                        threadAddressCache[threadId] = addr
+                        return addr
+                    }
                 }
             }
         } catch (_: Throwable) {}
@@ -697,12 +729,26 @@ class SmsRepository(
      */
     private fun resolveContact(phoneNumber: String): Pair<String, String?>? {
         if (phoneNumber.isBlank()) return null
-        contactLookupCache[phoneNumber]?.let { return it }
+        contactLookupCache[phoneNumber]?.let {
+            return if (it.first != null) Pair(it.first!!, it.second) else null
+        }
+
+        // If alphanumeric (contains letters, e.g. "VK-AMAZON", "HDFCBK", "AIRTEL"),
+        // it cannot be in PhoneLookup. Cache immediately as negative to avoid IPC.
+        if (phoneNumber.any { it.isLetter() }) {
+            contactLookupCache[phoneNumber] = NO_CONTACT
+            return null
+        }
+
         val normalized = phoneNumber.replace("[^0-9+]".toRegex(), "")
         if (normalized.isNotBlank()) {
-            contactLookupCache[normalized]?.let { return it }
+            contactLookupCache[normalized]?.let {
+                return if (it.first != null) Pair(it.first!!, it.second) else null
+            }
             if (normalized.length >= 7) {
-                contactLookupCache[normalized.takeLast(7)]?.let { return it }
+                contactLookupCache[normalized.takeLast(7)]?.let {
+                    return if (it.first != null) Pair(it.first!!, it.second) else null
+                }
             }
         }
 
@@ -721,13 +767,26 @@ class SmsRepository(
                     val name = if (nameIdx >= 0) c.getString(nameIdx) else null
                     val photo = if (photoIdx >= 0) c.getString(photoIdx) else null
                     if (!name.isNullOrBlank()) {
-                        val pair = Pair(name, photo)
+                        val pair = Pair<String?, String?>(name, photo)
                         contactLookupCache[phoneNumber] = pair
-                        pair
-                    } else null
-                } else null
+                        if (normalized.isNotBlank()) {
+                            contactLookupCache[normalized] = pair
+                        }
+                        Pair(name, photo)
+                    } else {
+                        contactLookupCache[phoneNumber] = NO_CONTACT
+                        null
+                    }
+                } else {
+                    contactLookupCache[phoneNumber] = NO_CONTACT
+                    null
+                }
+            } ?: run {
+                contactLookupCache[phoneNumber] = NO_CONTACT
+                null
             }
         } catch (_: Throwable) {
+            contactLookupCache[phoneNumber] = NO_CONTACT
             null
         }
     }

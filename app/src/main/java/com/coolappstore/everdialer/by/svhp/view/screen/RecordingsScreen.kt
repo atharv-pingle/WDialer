@@ -199,12 +199,8 @@ fun RecordingsScreen(
                         appVersion = appVersion,
                         onBackClick = if (openedFromSettings) { { navigator.navigateUp() } } else null,
                         onSettingsClick = {
-                            // Opens the bundled Ever Call Recorder app directly on its
-                            // Call Recording settings screen (storage location, filename
-                            // format, auto-delete rules, etc.), skipping the recordings list.
-                            val launch = Intent(context, com.coolappstore.evercallrecorder.by.svhp.MainActivity::class.java)
-                            launch.putExtra(com.coolappstore.evercallrecorder.by.svhp.MainActivity.EXTRA_OPEN_SETTINGS, true)
-                            context.startActivity(launch)
+                            com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.recordNormalized(0.92f, 0.06f)
+                            navigator.navigate(com.ramcosta.composedestinations.generated.destinations.CallRecordingSettingsScreenDestination())
                         },
                         onRecordingClick = { recordingItem, query ->
                             selectedRecording = recordingItem

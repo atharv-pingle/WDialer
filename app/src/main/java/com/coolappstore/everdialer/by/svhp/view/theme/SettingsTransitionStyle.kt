@@ -36,6 +36,20 @@ import org.koin.compose.koinInject
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import org.koin.core.context.GlobalContext
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.util.lerp
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 
 /**
  * Ultra-smooth expressive easing curves for slow, luxurious zoom motion.
@@ -86,12 +100,29 @@ object SettingsClickTracker {
         private set
 
     fun recordTap(x: Float, y: Float, screenWidth: Float, screenHeight: Float) {
-        lastOrigin = TransformOrigin.Center
+        if (screenWidth > 0f && screenHeight > 0f) {
+            val px = (x / screenWidth).coerceIn(0f, 1f)
+            val py = (y / screenHeight).coerceIn(0f, 1f)
+            lastOrigin = TransformOrigin(px, py)
+        }
     }
 
     fun recordNormalized(pivotX: Float, pivotY: Float) {
-        lastOrigin = TransformOrigin.Center
+        lastOrigin = TransformOrigin(pivotX.coerceIn(0f, 1f), pivotY.coerceIn(0f, 1f))
     }
+}
+
+/**
+ * Wrapper for root settings and search destinations that provides the expanding-from-origin
+ * opening animation and interactive predictive back scrub / collapse, identical to the dialpad page.
+ */
+@Composable
+fun ExpandingScreenContainer(
+    origin: TransformOrigin = SettingsClickTracker.lastOrigin,
+    onClose: () -> Unit,
+    content: @Composable (closeWithAnimation: () -> Unit) -> Unit
+) {
+    content(onClose)
 }
 
 /**
@@ -99,6 +130,7 @@ object SettingsClickTracker {
  */
 val settingsRoutes = setOf(
     "settings_screen",
+    "call_recording_settings_screen",
     "contact_details_screen",
     "call_log_detail_screen",
     "search_screen",
@@ -129,6 +161,7 @@ val settingsRoutes = setOf(
     "contributors_screen",
     "more_apps_web_view_screen",
     "ratings_web_view_screen",
+    "sms_settings_screen",
     "sms_chat_screen",
     "new_message_screen"
 )
@@ -137,6 +170,15 @@ fun isSettingsRoute(route: String?): Boolean {
     if (route == null) return false
     val base = route.substringBefore("?").substringBefore("/")
     return base in settingsRoutes || base.contains("settings", ignoreCase = true) || base.contains("about", ignoreCase = true) || base.contains("contact_details", ignoreCase = true) || base.contains("call_log_detail", ignoreCase = true) || base.contains("search", ignoreCase = true) || base.contains("contact_edit", ignoreCase = true) || base.contains("sms_chat", ignoreCase = true) || base.contains("new_message", ignoreCase = true)
+}
+
+fun isExpandingRoute(route: String?): Boolean {
+    if (route == null) return false
+    val base = route.substringBefore("?").substringBefore("/")
+    return base == "settings_screen" ||
+        base == "search_screen" ||
+        base == "sms_settings_screen" ||
+        base == "call_recording_settings_screen"
 }
 
 /**
@@ -156,6 +198,12 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
         if (isWindowsPhoneAnimation()) {
             TurnstileNavigationTracker.recordEnter(isBack = false, targetState.destination.route)
             fadeIn(tween(SETTINGS_WP_ANIM_DURATION_ENTER, easing = LinearOutSlowInEasing))
+        } else if (isExpandingRoute(targetState.destination.route) && !isSettingsRoute(initialState.destination.route)) {
+            scaleIn(
+                animationSpec = tween(480, easing = CubicBezierEasing(0.08f, 0.85f, 0.18f, 1f)),
+                initialScale = 0.04f,
+                transformOrigin = SettingsClickTracker.lastOrigin
+            ) + fadeIn(tween(400, easing = LinearOutSlowInEasing))
         } else {
             scaleIn(
                 animationSpec = tween(duration, easing = easing),
@@ -211,6 +259,12 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
                 animationSpec = tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing),
                 targetOffsetX = { full -> full / 6 }
             ) + fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
+        } else if (isExpandingRoute(initialState.destination.route) && !isSettingsRoute(targetState.destination.route)) {
+            scaleOut(
+                animationSpec = tween(420, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)),
+                targetScale = 0.04f,
+                transformOrigin = SettingsClickTracker.lastOrigin
+            ) + fadeOut(tween(350, easing = FastOutLinearInEasing))
         } else {
             scaleOut(
                 animationSpec = tween(duration, easing = easing),

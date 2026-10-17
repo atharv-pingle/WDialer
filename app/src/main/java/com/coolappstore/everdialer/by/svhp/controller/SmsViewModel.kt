@@ -12,6 +12,7 @@ import com.coolappstore.everdialer.by.svhp.modal.data.SmsConversation
 import com.coolappstore.everdialer.by.svhp.modal.data.SmsMessage
 import com.coolappstore.everdialer.by.svhp.modal.`interface`.ISmsRepository
 import com.coolappstore.everdialer.by.svhp.controller.sms.SmsEventBus
+import com.coolappstore.everdialer.by.svhp.controller.util.SmsCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -22,17 +23,27 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SmsViewModel(
     application: Application,
     private val smsRepository: ISmsRepository
 ) : AndroidViewModel(application) {
 
-    private val _conversations = MutableStateFlow<List<SmsConversation>>(emptyList())
+    // Seed immediately from memory cache if available (0ms to render)
+    private val _conversations = MutableStateFlow<List<SmsConversation>>(
+        SmsCache.getInMemoryCache() ?: emptyList()
+    )
     val conversations: StateFlow<List<SmsConversation>> = _conversations.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(false)
+    private val _hasInitialLoaded = MutableStateFlow(!SmsCache.getInMemoryCache().isNullOrEmpty())
+    val hasInitialLoaded: StateFlow<Boolean> = _hasInitialLoaded.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(SmsCache.getInMemoryCache().isNullOrEmpty())
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    @Volatile
+    private var isFetching = false
 
     val searchQuery = MutableStateFlow("")
 
@@ -61,8 +72,23 @@ class SmsViewModel(
     private var activeThreadId: Long? = null
     private var debounceJob: Job? = null
 
+    private val prefs: com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager by lazy {
+        org.koin.core.context.GlobalContext.get().get()
+    }
+
+    fun isSmsEnabled(): Boolean {
+        return prefs.getBoolean(com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager.KEY_SMS_ENABLED, false)
+    }
+
+    fun clearConversations() {
+        _conversations.value = emptyList()
+        _isLoading.value = false
+        _hasInitialLoaded.value = true
+    }
+
     private val smsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean, uri: Uri?) {
+            if (!isSmsEnabled()) return
             // Immediately reload active thread messages without waiting for full conversation scan
             activeThreadId?.let { tid ->
                 viewModelScope.launch(Dispatchers.IO) {
@@ -84,9 +110,37 @@ class SmsViewModel(
 
     init {
         registerObservers()
-        refreshConversations()
+        if (isSmsEnabled()) {
+            // Serve memory/disk cache immediately so UI renders in 0ms on open
+            val cached = SmsCache.getInMemoryCache()
+            if (!cached.isNullOrEmpty()) {
+                _conversations.value = cached
+                _hasInitialLoaded.value = true
+                _isLoading.value = false
+            }
+            viewModelScope.launch(Dispatchers.IO) {
+                if (_conversations.value.isEmpty()) {
+                    val diskCache = SmsCache.read(application)
+                    if (diskCache.isNotEmpty()) {
+                        withContext(Dispatchers.Main) {
+                            if (_conversations.value.isEmpty()) {
+                                _conversations.value = diskCache
+                                _hasInitialLoaded.value = true
+                                _isLoading.value = false
+                            }
+                        }
+                    }
+                }
+                fetchConversations()
+            }
+        } else {
+            _conversations.value = emptyList()
+            _hasInitialLoaded.value = true
+            _isLoading.value = false
+        }
         viewModelScope.launch(Dispatchers.IO) {
             SmsEventBus.newSmsEvent.collect { eventThreadId ->
+                if (!isSmsEnabled()) return@collect
                 activeThreadId?.let { tid ->
                     if (eventThreadId == null || eventThreadId == tid) {
                         val msgs = smsRepository.getMessagesForThread(tid)
@@ -121,14 +175,29 @@ class SmsViewModel(
     }
 
     private suspend fun fetchConversations() {
+        if (!isSmsEnabled()) {
+            _conversations.value = emptyList()
+            _isLoading.value = false
+            _hasInitialLoaded.value = true
+            return
+        }
+        if (isFetching) return
+        isFetching = true
         if (_conversations.value.isEmpty()) {
             _isLoading.value = true
         }
         try {
             val list = smsRepository.getConversations()
-            _conversations.value = list
+            if (list.isNotEmpty() || _conversations.value.isEmpty()) {
+                if (_conversations.value != list) {
+                    _conversations.value = list
+                }
+                SmsCache.write(getApplication(), list)
+            }
         } finally {
+            _hasInitialLoaded.value = true
             _isLoading.value = false
+            isFetching = false
         }
     }
 
@@ -170,7 +239,9 @@ class SmsViewModel(
 
     fun deleteThread(threadId: Long, onResult: ((Boolean) -> Unit)? = null) {
         // Optimistically remove from state immediately for zero-delay UI update
-        _conversations.value = _conversations.value.filter { it.threadId != threadId }
+        val updated = _conversations.value.filter { it.threadId != threadId }
+        _conversations.value = updated
+        SmsCache.write(getApplication(), updated)
         viewModelScope.launch(Dispatchers.IO) {
             val success = smsRepository.deleteThread(threadId)
             if (success) {
@@ -198,6 +269,14 @@ class SmsViewModel(
     }
 
     fun markThreadAsRead(threadId: Long) {
+        val current = _conversations.value
+        val updated = current.map { conv ->
+            if (conv.threadId == threadId) conv.copy(isRead = true, unreadCount = 0) else conv
+        }
+        if (current != updated) {
+            _conversations.value = updated
+            SmsCache.write(getApplication(), updated)
+        }
         viewModelScope.launch(Dispatchers.IO) {
             smsRepository.markThreadAsRead(threadId)
             fetchConversations()

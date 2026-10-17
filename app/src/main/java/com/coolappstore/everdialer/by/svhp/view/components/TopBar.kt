@@ -39,6 +39,11 @@ import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDes
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import org.koin.compose.koinInject
 import com.coolappstore.everdialer.by.svhp.view.theme.wpTurnstileHeader
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker
 
 /** The pill-shaped, non-editable "Search in Ever Dialer" bar — tapping it opens the single
  *  unified [SearchScreenDestination] (contacts, non-contacts, contact notes, recording notes).
@@ -62,7 +67,17 @@ fun SearchBarPill(navigator: DestinationsNavigator, modifier: Modifier = Modifie
         animationSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioMediumBouncy),
         label = "searchScale"
     )
+    var pillCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val recordSearchClick: () -> Unit = {
+        pillCoordinates?.let { coords ->
+            val center = coords.boundsInRoot().center
+            val rootSize = coords.findRootCoordinates().size
+            SettingsClickTracker.recordTap(center.x, center.y, rootSize.width.toFloat(), rootSize.height.toFloat())
+        } ?: SettingsClickTracker.recordNormalized(0.50f, 0.05f)
+    }
+
     val voiceSearchLauncher = rememberVoiceSearchLauncher { spokenText ->
+        recordSearchClick()
         navigator.navigate(SearchScreenDestination(initialQuery = spokenText))
     }
 
@@ -71,9 +86,13 @@ fun SearchBarPill(navigator: DestinationsNavigator, modifier: Modifier = Modifie
             if (prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)) {
                 performAppHaptic(context, prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light", prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f))
             }
+            recordSearchClick()
             navigator.navigate(SearchScreenDestination())
         },
-        modifier = modifier.height(52.dp).scale(searchScale),
+        modifier = modifier
+            .height(52.dp)
+            .scale(searchScale)
+            .onGloballyPositioned { coords -> pillCoordinates = coords },
         shape = CircleShape,
         color = searchBarBg,
         interactionSource = searchSource
@@ -225,14 +244,24 @@ fun SettingsIconButton(
         RoundedCornerShape((appRoundness * (16f / 28f)).dp)
     }
 
+    var iconCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+
     Surface(
         onClick = {
             if (prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)) {
                 performAppHaptic(context, prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light", prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f))
             }
+            iconCoordinates?.let { coords ->
+                val center = coords.boundsInRoot().center
+                val rootSize = coords.findRootCoordinates().size
+                SettingsClickTracker.recordTap(center.x, center.y, rootSize.width.toFloat(), rootSize.height.toFloat())
+            } ?: SettingsClickTracker.recordNormalized(0.92f, 0.05f)
             navigator.navigate(SettingsScreenDestination())
         },
-        modifier = modifier.size(52.dp).scale(settingsScale),
+        modifier = modifier
+            .size(52.dp)
+            .scale(settingsScale)
+            .onGloballyPositioned { coords -> iconCoordinates = coords },
         shape = settingsShape,
         color = settingsBgColor,
         interactionSource = settingsSource

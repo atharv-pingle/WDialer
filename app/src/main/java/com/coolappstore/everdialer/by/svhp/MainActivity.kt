@@ -1400,7 +1400,26 @@ class MainActivity : FragmentActivity() {
             }
             address = Uri.decode(address).trim()
 
-            body = data.getQueryParameter("body") ?: data.getQueryParameter("sms_body")
+            if (splitIndex >= 0 && splitIndex < ssp.length - 1) {
+                val queryPart = ssp.substring(splitIndex + 1)
+                for (param in queryPart.split('&')) {
+                    val kv = param.split('=', limit = 2)
+                    if (kv.isNotEmpty()) {
+                        val key = Uri.decode(kv[0])
+                        val value = if (kv.size > 1) Uri.decode(kv[1]) else ""
+                        if (key.equals("body", ignoreCase = true) || key.equals("sms_body", ignoreCase = true)) {
+                            body = value
+                            break
+                        }
+                    }
+                }
+            }
+
+            if (body == null && data.isHierarchical) {
+                try {
+                    body = data.getQueryParameter("body") ?: data.getQueryParameter("sms_body")
+                } catch (_: Exception) {}
+            }
         }
 
         if (address.isNullOrBlank()) {

@@ -191,6 +191,9 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
     }
 
     // Settings States
+    val smsEnabled = remember(settingsVer) {
+        prefs.getBoolean(PreferenceManager.KEY_SMS_ENABLED, false)
+    }
     val textSize = remember(settingsVer) {
         prefs.getFloat(PreferenceManager.KEY_SMS_CHAT_TEXT_SIZE, PreferenceManager.DEFAULT_SMS_CHAT_TEXT_SIZE)
     }
@@ -270,17 +273,18 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
     var showSwipeRightDialog by remember { mutableStateOf(false) }
     var showSwipeLeftDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
-        modifier = Modifier.settingsMotionBlur(),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            SettingsPillTopAppBar(
-                title = "SMS & Messages Settings",
-                onBackClick = { navigator.navigateUp() }
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.surface
-    ) { paddingValues ->
+    com.coolappstore.everdialer.by.svhp.view.theme.ExpandingScreenContainer(onClose = { navigator.navigateUp() }) { closeWithAnimation ->
+        Scaffold(
+            modifier = Modifier.settingsMotionBlur(),
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            topBar = {
+                SettingsPillTopAppBar(
+                    title = "SMS & Messages Settings",
+                    onBackClick = { closeWithAnimation() }
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        ) { paddingValues ->
         val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         LazyColumn(
             modifier = Modifier
@@ -289,6 +293,28 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
             contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + navBarBottom),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Master Enable SMS Toggle Card
+            item {
+                RivoAnimatedSection(delayMs = 0L) {
+                    RivoExpressiveCard {
+                        RivoSwitchListItem(
+                            headline = "Enable SMS",
+                            supporting = if (smsEnabled) "SMS and messaging features are active" else "Turn on to send and receive text messages",
+                            leadingIcon = Icons.Outlined.Sms,
+                            checked = smsEnabled,
+                            onCheckedChange = { isChecked ->
+                                prefs.setBoolean(PreferenceManager.KEY_SMS_ENABLED, isChecked)
+                                if (isChecked) {
+                                    smsVM.refreshConversations()
+                                } else {
+                                    smsVM.clearConversations()
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
             // Default App Status Card (only shown when Ever Dialer is not default)
             if (!isDefaultSms) {
                 item {
@@ -940,5 +966,6 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
                 TextButton(onClick = { showAppNameDialog = false }) { Text("Cancel") }
             }
         )
+    }
     }
 }

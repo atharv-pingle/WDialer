@@ -76,9 +76,17 @@ fun NewMessageScreen(
     val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
     val isSaturatedActive = remember(settingsVer, isDark) { prefs.isSaturatedForTheme(isDark) }
 
-    DisposableEffect(Unit) {
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
         com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening = true
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening = true
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
             com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening = false
         }
     }
@@ -101,7 +109,10 @@ fun NewMessageScreen(
             topBar = {
                 SettingsPillTopAppBar(
                     title = "New Message",
-                    onBackClick = { closeWithAnimation() }
+                    onBackClick = {
+                        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.notifyClosing()
+                        closeWithAnimation()
+                    }
                 )
             },
             containerColor = MaterialTheme.colorScheme.surface

@@ -75,19 +75,6 @@ fun CallLogFullScreen(
     var showSimPicker by remember { mutableStateOf(false) }
     var pendingNumber by remember { mutableStateOf<String?>(null) }
 
-    // Entrance animation
-    var screenVisible by remember { mutableStateOf(false) }
-    val screenAlpha by animateFloatAsState(
-        targetValue = if (screenVisible) 1f else 0f,
-        animationSpec = tween(300),
-        label = "logScreenAlpha"
-    )
-    val screenScale by animateFloatAsState(
-        targetValue = if (screenVisible) 1f else 0.96f,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "logScreenScale"
-    )
-    LaunchedEffect(Unit) { screenVisible = true }
 
     val matchedContact = remember(contactId, phoneNumber, contacts) {
         if (contactId != null && contactId != "null") contacts.find { it.id == contactId }
@@ -150,7 +137,7 @@ fun CallLogFullScreen(
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize().alpha(screenAlpha).scale(screenScale)) {
+        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
                 val settingsVersion by prefs.settingsChanged.collectAsState()
                 val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5

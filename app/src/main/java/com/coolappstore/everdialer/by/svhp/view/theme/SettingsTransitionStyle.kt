@@ -55,12 +55,12 @@ import kotlinx.coroutines.launch
 /**
  * Ultra-smooth expressive easing curves for slow, luxurious zoom motion.
  */
-val SettingsSmoothEase = FastOutSlowInEasing
-val SettingsSmoothEaseIn = FastOutLinearInEasing
-val SettingsSmoothEaseOut = LinearOutSlowInEasing
+val SettingsSmoothEase = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+val SettingsSmoothEaseIn = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
+val SettingsSmoothEaseOut = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 
-const val SETTINGS_ANIM_DURATION_ENTER = 400
-const val SETTINGS_ANIM_DURATION_EXIT = 400
+const val SETTINGS_ANIM_DURATION_ENTER = 420
+const val SETTINGS_ANIM_DURATION_EXIT = 420
 
 const val CHAT_ANIM_DURATION_ENTER = 600
 const val CHAT_ANIM_DURATION_EXIT = 550
@@ -68,7 +68,7 @@ val ChatSmoothEase = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 val ChatSmoothEaseOut = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 val ChatSmoothEaseIn = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
 
-const val SETTINGS_SCALE_ENTER_FROM = 0.92f
+const val SETTINGS_SCALE_ENTER_FROM = 0.02f
 const val SETTINGS_SCALE_EXIT_TO = 0.96f
 
 fun isSmsChatRoute(route: String?): Boolean {
@@ -115,6 +115,12 @@ object SettingsClickTracker {
     fun recordNormalized(pivotX: Float, pivotY: Float) {
         lastOrigin = TransformOrigin(pivotX.coerceIn(0f, 1f), pivotY.coerceIn(0f, 1f))
     }
+
+    fun notifyClosing() {
+        isSettingsOpening = false
+        isSearchOpening = false
+        isNewMessageOpening = false
+    }
 }
 
 /**
@@ -126,7 +132,11 @@ fun ExpandingScreenContainer(
     onClose: () -> Unit,
     content: @Composable (closeWithAnimation: () -> Unit) -> Unit
 ) {
-    content(onClose)
+    val handleClose = {
+        SettingsClickTracker.notifyClosing()
+        onClose()
+    }
+    content(handleClose)
 }
 
 /**
@@ -184,6 +194,7 @@ fun isExpandingRoute(route: String?): Boolean {
         base == "sms_settings_screen" ||
         base == "call_recording_settings_screen" ||
         base == "contact_details_screen" ||
+        base == "call_log_detail_screen" ||
         base == "new_message_screen"
 }
 
@@ -197,14 +208,16 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
 
     override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
         val isChat = isSmsChatRoute(targetState.destination.route)
+        val isExpanding = isExpandingRoute(targetState.destination.route)
         val duration = if (isChat) CHAT_ANIM_DURATION_ENTER else SETTINGS_ANIM_DURATION_ENTER
         val easing = if (isChat) ChatSmoothEase else SettingsSmoothEase
         val easingOut = if (isChat) ChatSmoothEaseOut else SettingsSmoothEaseOut
-        val origin = if (isExpandingRoute(targetState.destination.route)) {
+        val origin = if (isExpanding) {
             SettingsClickTracker.lastOrigin
         } else {
             TransformOrigin.Center
         }
+        val initialScale = if (isExpanding) 0.02f else 0.92f
 
         if (isWindowsPhoneAnimation()) {
             TurnstileNavigationTracker.recordEnter(isBack = false, targetState.destination.route)
@@ -212,7 +225,7 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
         } else {
             scaleIn(
                 animationSpec = tween(duration, easing = easing),
-                initialScale = SETTINGS_SCALE_ENTER_FROM,
+                initialScale = initialScale,
                 transformOrigin = origin
             ) + fadeIn(tween(duration, easing = easingOut))
         }
@@ -249,20 +262,25 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
                 animationSpec = tween(duration, easing = easing),
                 initialScale = SETTINGS_SCALE_EXIT_TO,
                 transformOrigin = TransformOrigin.Center
-            ) + fadeIn(tween(duration, easing = easingOut))
+            ) + fadeIn(
+                animationSpec = tween(duration, easing = easingOut),
+                initialAlpha = 0.95f
+            )
         }
     }
 
     override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
         val isChat = isSmsChatRoute(initialState.destination.route)
+        val isExpanding = isExpandingRoute(initialState.destination.route)
         val duration = if (isChat) CHAT_ANIM_DURATION_EXIT else SETTINGS_ANIM_DURATION_EXIT
         val easing = if (isChat) ChatSmoothEase else SettingsSmoothEase
         val easingIn = if (isChat) ChatSmoothEaseIn else SettingsSmoothEaseIn
-        val origin = if (isExpandingRoute(initialState.destination.route)) {
+        val origin = if (isExpanding) {
             SettingsClickTracker.lastOrigin
         } else {
             TransformOrigin.Center
         }
+        val targetScale = if (isExpanding) 0.02f else 0.92f
 
         if (isWindowsPhoneAnimation()) {
             slideOutHorizontally(
@@ -270,11 +288,12 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
                 targetOffsetX = { full -> full / 6 }
             ) + fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
         } else {
+            val fadeEasing = if (isExpanding) CubicBezierEasing(0.7f, 0f, 1f, 0.3f) else easingIn
             scaleOut(
                 animationSpec = tween(duration, easing = easing),
-                targetScale = SETTINGS_SCALE_ENTER_FROM,
+                targetScale = targetScale,
                 transformOrigin = origin
-            ) + fadeOut(tween(duration, easing = easingIn))
+            ) + fadeOut(tween(duration, easing = fadeEasing))
         }
     }
 }

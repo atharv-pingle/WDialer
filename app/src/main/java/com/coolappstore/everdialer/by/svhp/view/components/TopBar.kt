@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
 import com.ramcosta.composedestinations.generated.destinations.SearchScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
@@ -50,7 +51,11 @@ import com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker
  *  Shown at the top of the main tabs (via [TopBar]) as well as Settings, Notes, and Recordings,
  *  so every entry point into search looks and behaves identically. */
 @Composable
-fun SearchBarPill(navigator: DestinationsNavigator, modifier: Modifier = Modifier) {
+fun SearchBarPill(
+    navigator: DestinationsNavigator,
+    modifier: Modifier = Modifier,
+    isExpanded: Boolean = SettingsClickTracker.isSearchOpening
+) {
     val context = LocalContext.current
     val prefs = koinInject<PreferenceManager>()
     val settingsVer by prefs.settingsChanged.collectAsState()
@@ -68,7 +73,7 @@ fun SearchBarPill(navigator: DestinationsNavigator, modifier: Modifier = Modifie
         label = "searchScale"
     )
     val searchExpandScale by animateFloatAsState(
-        targetValue = if (SettingsClickTracker.isSearchOpening) 1.15f else 1f,
+        targetValue = if (isExpanded) 1.15f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessMediumLow
@@ -177,6 +182,11 @@ fun TopBar(navController: NavController, navigator: DestinationsNavigator) {
             .offset(y = offsetY),
         color = Color.Transparent
     ) {
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentRoute = navBackStackEntry?.destination?.route ?: ""
+        val isSettingsRunning = currentRoute.contains("settings", ignoreCase = true) || SettingsClickTracker.isSettingsOpening
+        val isSearchRunning = currentRoute.contains("search", ignoreCase = true) || SettingsClickTracker.isSearchOpening
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -185,10 +195,10 @@ fun TopBar(navController: NavController, navigator: DestinationsNavigator) {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Search bar
-            SearchBarPill(navigator = navigator, modifier = Modifier.weight(1f))
+            SearchBarPill(navigator = navigator, isExpanded = isSearchRunning, modifier = Modifier.weight(1f))
 
             // Settings button – coloured icon background
-            SettingsIconButton(navigator = navigator)
+            SettingsIconButton(navigator = navigator, isExpanded = isSettingsRunning)
         }
     }
 }
@@ -196,7 +206,8 @@ fun TopBar(navController: NavController, navigator: DestinationsNavigator) {
 @Composable
 fun SettingsIconButton(
     navigator: DestinationsNavigator,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isExpanded: Boolean = SettingsClickTracker.isSettingsOpening
 ) {
     val context = LocalContext.current
     val prefs = koinInject<PreferenceManager>()
@@ -208,7 +219,7 @@ fun SettingsIconButton(
         label = "settingsScale"
     )
     val settingsExpandScale by animateFloatAsState(
-        targetValue = if (SettingsClickTracker.isSettingsOpening) 2.4f else 1f,
+        targetValue = if (isExpanded) 2.4f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessMediumLow

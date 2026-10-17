@@ -139,9 +139,17 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
     val prefs: PreferenceManager = koinInject()
     val scope = rememberCoroutineScope()
 
-    DisposableEffect(Unit) {
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
         SettingsClickTracker.isSettingsOpening = true
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                SettingsClickTracker.isSettingsOpening = true
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
             SettingsClickTracker.isSettingsOpening = false
         }
     }
@@ -1576,7 +1584,10 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
             topBar = {
                 com.coolappstore.everdialer.by.svhp.view.components.SettingsPillTopAppBar(
                     title = com.coolappstore.everdialer.by.svhp.controller.util.tr("Settings"),
-                    onBackClick = { closeWithAnimation() }
+                    onBackClick = {
+                        SettingsClickTracker.notifyClosing()
+                        closeWithAnimation()
+                    }
                 )
             },
             containerColor = MaterialTheme.colorScheme.surface

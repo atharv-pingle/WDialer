@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -511,7 +512,9 @@ fun SmsScreen(
                 val fabShape = RoundedCornerShape(17.dp)
                 val pillNav = remember(settingsVer) { prefs.getBoolean(PreferenceManager.KEY_PILL_NAV, true) }
                 val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
-                val isNewMessageOpen = com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route ?: ""
+                val isNewMessageOpen = currentRoute.contains("new_message", ignoreCase = true) || com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening
                 val newMessageExpandScale by animateFloatAsState(
                     targetValue = if (isNewMessageOpen) 2.6f else 1f,
                     animationSpec = spring(

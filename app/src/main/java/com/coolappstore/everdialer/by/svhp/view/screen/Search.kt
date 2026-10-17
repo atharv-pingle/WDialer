@@ -97,10 +97,18 @@ fun SearchScreen(
         val permState = rememberPermissionState(Manifest.permission.READ_CONTACTS)
         val listState = rememberLazyListState()
 
-        DisposableEffect(Unit) {
+        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+        DisposableEffect(lifecycleOwner) {
             com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isSearchOpening = true
             NavBarVisibilityState.hideForSettingsEntry = true
+            val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                    com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isSearchOpening = true
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
             onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
                 com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isSearchOpening = false
                 NavBarVisibilityState.hideForSettingsEntry = false
             }
@@ -118,7 +126,10 @@ fun SearchScreen(
                     onRequestPermission = { permState.launchPermissionRequest() },
                     listState = listState,
                     initialQuery = initialQuery,
-                    onBack = { closeWithAnimation() }
+                    onBack = {
+                        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.notifyClosing()
+                        closeWithAnimation()
+                    }
                 )
             }
         }

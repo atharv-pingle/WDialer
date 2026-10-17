@@ -85,7 +85,7 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
                 } else {
                     scaleIn(
                         animationSpec = tween(enterDuration, easing = enterEasing),
-                        initialScale = SETTINGS_SCALE_ENTER_FROM,
+                        initialScale = 0.02f,
                         transformOrigin = TransformOrigin.Center
                     ) + fadeIn(tween(enterDuration, easing = enterEasingOut))
                 }
@@ -95,11 +95,7 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
                     TurnstileNavigationTracker.recordEnter(isBack = true, targetState.destination.route)
                     fadeIn(tween(SETTINGS_WP_ANIM_DURATION_ENTER, easing = LinearOutSlowInEasing))
                 } else {
-                    scaleIn(
-                        animationSpec = tween(enterDuration, easing = enterEasing),
-                        initialScale = SETTINGS_SCALE_EXIT_TO,
-                        transformOrigin = TransformOrigin.Center
-                    ) + fadeIn(tween(enterDuration, easing = enterEasingOut))
+                    EnterTransition.None
                 }
             }
             fromTab && toTab && !isLandscapeMode -> {
@@ -136,11 +132,7 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
                 if (isWindowsPhoneAnimation()) {
                     fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
                 } else {
-                    scaleOut(
-                        animationSpec = tween(exitDuration, easing = exitEasing),
-                        targetScale = SETTINGS_SCALE_EXIT_TO,
-                        transformOrigin = TransformOrigin.Center
-                    ) + fadeOut(tween(exitDuration, easing = exitEasingIn))
+                    ExitTransition.None
                 }
             }
             fromTab && toTab && !isLandscapeMode -> {
@@ -184,11 +176,7 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
                     TurnstileNavigationTracker.recordEnter(isBack = true, targetState.destination.route)
                     fadeIn(tween(SETTINGS_WP_ANIM_DURATION_ENTER, easing = LinearOutSlowInEasing))
                 } else {
-                    scaleIn(
-                        animationSpec = tween(enterDuration, easing = enterEasing),
-                        initialScale = SETTINGS_SCALE_EXIT_TO,
-                        transformOrigin = TransformOrigin.Center
-                    ) + fadeIn(tween(enterDuration, easing = enterEasingOut))
+                    EnterTransition.None
                 }
             }
             fromTab && toTab && !isLandscapeMode -> {
@@ -228,11 +216,7 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
                         targetOffsetX = { full -> full / 6 }
                     ) + fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
                 } else {
-                    scaleOut(
-                        animationSpec = tween(exitDuration, easing = exitEasing),
-                        targetScale = SETTINGS_SCALE_ENTER_FROM,
-                        transformOrigin = TransformOrigin.Center
-                    ) + fadeOut(tween(exitDuration, easing = exitEasingIn))
+                    ExitTransition.None
                 }
             }
             fromTab && toTab && !isLandscapeMode -> {

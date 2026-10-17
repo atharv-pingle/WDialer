@@ -98,8 +98,10 @@ fun SearchScreen(
         val listState = rememberLazyListState()
 
         DisposableEffect(Unit) {
+            com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isSearchOpening = true
             NavBarVisibilityState.hideForSettingsEntry = true
             onDispose {
+                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isSearchOpening = false
                 NavBarVisibilityState.hideForSettingsEntry = false
             }
         }

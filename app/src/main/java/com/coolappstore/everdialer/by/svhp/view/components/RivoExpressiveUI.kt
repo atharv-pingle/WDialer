@@ -72,6 +72,8 @@ import org.koin.compose.koinInject
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.graphics.graphicsLayer
 import com.coolappstore.everdialer.by.svhp.liquidglass.drawBackdrop
 import com.coolappstore.everdialer.by.svhp.liquidglass.drawPlainBackdrop
@@ -760,6 +762,24 @@ fun RivoListItem(
         label = "ListItemScale"
     )
 
+    var avatarCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var rowCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val recordAvatarClick: () -> Unit = {
+        avatarCoords?.let { coords ->
+            val center = coords.boundsInRoot().center
+            val rootSize = coords.findRootCoordinates().size
+            com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.recordTap(
+                center.x, center.y, rootSize.width.toFloat(), rootSize.height.toFloat()
+            )
+        } ?: rowCoords?.let { coords ->
+            val bounds = coords.boundsInRoot()
+            val rootSize = coords.findRootCoordinates().size
+            com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.recordTap(
+                bounds.left + 36f, bounds.center.y, rootSize.width.toFloat(), rootSize.height.toFloat()
+            )
+        } ?: com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.recordNormalized(0.12f, 0.5f)
+    }
+
     Surface(
         color = Color.Transparent,
         modifier = modifier
@@ -773,12 +793,13 @@ fun RivoListItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .onGloballyPositioned { coords -> rowCoords = coords }
                 .clip(RoundedCornerShape((LocalCardCornerRadius.current.value.coerceAtLeast(0f) * (16f / 28f)).dp))
                 .combinedClickable(
                     interactionSource = interactionSource,
                     indication = null,
                     onClick = {
-                        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.recordTap(0f, 0f, 0f, 0f)
+                        recordAvatarClick()
                         if (prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)) {
                             performAppHaptic(
                                 context,
@@ -802,11 +823,15 @@ fun RivoListItem(
                     size = 48.dp,
                     modifier = Modifier
                         .size(48.dp)
+                        .onGloballyPositioned { coords -> avatarCoords = coords }
                         .then(
                             if (onAvatarClick != null)
                                 Modifier
                                      .clip(CircleShape)
-                                     .combinedClickable(onClick = onAvatarClick)
+                                     .combinedClickable(onClick = {
+                                         recordAvatarClick()
+                                         onAvatarClick()
+                                     })
                             else Modifier
                         )
                 )

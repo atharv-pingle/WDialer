@@ -38,6 +38,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.graphics.Color
 import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalConfiguration
@@ -506,22 +511,60 @@ fun SmsScreen(
                 val fabShape = RoundedCornerShape(17.dp)
                 val pillNav = remember(settingsVer) { prefs.getBoolean(PreferenceManager.KEY_PILL_NAV, true) }
                 val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+                val isNewMessageOpen = com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening
+                val newMessageExpandScale by animateFloatAsState(
+                    targetValue = if (isNewMessageOpen) 2.6f else 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    label = "newMessageExpandScale"
+                )
+                val newMessageFabElevation by animateDpAsState(
+                    targetValue = if (isNewMessageOpen) 12.dp else 6.dp,
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    label = "newMessageFabElevation"
+                )
+
+                var fabCoordinates by remember { mutableStateOf<androidx.compose.ui.layout.LayoutCoordinates?>(null) }
                 val baseModifier = Modifier
+                    .onGloballyPositioned { coordinates ->
+                        fabCoordinates = coordinates
+                    }
+                    .scale(newMessageExpandScale)
                     .then(if (pillNav) Modifier.navigationBarsPadding().padding(bottom = 92.dp) else Modifier.navigationBarsPadding().padding(bottom = 80.dp))
                     .then(if (isLandscape) Modifier.navigationBarsPadding().padding(bottom = 8.dp) else Modifier)
 
                 FloatingActionButton(
                     onClick = {
+                        if (prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)) {
+                            com.coolappstore.everdialer.by.svhp.view.components.performAppHaptic(
+                                context,
+                                prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light",
+                                prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f)
+                            )
+                        }
+                        fabCoordinates?.let { coords ->
+                            val center = coords.boundsInRoot().center
+                            val rootSize = coords.findRootCoordinates().size
+                            com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.recordTap(
+                                center.x,
+                                center.y,
+                                rootSize.width.toFloat(),
+                                rootSize.height.toFloat()
+                            )
+                        } ?: com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.recordNormalized(0.88f, 0.92f)
+                        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening = true
                         navigator.navigate(NewMessageScreenDestination(initialText = null))
                     },
                     containerColor = fabBg,
                     contentColor = fabFg,
                     shape = fabShape,
                     elevation = FloatingActionButtonDefaults.elevation(
-                        defaultElevation = 6.dp,
-                        pressedElevation = 6.dp,
-                        focusedElevation = 6.dp,
-                        hoveredElevation = 6.dp
+                        defaultElevation = newMessageFabElevation,
+                        pressedElevation = newMessageFabElevation,
+                        focusedElevation = newMessageFabElevation,
+                        hoveredElevation = newMessageFabElevation
                     ),
                     modifier = baseModifier
                 ) {

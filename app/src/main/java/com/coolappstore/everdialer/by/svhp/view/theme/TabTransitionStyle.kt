@@ -135,12 +135,6 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
             fromSettings || toSettings -> {
                 if (isWindowsPhoneAnimation()) {
                     fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
-                } else if (isExpandingRoute(targetState.destination.route)) {
-                    scaleOut(
-                        animationSpec = tween(480, easing = CubicBezierEasing(0.08f, 0.85f, 0.18f, 1f)),
-                        targetScale = 0.94f,
-                        transformOrigin = TransformOrigin.Center
-                    ) + fadeOut(tween(480, easing = LinearOutSlowInEasing), targetAlpha = 0.85f)
                 } else {
                     scaleOut(
                         animationSpec = tween(exitDuration, easing = exitEasing),
@@ -189,12 +183,6 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
                 if (isWindowsPhoneAnimation()) {
                     TurnstileNavigationTracker.recordEnter(isBack = true, targetState.destination.route)
                     fadeIn(tween(SETTINGS_WP_ANIM_DURATION_ENTER, easing = LinearOutSlowInEasing))
-                } else if (isExpandingRoute(initialState.destination.route)) {
-                    scaleIn(
-                        animationSpec = tween(420, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)),
-                        initialScale = 0.94f,
-                        transformOrigin = TransformOrigin.Center
-                    ) + fadeIn(tween(420, easing = LinearOutSlowInEasing), initialAlpha = 0.85f)
                 } else {
                     scaleIn(
                         animationSpec = tween(enterDuration, easing = enterEasing),

@@ -76,6 +76,13 @@ fun NewMessageScreen(
     val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
     val isSaturatedActive = remember(settingsVer, isDark) { prefs.isSaturatedForTheme(isDark) }
 
+    DisposableEffect(Unit) {
+        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening = true
+        onDispose {
+            com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening = false
+        }
+    }
+
     fun openChatWith(number: String, name: String?) {
         navigator.navigate(
             SmsChatScreenDestination(
@@ -87,17 +94,18 @@ fun NewMessageScreen(
         )
     }
 
-    Scaffold(
-        modifier = Modifier.settingsMotionBlur(),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            SettingsPillTopAppBar(
-                title = "New Message",
-                onBackClick = { navigator.navigateUp() }
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.surface
-    ) { paddingValues ->
+    com.coolappstore.everdialer.by.svhp.view.theme.ExpandingScreenContainer(onClose = { navigator.navigateUp() }) { closeWithAnimation ->
+        Scaffold(
+            modifier = Modifier.settingsMotionBlur(),
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            topBar = {
+                SettingsPillTopAppBar(
+                    title = "New Message",
+                    onBackClick = { closeWithAnimation() }
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        ) { paddingValues ->
         val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
         Column(
@@ -254,4 +262,5 @@ fun NewMessageScreen(
             }
         }
     }
+}
 }

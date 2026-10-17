@@ -67,6 +67,14 @@ fun SearchBarPill(navigator: DestinationsNavigator, modifier: Modifier = Modifie
         animationSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioMediumBouncy),
         label = "searchScale"
     )
+    val searchExpandScale by animateFloatAsState(
+        targetValue = if (SettingsClickTracker.isSearchOpening) 1.15f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "searchExpandScale"
+    )
     var pillCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val recordSearchClick: () -> Unit = {
         pillCoordinates?.let { coords ->
@@ -77,6 +85,7 @@ fun SearchBarPill(navigator: DestinationsNavigator, modifier: Modifier = Modifie
     }
 
     val voiceSearchLauncher = rememberVoiceSearchLauncher { spokenText ->
+        SettingsClickTracker.isSearchOpening = true
         recordSearchClick()
         navigator.navigate(SearchScreenDestination(initialQuery = spokenText))
     }
@@ -86,12 +95,13 @@ fun SearchBarPill(navigator: DestinationsNavigator, modifier: Modifier = Modifie
             if (prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)) {
                 performAppHaptic(context, prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light", prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f))
             }
+            SettingsClickTracker.isSearchOpening = true
             recordSearchClick()
             navigator.navigate(SearchScreenDestination())
         },
         modifier = modifier
             .height(52.dp)
-            .scale(searchScale)
+            .scale(searchScale * searchExpandScale)
             .onGloballyPositioned { coords -> pillCoordinates = coords },
         shape = CircleShape,
         color = searchBarBg,
@@ -197,6 +207,14 @@ fun SettingsIconButton(
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "settingsScale"
     )
+    val settingsExpandScale by animateFloatAsState(
+        targetValue = if (SettingsClickTracker.isSettingsOpening) 2.4f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "settingsExpandScale"
+    )
 
     val settingsVer by prefs.settingsChanged.collectAsState()
     val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
@@ -251,6 +269,7 @@ fun SettingsIconButton(
             if (prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)) {
                 performAppHaptic(context, prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light", prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f))
             }
+            SettingsClickTracker.isSettingsOpening = true
             iconCoordinates?.let { coords ->
                 val center = coords.boundsInRoot().center
                 val rootSize = coords.findRootCoordinates().size
@@ -260,7 +279,7 @@ fun SettingsIconButton(
         },
         modifier = modifier
             .size(52.dp)
-            .scale(settingsScale)
+            .scale(settingsScale * settingsExpandScale)
             .onGloballyPositioned { coords -> iconCoordinates = coords },
         shape = settingsShape,
         color = settingsBgColor,

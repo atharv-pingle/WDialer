@@ -72,8 +72,12 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 import androidx.compose.foundation.combinedClickable
@@ -562,6 +566,27 @@ private fun FavoriteContactCard(
 
     val phoneNumber = contact.phoneNumbers.firstOrNull()
 
+    var avatarCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var cardCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val recordAvatarClick: () -> Unit = {
+        avatarCoords?.let { coords ->
+            val center = coords.boundsInRoot().center
+            val rootSize = coords.findRootCoordinates().size
+            SettingsClickTracker.recordTap(
+                center.x, center.y, rootSize.width.toFloat(), rootSize.height.toFloat()
+            )
+        } ?: cardCoords?.let { coords ->
+            val bounds = coords.boundsInRoot()
+            val rootSize = coords.findRootCoordinates().size
+            SettingsClickTracker.recordTap(
+                if (isListView) bounds.left + 38f else bounds.center.x,
+                if (isListView) bounds.center.y else bounds.top + bounds.width / 2f,
+                rootSize.width.toFloat(),
+                rootSize.height.toFloat()
+            )
+        } ?: SettingsClickTracker.recordNormalized(0.5f, 0.5f)
+    }
+
     val leftSwipeKey = remember(settingsVer) { prefs.getSwipeAction("favourites", "left") }
     val rightSwipeKey = remember(settingsVer) { prefs.getSwipeAction("favourites", "right") }
     val colorScheme = MaterialTheme.colorScheme
@@ -587,6 +612,7 @@ private fun FavoriteContactCard(
             }
             "select" -> onSelectMode?.invoke()
             "view_contact" -> {
+                recordAvatarClick()
                 navigator.navigate(ContactDetailsScreenDestination(contactId = contact.id))
             }
             "edit_contact" -> {
@@ -669,6 +695,7 @@ private fun FavoriteContactCard(
                 }
             }
             .onGloballyPositioned { coords ->
+                cardCoords = coords
                 val bounds = coords.boundsInWindow()
                 onBoundsChanged?.invoke(bounds)
             }
@@ -702,7 +729,14 @@ private fun FavoriteContactCard(
                                     isPressed = false
                                     when {
                                         dragStarted -> { isDraggingLocally = false; onDragEnd?.invoke() }
-                                        !longPressTriggered -> { if (selectionMode) onSelectToggle?.invoke() else onClick() }
+                                        !longPressTriggered -> {
+                                            if (selectionMode) {
+                                                onSelectToggle?.invoke()
+                                            } else {
+                                                recordAvatarClick()
+                                                onClick()
+                                            }
+                                        }
                                         // long press without drag: menu already shown in job
                                     }
                                     break@loop
@@ -781,7 +815,11 @@ private fun FavoriteContactCard(
                         }
                     }
 
-                    Box(modifier = Modifier.size(48.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .onGloballyPositioned { avatarCoords = it }
+                    ) {
                         RivoAvatar(
                             name = contact.name,
                             photoUri = contact.photoUri,
@@ -836,7 +874,12 @@ private fun FavoriteContactCard(
         } else {
             Box {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .onGloballyPositioned { avatarCoords = it }
+                    ) {
                         RivoAvatar(
                             name = contact.name,
                             photoUri = contact.photoUri,
@@ -1035,6 +1078,7 @@ private fun FavoriteContactCard(
                     iconTint = Color(0xFF2196F3),
                     onClick = {
                         showMenu = false
+                        recordAvatarClick()
                         navigator.navigate(ContactDetailsScreenDestination(contactId = contact.id))
                     }
                 )

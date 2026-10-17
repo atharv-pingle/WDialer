@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -99,6 +100,10 @@ object SettingsClickTracker {
     var lastOrigin: TransformOrigin = TransformOrigin.Center
         private set
 
+    var isSettingsOpening by mutableStateOf(false)
+    var isSearchOpening by mutableStateOf(false)
+    var isNewMessageOpening by mutableStateOf(false)
+
     fun recordTap(x: Float, y: Float, screenWidth: Float, screenHeight: Float) {
         if (screenWidth > 0f && screenHeight > 0f) {
             val px = (x / screenWidth).coerceIn(0f, 1f)
@@ -113,8 +118,7 @@ object SettingsClickTracker {
 }
 
 /**
- * Wrapper for root settings and search destinations that provides the expanding-from-origin
- * opening animation and interactive predictive back scrub / collapse, identical to the dialpad page.
+ * Wrapper for root settings, search, contact info, and new message destinations.
  */
 @Composable
 fun ExpandingScreenContainer(
@@ -178,7 +182,9 @@ fun isExpandingRoute(route: String?): Boolean {
     return base == "settings_screen" ||
         base == "search_screen" ||
         base == "sms_settings_screen" ||
-        base == "call_recording_settings_screen"
+        base == "call_recording_settings_screen" ||
+        base == "contact_details_screen" ||
+        base == "new_message_screen"
 }
 
 /**
@@ -194,21 +200,20 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
         val duration = if (isChat) CHAT_ANIM_DURATION_ENTER else SETTINGS_ANIM_DURATION_ENTER
         val easing = if (isChat) ChatSmoothEase else SettingsSmoothEase
         val easingOut = if (isChat) ChatSmoothEaseOut else SettingsSmoothEaseOut
+        val origin = if (isExpandingRoute(targetState.destination.route)) {
+            SettingsClickTracker.lastOrigin
+        } else {
+            TransformOrigin.Center
+        }
 
         if (isWindowsPhoneAnimation()) {
             TurnstileNavigationTracker.recordEnter(isBack = false, targetState.destination.route)
             fadeIn(tween(SETTINGS_WP_ANIM_DURATION_ENTER, easing = LinearOutSlowInEasing))
-        } else if (isExpandingRoute(targetState.destination.route) && !isSettingsRoute(initialState.destination.route)) {
-            scaleIn(
-                animationSpec = tween(480, easing = CubicBezierEasing(0.08f, 0.85f, 0.18f, 1f)),
-                initialScale = 0.04f,
-                transformOrigin = SettingsClickTracker.lastOrigin
-            ) + fadeIn(tween(400, easing = LinearOutSlowInEasing))
         } else {
             scaleIn(
                 animationSpec = tween(duration, easing = easing),
                 initialScale = SETTINGS_SCALE_ENTER_FROM,
-                transformOrigin = TransformOrigin.Center
+                transformOrigin = origin
             ) + fadeIn(tween(duration, easing = easingOut))
         }
     }
@@ -253,23 +258,22 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
         val duration = if (isChat) CHAT_ANIM_DURATION_EXIT else SETTINGS_ANIM_DURATION_EXIT
         val easing = if (isChat) ChatSmoothEase else SettingsSmoothEase
         val easingIn = if (isChat) ChatSmoothEaseIn else SettingsSmoothEaseIn
+        val origin = if (isExpandingRoute(initialState.destination.route)) {
+            SettingsClickTracker.lastOrigin
+        } else {
+            TransformOrigin.Center
+        }
 
         if (isWindowsPhoneAnimation()) {
             slideOutHorizontally(
                 animationSpec = tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing),
                 targetOffsetX = { full -> full / 6 }
             ) + fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
-        } else if (isExpandingRoute(initialState.destination.route) && !isSettingsRoute(targetState.destination.route)) {
-            scaleOut(
-                animationSpec = tween(420, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)),
-                targetScale = 0.04f,
-                transformOrigin = SettingsClickTracker.lastOrigin
-            ) + fadeOut(tween(350, easing = FastOutLinearInEasing))
         } else {
             scaleOut(
                 animationSpec = tween(duration, easing = easing),
                 targetScale = SETTINGS_SCALE_ENTER_FROM,
-                transformOrigin = TransformOrigin.Center
+                transformOrigin = origin
             ) + fadeOut(tween(duration, easing = easingIn))
         }
     }

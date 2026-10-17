@@ -91,6 +91,7 @@ import org.koin.compose.koinInject
 import java.io.File
 import kotlin.math.roundToInt
 
+import com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker
 import com.coolappstore.everdialer.by.svhp.view.theme.SettingsTransitionStyle
 import com.coolappstore.everdialer.by.svhp.view.theme.settingsMotionBlur
 import com.coolappstore.everdialer.by.svhp.view.theme.wpTurnstileControl
@@ -137,6 +138,13 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
     val listState = rememberLazyListState()
     val prefs: PreferenceManager = koinInject()
     val scope = rememberCoroutineScope()
+
+    DisposableEffect(Unit) {
+        SettingsClickTracker.isSettingsOpening = true
+        onDispose {
+            SettingsClickTracker.isSettingsOpening = false
+        }
+    }
 
     var silenceUnknown by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_SILENCE_UNKNOWN, false)) }
     val rateReviewSettingsVersion by prefs.settingsChanged.collectAsState()

@@ -205,6 +205,12 @@ class PreferenceManager(context: Context) {
         return raw.split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }.toSet()
     }
 
+    fun getSaturatedTarget(): String =
+        getString(KEY_SATURATED_TARGET, SATURATED_TARGET_CONTAINER) ?: SATURATED_TARGET_CONTAINER
+
+    fun setSaturatedTarget(target: String) =
+        setString(KEY_SATURATED_TARGET, target)
+
     fun isSaturatedForTheme(isDark: Boolean): Boolean {
         if (!getBoolean(KEY_SATURATED_COLORS, false)) return false
         val modes = getSaturatedModesSet()
@@ -487,6 +493,9 @@ class PreferenceManager(context: Context) {
         const val KEY_CORNER_RADIUS         = "corner_radius"
         const val KEY_THEME_MODE            = "theme_mode"
         const val KEY_SATURATED_COLORS      = "saturated_colors"
+        const val KEY_SATURATED_TARGET      = "saturated_target"
+        const val SATURATED_TARGET_CONTAINER = "container"
+        const val SATURATED_TARGET_BACKGROUND = "background"
         const val KEY_SATURATED_MODES       = "saturated_modes"
         const val DEFAULT_SATURATED_MODES   = "light,dark,white,black"
         const val KEY_SATURATION_LEVEL      = "saturation_level"

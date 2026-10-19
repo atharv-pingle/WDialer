@@ -140,6 +140,7 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
     var dynamicColors       by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_DYNAMIC_COLORS, true)) }
     var showFloatingColorPicker by remember { mutableStateOf(false) }
     var saturatedColors     by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_SATURATED_COLORS, false)) }
+    var saturatedTarget     by remember { mutableStateOf(prefs.getSaturatedTarget()) }
     var saturatedModes      by remember { mutableStateOf(prefs.getSaturatedModesSet()) }
     var saturationLevelLight by remember { mutableFloatStateOf(prefs.getSaturationLevel(false)) }
     var saturationLevelDark  by remember { mutableFloatStateOf(prefs.getSaturationLevel(true)) }
@@ -1244,6 +1245,60 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                                             .fillMaxWidth()
                                             .padding(horizontal = 16.dp, vertical = 6.dp)
                                     ) {
+                                        Surface(
+                                            shape = RoundedCornerShape(50.dp),
+                                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 6.dp, vertical = 6.dp),
+                                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                val targetsList = listOf(
+                                                    "Container" to PreferenceManager.SATURATED_TARGET_CONTAINER,
+                                                    "Background" to PreferenceManager.SATURATED_TARGET_BACKGROUND
+                                                )
+                                                val isPrimaryBright = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.primary.toArgb()) > 0.45
+                                                val selectedFg = if (isPrimaryBright) Color(0xFF1C1B1F) else Color.White
+                                                targetsList.forEach { (label, key) ->
+                                                    val isSelected = saturatedTarget == key
+                                                    FilterChip(
+                                                        selected = isSelected,
+                                                        onClick = {
+                                                            if (saturatedTarget != key) {
+                                                                saturatedTarget = key
+                                                                prefs.setSaturatedTarget(key)
+                                                            }
+                                                        },
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .padding(horizontal = 2.dp),
+                                                        label = {
+                                                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                                                Text(
+                                                                    label,
+                                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                                                )
+                                                            }
+                                                        },
+                                                        shape = RoundedCornerShape(50.dp),
+                                                        border = null,
+                                                        colors = FilterChipDefaults.filterChipColors(
+                                                            containerColor = Color.Transparent,
+                                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            selectedLabelColor = selectedFg
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
                                         Surface(
                                             shape = RoundedCornerShape(50.dp),
                                             color = MaterialTheme.colorScheme.surfaceContainerHighest,

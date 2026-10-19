@@ -2227,6 +2227,7 @@ fun DialerActionExpressive(
     val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
     val settingsState by prefs.settingsChanged.collectAsState()
     val isSaturatedActive = remember(settingsState, isDark) { prefs.isSaturatedForTheme(isDark) }
+    val isSaturatedContainer = remember(settingsState) { prefs.getSaturatedTarget() == PreferenceManager.SATURATED_TARGET_CONTAINER }
 
     val triggerTapPulse = {
         tapJob?.cancel()
@@ -2264,7 +2265,7 @@ fun DialerActionExpressive(
     val restingBgColor = when {
         customColor != null -> customColor
         isCallButton -> if (isSaturatedActive) MaterialTheme.colorScheme.primary else Color(0xFF34A853)
-        isSaturatedActive -> androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primary, 0.35f)
+        isSaturatedActive && isSaturatedContainer -> androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primary, 0.35f)
         else -> MaterialTheme.colorScheme.primaryContainer
     }
     val targetBgColor = if (isVisuallyPressed) (customColor?.let { it.copy(alpha = 0.85f) } ?: MaterialTheme.colorScheme.primary) else restingBgColor
@@ -2273,7 +2274,7 @@ fun DialerActionExpressive(
     val restingContentColor = when {
         customColor != null -> Color.White
         isCallButton -> Color.White
-        isSaturatedActive -> MaterialTheme.colorScheme.onPrimaryContainer
+        isSaturatedActive && isSaturatedContainer -> MaterialTheme.colorScheme.onPrimaryContainer
         else -> MaterialTheme.colorScheme.onPrimaryContainer
     }
     val isPrimaryBright = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.primary.toArgb()) > 0.45
@@ -2391,6 +2392,7 @@ fun DialPadKey(
     val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
     val settingsState by prefs.settingsChanged.collectAsState()
     val isSaturatedActive = remember(settingsState, isDark) { prefs.isSaturatedForTheme(isDark) }
+    val isSaturatedContainer = remember(settingsState) { prefs.getSaturatedTarget() == PreferenceManager.SATURATED_TARGET_CONTAINER }
 
     val cornerRadius by animateDpAsState(
         targetValue = if (isVisuallyPressed) 10.dp else (if (compact) 24.dp else 28.dp),
@@ -2403,7 +2405,7 @@ fun DialPadKey(
         label = "DialKeyScale"
     )
 
-    val restingBgColor = if (isSaturatedActive) {
+    val restingBgColor = if (isSaturatedActive && isSaturatedContainer) {
         androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primary, 0.35f)
     } else {
         MaterialTheme.colorScheme.primaryContainer

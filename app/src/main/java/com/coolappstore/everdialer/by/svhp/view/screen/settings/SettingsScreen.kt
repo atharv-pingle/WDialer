@@ -1586,6 +1586,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                     title = com.coolappstore.everdialer.by.svhp.controller.util.tr("Settings"),
                     onBackClick = {
                         SettingsClickTracker.notifyClosing()
+                        SettingsClickTracker.triggerSettingsBounce()
                         closeWithAnimation()
                     }
                 )

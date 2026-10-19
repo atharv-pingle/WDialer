@@ -210,14 +210,16 @@ fun RecordingsScreen(
                         onGlobalSearchClick = {
                             navigator.navigate(com.ramcosta.composedestinations.generated.destinations.SearchScreenDestination())
                         },
-                        onEverDialerSettingsClick = {
-                            navigator.navigate(com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination())
+                        onEverDialerSettingsClick = if (openedFromSettings) { {} } else {
+                            { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination()) }
                         },
-                        everDialerSettingsButton = {
-                            SettingsIconButton(
-                                navigator = navigator,
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
+                        everDialerSettingsButton = if (openedFromSettings) null else {
+                            {
+                                SettingsIconButton(
+                                    navigator = navigator,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                            }
                         }
                     )
 

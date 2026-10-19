@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -60,7 +61,7 @@ val SettingsSmoothEaseIn = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
 val SettingsSmoothEaseOut = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 
 const val SETTINGS_ANIM_DURATION_ENTER = 420
-const val SETTINGS_ANIM_DURATION_EXIT = 420
+const val SETTINGS_ANIM_DURATION_EXIT = 800
 
 const val CHAT_ANIM_DURATION_ENTER = 600
 const val CHAT_ANIM_DURATION_EXIT = 550
@@ -68,12 +69,23 @@ val ChatSmoothEase = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 val ChatSmoothEaseOut = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 val ChatSmoothEaseIn = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
 
+const val CONTACT_DETAILS_ANIM_DURATION_ENTER = 680
+const val CONTACT_DETAILS_ANIM_DURATION_EXIT = 550
+val ContactDetailsSmoothEase = CubicBezierEasing(0.12f, 0.7f, 0.15f, 1f)
+val ContactDetailsSmoothEaseExit = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+
 const val SETTINGS_SCALE_ENTER_FROM = 0.02f
 const val SETTINGS_SCALE_EXIT_TO = 0.96f
 
 fun isSmsChatRoute(route: String?): Boolean {
     if (route == null) return false
     return route.contains("sms_chat", ignoreCase = true)
+}
+
+fun isContactDetailsRoute(route: String?): Boolean {
+    if (route == null) return false
+    val base = route.substringBefore("?").substringBefore("/")
+    return base.contains("contact_details", ignoreCase = true) || base.contains("call_log_detail", ignoreCase = true)
 }
 
 /**
@@ -100,9 +112,34 @@ object SettingsClickTracker {
     var lastOrigin: TransformOrigin = TransformOrigin.Center
         private set
 
+    // Constant origin reserved specifically for the Ever Dialer Settings button in TopBar
+    var settingsIconOrigin: TransformOrigin = TransformOrigin(0.92f, 0.05f)
+
     var isSettingsOpening by mutableStateOf(false)
     var isSearchOpening by mutableStateOf(false)
     var isNewMessageOpening by mutableStateOf(false)
+
+    var settingsBounceTrigger by mutableIntStateOf(0)
+    var searchBounceTrigger by mutableIntStateOf(0)
+
+    private var lastSettingsBounceTime = 0L
+    private var lastSearchBounceTime = 0L
+
+    fun triggerSettingsBounce() {
+        val now = System.currentTimeMillis()
+        if (now - lastSettingsBounceTime > 1200L) {
+            lastSettingsBounceTime = now
+            settingsBounceTrigger++
+        }
+    }
+
+    fun triggerSearchBounce() {
+        val now = System.currentTimeMillis()
+        if (now - lastSearchBounceTime > 1200L) {
+            lastSearchBounceTime = now
+            searchBounceTrigger++
+        }
+    }
 
     fun recordTap(x: Float, y: Float, screenWidth: Float, screenHeight: Float) {
         if (screenWidth > 0f && screenHeight > 0f) {
@@ -134,6 +171,7 @@ fun ExpandingScreenContainer(
 ) {
     val handleClose = {
         SettingsClickTracker.notifyClosing()
+        SettingsClickTracker.triggerSettingsBounce()
         onClose()
     }
     content(handleClose)
@@ -190,12 +228,25 @@ fun isExpandingRoute(route: String?): Boolean {
     if (route == null) return false
     val base = route.substringBefore("?").substringBefore("/")
     return base == "settings_screen" ||
-        base == "search_screen" ||
         base == "sms_settings_screen" ||
         base == "call_recording_settings_screen" ||
         base == "contact_details_screen" ||
         base == "call_log_detail_screen" ||
         base == "new_message_screen"
+}
+
+/**
+ * Destination style for SearchScreen — renders as a Dialog destination so the underlying
+ * page (Recents, Contacts, etc.) remains fully active and visible in the composition.
+ * This guarantees zero blank backgrounds during navigation and smooth predictive back interaction.
+ */
+object SearchDestinationStyle : com.ramcosta.composedestinations.spec.DestinationStyle.Dialog() {
+    override val properties: androidx.compose.ui.window.DialogProperties = androidx.compose.ui.window.DialogProperties(
+        dismissOnBackPress = false,
+        dismissOnClickOutside = false,
+        usePlatformDefaultWidth = false,
+        decorFitsSystemWindows = false
+    )
 }
 
 /**
@@ -208,16 +259,34 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
 
     override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
         val isChat = isSmsChatRoute(targetState.destination.route)
+        val isContact = isContactDetailsRoute(targetState.destination.route)
         val isExpanding = isExpandingRoute(targetState.destination.route)
-        val duration = if (isChat) CHAT_ANIM_DURATION_ENTER else SETTINGS_ANIM_DURATION_ENTER
-        val easing = if (isChat) ChatSmoothEase else SettingsSmoothEase
-        val easingOut = if (isChat) ChatSmoothEaseOut else SettingsSmoothEaseOut
-        val origin = if (isExpanding) {
-            SettingsClickTracker.lastOrigin
-        } else {
-            TransformOrigin.Center
+        val duration = when {
+            isContact -> CONTACT_DETAILS_ANIM_DURATION_ENTER
+            isChat -> CHAT_ANIM_DURATION_ENTER
+            else -> SETTINGS_ANIM_DURATION_ENTER
         }
-        val initialScale = if (isExpanding) 0.02f else 0.92f
+        val easing = when {
+            isContact -> ContactDetailsSmoothEase
+            isChat -> ChatSmoothEase
+            else -> SettingsSmoothEase
+        }
+        val easingOut = when {
+            isContact -> ContactDetailsSmoothEase
+            isChat -> ChatSmoothEaseOut
+            else -> SettingsSmoothEaseOut
+        }
+        val isRootSettings = targetState.destination.route?.substringBefore("?")?.substringBefore("/") == "settings_screen"
+        val origin = when {
+            isRootSettings -> SettingsClickTracker.settingsIconOrigin
+            isExpanding -> SettingsClickTracker.lastOrigin
+            else -> TransformOrigin.Center
+        }
+        val initialScale = when {
+            isContact -> 0.28f
+            isExpanding -> 0.02f
+            else -> 0.92f
+        }
 
         if (isWindowsPhoneAnimation()) {
             TurnstileNavigationTracker.recordEnter(isBack = false, targetState.destination.route)
@@ -233,9 +302,22 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
 
     override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
         val isChat = isSmsChatRoute(initialState.destination.route)
-        val duration = if (isChat) CHAT_ANIM_DURATION_EXIT else SETTINGS_ANIM_DURATION_EXIT
-        val easing = if (isChat) ChatSmoothEase else SettingsSmoothEase
-        val easingIn = if (isChat) ChatSmoothEaseIn else SettingsSmoothEaseIn
+        val isContact = isContactDetailsRoute(initialState.destination.route)
+        val duration = when {
+            isContact -> CONTACT_DETAILS_ANIM_DURATION_EXIT
+            isChat -> CHAT_ANIM_DURATION_EXIT
+            else -> SETTINGS_ANIM_DURATION_EXIT
+        }
+        val easing = when {
+            isContact -> ContactDetailsSmoothEaseExit
+            isChat -> ChatSmoothEase
+            else -> SettingsSmoothEase
+        }
+        val easingIn = when {
+            isContact -> ContactDetailsSmoothEaseExit
+            isChat -> ChatSmoothEaseIn
+            else -> SettingsSmoothEaseIn
+        }
 
         if (isWindowsPhoneAnimation()) {
             fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
@@ -250,9 +332,22 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
 
     override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
         val isChat = isSmsChatRoute(targetState.destination.route)
-        val duration = if (isChat) CHAT_ANIM_DURATION_ENTER else SETTINGS_ANIM_DURATION_ENTER
-        val easing = if (isChat) ChatSmoothEase else SettingsSmoothEase
-        val easingOut = if (isChat) ChatSmoothEaseOut else SettingsSmoothEaseOut
+        val isContact = isContactDetailsRoute(targetState.destination.route)
+        val duration = when {
+            isContact -> CONTACT_DETAILS_ANIM_DURATION_ENTER
+            isChat -> CHAT_ANIM_DURATION_ENTER
+            else -> SETTINGS_ANIM_DURATION_EXIT
+        }
+        val easing = when {
+            isContact -> ContactDetailsSmoothEase
+            isChat -> ChatSmoothEase
+            else -> SettingsSmoothEase
+        }
+        val easingOut = when {
+            isContact -> ContactDetailsSmoothEase
+            isChat -> ChatSmoothEaseOut
+            else -> SettingsSmoothEaseOut
+        }
 
         if (isWindowsPhoneAnimation()) {
             TurnstileNavigationTracker.recordEnter(isBack = true, targetState.destination.route)
@@ -271,16 +366,34 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
 
     override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
         val isChat = isSmsChatRoute(initialState.destination.route)
+        val isContact = isContactDetailsRoute(initialState.destination.route)
         val isExpanding = isExpandingRoute(initialState.destination.route)
-        val duration = if (isChat) CHAT_ANIM_DURATION_EXIT else SETTINGS_ANIM_DURATION_EXIT
-        val easing = if (isChat) ChatSmoothEase else SettingsSmoothEase
-        val easingIn = if (isChat) ChatSmoothEaseIn else SettingsSmoothEaseIn
-        val origin = if (isExpanding) {
-            SettingsClickTracker.lastOrigin
-        } else {
-            TransformOrigin.Center
+        val duration = when {
+            isContact -> CONTACT_DETAILS_ANIM_DURATION_EXIT
+            isChat -> CHAT_ANIM_DURATION_EXIT
+            else -> SETTINGS_ANIM_DURATION_EXIT
         }
-        val targetScale = if (isExpanding) 0.02f else 0.92f
+        val easing = when {
+            isContact -> ContactDetailsSmoothEaseExit
+            isChat -> ChatSmoothEase
+            else -> SettingsSmoothEase
+        }
+        val easingIn = when {
+            isContact -> ContactDetailsSmoothEaseExit
+            isChat -> ChatSmoothEaseIn
+            else -> SettingsSmoothEaseIn
+        }
+        val isRootSettings = initialState.destination.route?.substringBefore("?")?.substringBefore("/") == "settings_screen"
+        val origin = when {
+            isRootSettings -> SettingsClickTracker.settingsIconOrigin
+            isExpanding -> SettingsClickTracker.lastOrigin
+            else -> TransformOrigin.Center
+        }
+        val targetScale = when {
+            isContact -> 0.28f
+            isExpanding -> 0.02f
+            else -> 0.92f
+        }
 
         if (isWindowsPhoneAnimation()) {
             slideOutHorizontally(
@@ -288,7 +401,7 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
                 targetOffsetX = { full -> full / 6 }
             ) + fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
         } else {
-            val fadeEasing = if (isExpanding) CubicBezierEasing(0.7f, 0f, 1f, 0.3f) else easingIn
+            val fadeEasing = if (isContact) ContactDetailsSmoothEaseExit else if (isExpanding) CubicBezierEasing(0.15f, 0.15f, 0.35f, 1f) else easingIn
             scaleOut(
                 animationSpec = tween(duration, easing = easing),
                 targetScale = targetScale,

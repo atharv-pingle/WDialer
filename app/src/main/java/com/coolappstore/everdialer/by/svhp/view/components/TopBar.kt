@@ -1,12 +1,17 @@
 package com.coolappstore.everdialer.by.svhp.view.components
 
 import android.content.res.Configuration
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -44,6 +49,9 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
 import com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker
 
 /** The pill-shaped, non-editable "Search in Ever Dialer" bar — tapping it opens the single
@@ -58,28 +66,6 @@ fun SearchBarPill(
 ) {
     val context = LocalContext.current
     val prefs = koinInject<PreferenceManager>()
-    val settingsVer by prefs.settingsChanged.collectAsState()
-    val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
-    val isSaturatedActive = remember(settingsVer, isDark) { prefs.isSaturatedForTheme(isDark) }
-
-    val searchBarBg = if (isSaturatedActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh
-    val searchBarFg = if (isSaturatedActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-
-    val searchSource = remember { MutableInteractionSource() }
-    val searchPressed by searchSource.collectIsPressedAsState()
-    val searchScale by animateFloatAsState(
-        targetValue = if (searchPressed) 0.96f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "searchScale"
-    )
-    val searchExpandScale by animateFloatAsState(
-        targetValue = if (isExpanded) 1.15f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "searchExpandScale"
-    )
     var pillCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val recordSearchClick: () -> Unit = {
         pillCoordinates?.let { coords ->
@@ -91,59 +77,81 @@ fun SearchBarPill(
 
     val voiceSearchLauncher = rememberVoiceSearchLauncher { spokenText ->
         SettingsClickTracker.isSearchOpening = true
+        SettingsClickTracker.triggerSearchBounce()
         recordSearchClick()
         navigator.navigate(SearchScreenDestination(initialQuery = spokenText))
     }
 
-    Surface(
-        onClick = {
+    val searchBounceX = remember { Animatable(0f) }
+    val searchBounceY = remember { Animatable(0f) }
+    val searchBounceScale = remember { Animatable(1f) }
+    val searchBounceTrigger = SettingsClickTracker.searchBounceTrigger
+
+    LaunchedEffect(searchBounceTrigger) {
+        if (searchBounceTrigger == 0) return@LaunchedEffect
+        launch {
+            searchBounceX.snapTo(0f)
+            searchBounceX.animateTo(
+                targetValue = 0f,
+                animationSpec = keyframes {
+                    durationMillis = 820
+                    12f at 260 using FastOutSlowInEasing   // glide right once
+                    2f at 560 using FastOutSlowInEasing    // float gently back
+                    0f at 820 using FastOutSlowInEasing    // settle center
+                }
+            )
+        }
+        launch {
+            searchBounceY.snapTo(0f)
+            searchBounceY.animateTo(
+                targetValue = 0f,
+                animationSpec = keyframes {
+                    durationMillis = 820
+                    (-8f) at 260 using FastOutSlowInEasing // float up once
+                    (-1f) at 560 using FastOutSlowInEasing // float gently down
+                    0f at 820 using FastOutSlowInEasing    // settle center
+                }
+            )
+        }
+        launch {
+            searchBounceScale.snapTo(1f)
+            searchBounceScale.animateTo(
+                targetValue = 1f,
+                animationSpec = keyframes {
+                    durationMillis = 820
+                    1.03f at 260 using FastOutSlowInEasing
+                    1.005f at 560 using FastOutSlowInEasing
+                    1f at 820 using FastOutSlowInEasing
+                }
+            )
+        }
+    }
+
+    AppSearchBar(
+        modifier = modifier.graphicsLayer {
+            translationX = searchBounceX.value
+            translationY = searchBounceY.value
+            scaleX = searchBounceScale.value
+            scaleY = searchBounceScale.value
+        },
+        isEditable = false,
+        onSearchBarClick = {
             if (prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)) {
                 performAppHaptic(context, prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light", prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f))
             }
             SettingsClickTracker.isSearchOpening = true
+            SettingsClickTracker.triggerSearchBounce()
             recordSearchClick()
             navigator.navigate(SearchScreenDestination())
         },
-        modifier = modifier
-            .height(52.dp)
-            .scale(searchScale * searchExpandScale)
-            .onGloballyPositioned { coords -> pillCoordinates = coords },
-        shape = CircleShape,
-        color = searchBarBg,
-        interactionSource = searchSource
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize().padding(start = 16.dp, end = 6.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Search",
-                tint = searchBarFg
-            )
-            Text(
-                text = com.coolappstore.everdialer.by.svhp.controller.util.tr("Search in Ever Dialer"),
-                style = MaterialTheme.typography.bodyLarge,
-                color = searchBarFg,
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(
-                onClick = {
-                    if (prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)) {
-                        performAppHaptic(context, prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light", prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f))
-                    }
-                    VoiceSearchHelper.launchVoiceSearch(context, voiceSearchLauncher)
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Mic,
-                    contentDescription = "Voice Search",
-                    tint = searchBarFg
-                )
+        onVoiceClick = {
+            if (prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)) {
+                performAppHaptic(context, prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light", prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f))
             }
-        }
-    }
+            VoiceSearchHelper.launchVoiceSearch(context, voiceSearchLauncher)
+        },
+        onGloballyPositioned = { coords -> pillCoordinates = coords }
+    )
 }
 
 @Composable
@@ -174,31 +182,46 @@ fun TopBar(navController: NavController, navigator: DestinationsNavigator) {
     )
     LaunchedEffect(Unit) { visible = true }
 
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route ?: ""
+    val isSettingsRunning = currentRoute.contains("settings", ignoreCase = true) || SettingsClickTracker.isSettingsOpening
+    val isSearchRunning = currentRoute.contains("search", ignoreCase = true) || SettingsClickTracker.isSearchOpening
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .zIndex(if (isSettingsRunning) 1000f else 1f)
             .windowInsetsPadding(WindowInsets.statusBars)
             .alpha(alpha)
             .offset(y = offsetY),
         color = Color.Transparent
     ) {
-        val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentRoute = navBackStackEntry?.destination?.route ?: ""
-        val isSettingsRunning = currentRoute.contains("settings", ignoreCase = true) || SettingsClickTracker.isSettingsOpening
-        val isSearchRunning = currentRoute.contains("search", ignoreCase = true) || SettingsClickTracker.isSearchOpening
-
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .zIndex(if (isSettingsRunning) 1000f else 1f)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            // Search bar
-            SearchBarPill(navigator = navigator, isExpanded = isSearchRunning, modifier = Modifier.weight(1f))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Search bar
+                SearchBarPill(navigator = navigator, isExpanded = isSearchRunning, modifier = Modifier.weight(1f))
 
-            // Settings button – coloured icon background
-            SettingsIconButton(navigator = navigator, isExpanded = isSettingsRunning)
+                // Spacer placeholder preserving identical SearchBarPill width and alignment
+                Spacer(modifier = Modifier.size(52.dp))
+            }
+
+            // Settings button rendered in floating top layer above row and search bar
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .zIndex(if (isSettingsRunning) 1000f else 2f)
+            ) {
+                SettingsIconButton(navigator = navigator, isExpanded = isSettingsRunning)
+            }
         }
     }
 }
@@ -218,13 +241,45 @@ fun SettingsIconButton(
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "settingsScale"
     )
-    val settingsExpandScale by animateFloatAsState(
-        targetValue = if (isExpanded) 2.4f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "settingsExpandScale"
+
+    val bounceScale = remember { Animatable(1f) }
+    val bounceRotation = remember { Animatable(0f) }
+    val settingsBounceTrigger = SettingsClickTracker.settingsBounceTrigger
+
+    LaunchedEffect(settingsBounceTrigger) {
+        if (settingsBounceTrigger == 0) return@LaunchedEffect
+        launch {
+            bounceScale.snapTo(1f)
+            bounceScale.animateTo(
+                targetValue = 1f,
+                animationSpec = keyframes {
+                    durationMillis = 920
+                    0.88f at 220 using FastOutSlowInEasing   // slow gentle squash
+                    1.15f at 480 using FastOutSlowInEasing   // smooth rounded outward bloom
+                    0.985f at 700 using FastOutSlowInEasing  // very soft rebound
+                    1.00f at 920 using FastOutSlowInEasing   // feather landing, zero sudden stop
+                }
+            )
+        }
+        launch {
+            bounceRotation.snapTo(0f)
+            bounceRotation.animateTo(
+                targetValue = 0f,
+                animationSpec = keyframes {
+                    durationMillis = 920
+                    (-10f) at 240 using FastOutSlowInEasing  // smooth roll left
+                    5f at 520 using FastOutSlowInEasing     // soft counter roll right
+                    (-1f) at 740 using FastOutSlowInEasing  // micro settle
+                    0f at 920 using FastOutSlowInEasing     // gentle rest without snap
+                }
+            )
+        }
+    }
+
+    val floatingElevation by animateDpAsState(
+        targetValue = if (isExpanded) 12.dp else 0.dp,
+        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+        label = "settingsFloatingElevation"
     )
 
     val settingsVer by prefs.settingsChanged.collectAsState()
@@ -281,19 +336,46 @@ fun SettingsIconButton(
                 performAppHaptic(context, prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light", prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f))
             }
             SettingsClickTracker.isSettingsOpening = true
+            SettingsClickTracker.triggerSettingsBounce()
             iconCoordinates?.let { coords ->
                 val center = coords.boundsInRoot().center
                 val rootSize = coords.findRootCoordinates().size
+                if (rootSize.width > 0 && rootSize.height > 0) {
+                    val px = (center.x / rootSize.width.toFloat()).coerceIn(0f, 1f)
+                    val py = (center.y / rootSize.height.toFloat()).coerceIn(0f, 1f)
+                    SettingsClickTracker.settingsIconOrigin = TransformOrigin(px, py)
+                }
                 SettingsClickTracker.recordTap(center.x, center.y, rootSize.width.toFloat(), rootSize.height.toFloat())
-            } ?: SettingsClickTracker.recordNormalized(0.92f, 0.05f)
+            } ?: run {
+                SettingsClickTracker.settingsIconOrigin = TransformOrigin(0.92f, 0.05f)
+                SettingsClickTracker.recordNormalized(0.92f, 0.05f)
+            }
             navigator.navigate(SettingsScreenDestination())
         },
         modifier = modifier
             .size(52.dp)
-            .scale(settingsScale * settingsExpandScale)
-            .onGloballyPositioned { coords -> iconCoordinates = coords },
+            .zIndex(if (isExpanded) 1000f else 2f)
+            .graphicsLayer {
+                val s = settingsScale * bounceScale.value
+                scaleX = s
+                scaleY = s
+                rotationZ = bounceRotation.value
+                transformOrigin = TransformOrigin.Center
+            }
+            .onGloballyPositioned { coords ->
+                iconCoordinates = coords
+                val center = coords.boundsInRoot().center
+                val rootSize = coords.findRootCoordinates().size
+                if (rootSize.width > 0 && rootSize.height > 0) {
+                    val px = (center.x / rootSize.width.toFloat()).coerceIn(0f, 1f)
+                    val py = (center.y / rootSize.height.toFloat()).coerceIn(0f, 1f)
+                    SettingsClickTracker.settingsIconOrigin = TransformOrigin(px, py)
+                }
+            },
         shape = settingsShape,
         color = settingsBgColor,
+        shadowElevation = floatingElevation,
+        tonalElevation = floatingElevation,
         interactionSource = settingsSource
     ) {
         Box(contentAlignment = Alignment.Center) {

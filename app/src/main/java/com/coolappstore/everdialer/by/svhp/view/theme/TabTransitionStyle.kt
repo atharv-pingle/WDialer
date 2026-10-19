@@ -73,9 +73,27 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
         val toSettings   = isSettingsRoute(targetState.destination.route)
         val fromSettings = isSettingsRoute(initialState.destination.route)
         val isChat = isSmsChatRoute(targetState.destination.route) || isSmsChatRoute(initialState.destination.route)
-        val enterDuration = if (isChat) CHAT_ANIM_DURATION_ENTER else SETTINGS_ANIM_DURATION_ENTER
-        val enterEasing = if (isChat) ChatSmoothEase else SettingsSmoothEase
-        val enterEasingOut = if (isChat) ChatSmoothEaseOut else SettingsSmoothEaseOut
+        val isContact = isContactDetailsRoute(targetState.destination.route) || isContactDetailsRoute(initialState.destination.route)
+        val enterDuration = when {
+            isContact -> CONTACT_DETAILS_ANIM_DURATION_ENTER
+            isChat -> CHAT_ANIM_DURATION_ENTER
+            else -> SETTINGS_ANIM_DURATION_ENTER
+        }
+        val enterEasing = when {
+            isContact -> ContactDetailsSmoothEase
+            isChat -> ChatSmoothEase
+            else -> SettingsSmoothEase
+        }
+        val enterEasingOut = when {
+            isContact -> ContactDetailsSmoothEase
+            isChat -> ChatSmoothEaseOut
+            else -> SettingsSmoothEaseOut
+        }
+        val initialScale = when {
+            isContact -> 0.28f
+            else -> 0.02f
+        }
+        val origin = if (isContact) SettingsClickTracker.lastOrigin else TransformOrigin.Center
 
         when {
             toSettings -> {
@@ -85,8 +103,8 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
                 } else {
                     scaleIn(
                         animationSpec = tween(enterDuration, easing = enterEasing),
-                        initialScale = 0.02f,
-                        transformOrigin = TransformOrigin.Center
+                        initialScale = initialScale,
+                        transformOrigin = origin
                     ) + fadeIn(tween(enterDuration, easing = enterEasingOut))
                 }
             }

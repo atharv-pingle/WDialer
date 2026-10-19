@@ -140,7 +140,7 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
             dialpadProgress.snapTo(0f)
             dialpadProgress.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(durationMillis = 480, easing = CubicBezierEasing(0.08f, 0.85f, 0.18f, 1f))
+                animationSpec = tween(durationMillis = 680, easing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f))
             )
         } else {
             dialpadProgress.snapTo(0f)
@@ -160,7 +160,7 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
             scope.launch {
                 dialpadProgress.animateTo(
                     targetValue = 0f,
-                    animationSpec = tween(durationMillis = 420, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
+                    animationSpec = tween(durationMillis = 520, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
                 )
                 showDialpad = false
                 dialpadClosing = false
@@ -197,9 +197,9 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
     val isDialpadOpen = showDialpad && !dialpadClosing
     val dialpadExpandScale by animateFloatAsState(
         targetValue = if (isDialpadOpen) 2.6f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
+        animationSpec = tween(
+            durationMillis = if (isDialpadOpen) 680 else 520,
+            easing = if (isDialpadOpen) CubicBezierEasing(0.16f, 1f, 0.3f, 1f) else CubicBezierEasing(0.2f, 0f, 0f, 1f)
         ),
         label = "dialpadExpandScale"
     )
@@ -544,7 +544,7 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
-                            val scale = lerp(0.04f, 1f, p)
+                            val scale = lerp(0.10f, 1f, p)
                             scaleX = scale
                             scaleY = scale
                             transformOrigin = TransformOrigin(pivotX, pivotY)

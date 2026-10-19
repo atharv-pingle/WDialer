@@ -131,7 +131,7 @@ fun HomeScreen(
                 actions = {
                     AnimatedVisibility(visible = !isSelectionMode, enter = fadeIn(), exit = fadeOut()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (!isLandscape) {
+                            if (!isLandscape && onBackClick == null) {
                                 if (everDialerSettingsButton != null) {
                                     everDialerSettingsButton()
                                 } else {

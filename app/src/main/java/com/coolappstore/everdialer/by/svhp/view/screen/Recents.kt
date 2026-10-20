@@ -365,7 +365,7 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
             val isDynamic = remember(settingsVer) { prefs.getBoolean(com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager.KEY_DYNAMIC_COLORS, true) }
             val usePrimary = isSaturatedActive || !isDynamic
             val fabBg = if (usePrimary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer
-            val fabFg = if (usePrimary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+            val fabFg = if (isSaturatedActive && isDark) Color.Black else if (usePrimary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
             val fabShape = RoundedCornerShape(17.dp)
             val useLiquidGlass = liquidGlass && lgRecentsFab && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && globalBackdrop != null
             val useBlur = blurEffects && blurRecentsFab && !useLiquidGlass

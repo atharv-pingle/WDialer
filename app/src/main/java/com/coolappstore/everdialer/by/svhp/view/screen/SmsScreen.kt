@@ -508,24 +508,27 @@ fun SmsScreen(
                 val isDynamic = remember(settingsVer) { prefs.getBoolean(PreferenceManager.KEY_DYNAMIC_COLORS, true) }
                 val usePrimary = isSaturatedActive || !isDynamic
                 val fabBg = if (usePrimary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer
-                val fabFg = if (usePrimary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+                val fabFg = if (isSaturatedActive && isDark) Color.Black else if (usePrimary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
                 val fabShape = RoundedCornerShape(17.dp)
                 val pillNav = remember(settingsVer) { prefs.getBoolean(PreferenceManager.KEY_PILL_NAV, true) }
                 val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route ?: ""
-                val isNewMessageOpen = currentRoute.contains("new_message", ignoreCase = true) || com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening
+                val isNewMessageOpen = (currentRoute.contains("new_message", ignoreCase = true) || com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening) && !com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageClosing
                 val newMessageExpandScale by animateFloatAsState(
                     targetValue = if (isNewMessageOpen) 2.6f else 1f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessMediumLow
+                    animationSpec = androidx.compose.animation.core.tween(
+                        durationMillis = if (isNewMessageOpen) 600 else 800,
+                        easing = androidx.compose.animation.core.CubicBezierEasing(0.2f, 0f, 0f, 1f)
                     ),
                     label = "newMessageExpandScale"
                 )
                 val newMessageFabElevation by animateDpAsState(
                     targetValue = if (isNewMessageOpen) 12.dp else 6.dp,
-                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    animationSpec = androidx.compose.animation.core.tween(
+                        durationMillis = if (isNewMessageOpen) 600 else 800,
+                        easing = androidx.compose.animation.core.CubicBezierEasing(0.2f, 0f, 0f, 1f)
+                    ),
                     label = "newMessageFabElevation"
                 )
 
@@ -557,7 +560,9 @@ fun SmsScreen(
                                 rootSize.height.toFloat()
                             )
                         } ?: com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.recordNormalized(0.88f, 0.92f)
+                        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageClosing = false
                         com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening = true
+                        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpen = true
                         navigator.navigate(NewMessageScreenDestination(initialText = null))
                     },
                     containerColor = fabBg,

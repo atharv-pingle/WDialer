@@ -78,20 +78,26 @@ fun NewMessageScreen(
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
-        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening = true
+        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening = false
+        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageClosing = false
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening = true
+                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening = false
+                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageClosing = false
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpening = false
+            com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageClosing = false
+            com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageOpen = false
         }
     }
 
     fun openChatWith(number: String, name: String?) {
+        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageClosing = true
+        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.notifyClosing()
         navigator.navigate(
             SmsChatScreenDestination(
                 threadId = -1L,
@@ -110,6 +116,7 @@ fun NewMessageScreen(
                 SettingsPillTopAppBar(
                     title = "New Message",
                     onBackClick = {
+                        com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.isNewMessageClosing = true
                         com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.notifyClosing()
                         closeWithAnimation()
                     }

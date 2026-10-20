@@ -231,7 +231,7 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
         val fromSettings = isSettingsRoute(initialState)
         val toSettings   = isSettingsRoute(targetState)
         val isChat = isSmsChatRoute(targetState.destination.route) || isSmsChatRoute(initialState.destination.route)
-        val enterDuration = if (isChat) CHAT_ANIM_DURATION_ENTER else SETTINGS_ANIM_DURATION_ENTER
+        val enterDuration = if (isChat) CHAT_ANIM_DURATION_ENTER else if (fromSettings) SETTINGS_ANIM_DURATION_EXIT else SETTINGS_ANIM_DURATION_ENTER
         val enterEasing = if (isChat) ChatSmoothEase else SettingsSmoothEase
         val enterEasingOut = if (isChat) ChatSmoothEaseOut else SettingsSmoothEaseOut
 

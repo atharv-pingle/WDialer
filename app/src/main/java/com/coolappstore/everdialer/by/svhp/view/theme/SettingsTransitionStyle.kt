@@ -118,24 +118,48 @@ object SettingsClickTracker {
     var isSettingsOpening by mutableStateOf(false)
     var isSearchOpening by mutableStateOf(false)
     var isNewMessageOpening by mutableStateOf(false)
+    var isNewMessageClosing by mutableStateOf(false)
+    var isNewMessageOpen by mutableStateOf(false)
 
     var settingsBounceTrigger by mutableIntStateOf(0)
     var searchBounceTrigger by mutableIntStateOf(0)
+    var isClosingBounce by mutableStateOf(false)
+        private set
 
     private var lastSettingsBounceTime = 0L
     private var lastSearchBounceTime = 0L
+    private var hasFiredSettingsCloseBounce = false
 
-    fun triggerSettingsBounce() {
+    fun onSettingsScreenEntered() {
+        hasFiredSettingsCloseBounce = false
+    }
+
+    fun triggerSettingsOpenBounce() {
         val now = System.currentTimeMillis()
-        if (now - lastSettingsBounceTime > 1200L) {
+        if (now - lastSettingsBounceTime > 250L) {
             lastSettingsBounceTime = now
+            hasFiredSettingsCloseBounce = false
+            isClosingBounce = false
             settingsBounceTrigger++
         }
     }
 
+    fun triggerSettingsCloseBounce() {
+        if (!hasFiredSettingsCloseBounce) {
+            hasFiredSettingsCloseBounce = true
+            isClosingBounce = true
+            lastSettingsBounceTime = System.currentTimeMillis()
+            settingsBounceTrigger++
+        }
+    }
+
+    fun triggerSettingsBounce() {
+        triggerSettingsCloseBounce()
+    }
+
     fun triggerSearchBounce() {
         val now = System.currentTimeMillis()
-        if (now - lastSearchBounceTime > 1200L) {
+        if (now - lastSearchBounceTime > 250L) {
             lastSearchBounceTime = now
             searchBounceTrigger++
         }
@@ -157,6 +181,8 @@ object SettingsClickTracker {
         isSettingsOpening = false
         isSearchOpening = false
         isNewMessageOpening = false
+        isNewMessageClosing = true
+        isNewMessageOpen = false
     }
 }
 
@@ -169,10 +195,15 @@ fun ExpandingScreenContainer(
     onClose: () -> Unit,
     content: @Composable (closeWithAnimation: () -> Unit) -> Unit
 ) {
+    val backDispatcher = androidx.activity.compose.LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val handleClose = {
         SettingsClickTracker.notifyClosing()
-        SettingsClickTracker.triggerSettingsBounce()
-        onClose()
+        SettingsClickTracker.triggerSettingsCloseBounce()
+        if (backDispatcher != null) {
+            backDispatcher.onBackPressed()
+        } else {
+            onClose()
+        }
     }
     content(handleClose)
 }
@@ -288,7 +319,7 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
         val duration = when {
             isContact -> CONTACT_DETAILS_ANIM_DURATION_ENTER
             isChat -> CHAT_ANIM_DURATION_ENTER
-            else -> SETTINGS_ANIM_DURATION_ENTER
+            else -> 600
         }
         val easing = when {
             isContact -> ContactDetailsSmoothEase
@@ -373,6 +404,11 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
             else -> SettingsSmoothEaseOut
         }
 
+        val isFromRootSettings = initialState.destination.route?.substringBefore("?")?.substringBefore("/") == "settings_screen"
+        if (isFromRootSettings || isRecordingsFromSettings(initialState)) {
+            SettingsClickTracker.triggerSettingsCloseBounce()
+        }
+
         if (isWindowsPhoneAnimation()) {
             TurnstileNavigationTracker.recordEnter(isBack = true, targetState.destination.route)
             fadeIn(tween(SETTINGS_WP_ANIM_DURATION_ENTER, easing = LinearOutSlowInEasing))
@@ -408,6 +444,9 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
             else -> SettingsSmoothEaseIn
         }
         val isRootSettings = initialState.destination.route?.substringBefore("?")?.substringBefore("/") == "settings_screen"
+        if (isRootSettings || isRecordingsFromSettings(initialState)) {
+            SettingsClickTracker.triggerSettingsCloseBounce()
+        }
         val origin = when {
             isRootSettings -> SettingsClickTracker.settingsIconOrigin
             isExpanding -> SettingsClickTracker.lastOrigin
@@ -425,7 +464,7 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
                 targetOffsetX = { full -> full / 6 }
             ) + fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
         } else {
-            val fadeEasing = if (isContact) ContactDetailsSmoothEaseExit else if (isExpanding) CubicBezierEasing(0.15f, 0.15f, 0.35f, 1f) else easingIn
+            val fadeEasing = if (isContact) ContactDetailsSmoothEaseExit else if (isExpanding) SettingsSmoothEase else easingIn
             scaleOut(
                 animationSpec = tween(duration, easing = easing),
                 targetScale = targetScale,

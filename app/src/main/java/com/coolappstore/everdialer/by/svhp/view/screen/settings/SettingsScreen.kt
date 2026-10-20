@@ -150,6 +150,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         SettingsClickTracker.isSettingsOpening = true
+        SettingsClickTracker.onSettingsScreenEntered()
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 SettingsClickTracker.isSettingsOpening = true
@@ -160,6 +161,8 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             SettingsClickTracker.isSettingsOpening = false
+            SettingsClickTracker.notifyClosing()
+            SettingsClickTracker.triggerSettingsCloseBounce()
         }
     }
 
@@ -167,6 +170,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
     val settingsVer by prefs.settingsChanged.collectAsState()
     val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
     val isSaturatedActive = remember(settingsVer, isDark) { prefs.isSaturatedForTheme(isDark) }
+    val isSaturatedContainer = remember(settingsVer) { prefs.getSaturatedTarget() == PreferenceManager.SATURATED_TARGET_CONTAINER }
     val isBackgroundTarget = remember(settingsVer) { prefs.getSaturatedTarget() == PreferenceManager.SATURATED_TARGET_BACKGROUND }
     val rateReviewSettingsVersion = settingsVer
     // Set from the bundled Ever Call Recorder module's own Settings screen (writes straight into
@@ -721,8 +725,6 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                 com.coolappstore.everdialer.by.svhp.view.components.SettingsPillTopAppBar(
                     title = com.coolappstore.everdialer.by.svhp.controller.util.tr("Settings"),
                     onBackClick = {
-                        SettingsClickTracker.notifyClosing()
-                        SettingsClickTracker.triggerSettingsBounce()
                         closeWithAnimation()
                     }
                 )
@@ -780,22 +782,30 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                         }
                     }
 
-                    val searchContainerBg = if (isSaturatedActive && isBackgroundTarget) {
+                    val searchContainerBg = if (isSaturatedActive && isSaturatedContainer) {
+                        MaterialTheme.colorScheme.primary
+                    } else if (isSaturatedActive && isBackgroundTarget) {
                         if (isDark) Color.Black else Color.White
                     } else {
                         MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.50f)
                     }
-                    val searchContentColor = if (isSaturatedActive && isBackgroundTarget) {
+                    val searchContentColor = if (isSaturatedActive && isSaturatedContainer) {
+                        if (isDark) Color.Black else MaterialTheme.colorScheme.onPrimary
+                    } else if (isSaturatedActive && isBackgroundTarget) {
                         if (isDark) Color.White else Color(0xFF111827)
                     } else {
                         MaterialTheme.colorScheme.onSurface
                     }
-                    val searchPlaceholderColor = if (isSaturatedActive && isBackgroundTarget) {
+                    val searchPlaceholderColor = if (isSaturatedActive && isSaturatedContainer) {
+                        (if (isDark) Color.Black else MaterialTheme.colorScheme.onPrimary).copy(alpha = 0.7f)
+                    } else if (isSaturatedActive && isBackgroundTarget) {
                         (if (isDark) Color.White else Color(0xFF111827)).copy(alpha = 0.7f)
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     }
-                    val searchIconColor = if (isSaturatedActive && isBackgroundTarget) {
+                    val searchIconColor = if (isSaturatedActive && isSaturatedContainer) {
+                        if (isDark) Color.Black else MaterialTheme.colorScheme.onPrimary
+                    } else if (isSaturatedActive && isBackgroundTarget) {
                         if (isDark) Color.White else Color(0xFF111827)
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -805,7 +815,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                     Surface(
                         shape = RoundedCornerShape(28.dp),
                         color = searchContainerBg,
-                        border = BorderStroke(1.dp, if (isSaturatedActive && isBackgroundTarget) Color.Transparent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.30f)),
+                        border = BorderStroke(1.dp, if (isSaturatedActive && (isBackgroundTarget || isSaturatedContainer)) Color.Transparent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.30f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         TextField(

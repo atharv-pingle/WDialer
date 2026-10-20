@@ -187,6 +187,14 @@ fun TopBar(navController: NavController, navigator: DestinationsNavigator) {
     val isSettingsRunning = currentRoute.contains("settings", ignoreCase = true) || SettingsClickTracker.isSettingsOpening
     val isSearchRunning = currentRoute.contains("search", ignoreCase = true) || SettingsClickTracker.isSearchOpening
 
+    var prevRoute by remember { mutableStateOf(currentRoute) }
+    LaunchedEffect(currentRoute) {
+        if (prevRoute.contains("settings", ignoreCase = true) && !currentRoute.contains("settings", ignoreCase = true)) {
+            SettingsClickTracker.triggerSettingsCloseBounce()
+        }
+        prevRoute = currentRoute
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -243,44 +251,28 @@ fun SettingsIconButton(
     )
 
     val bounceScale = remember { Animatable(1f) }
-    val bounceRotation = remember { Animatable(0f) }
     val settingsBounceTrigger = SettingsClickTracker.settingsBounceTrigger
+    val isClosingBounce = SettingsClickTracker.isClosingBounce
 
     LaunchedEffect(settingsBounceTrigger) {
         if (settingsBounceTrigger == 0) return@LaunchedEffect
+        val isClosing = isClosingBounce
+        val duration = if (isClosing) 750 else 400
+        val peakTime = if (isClosing) 320 else 160
+        val peakScale = if (isClosing) 1.18f else 1.16f
+
         launch {
             bounceScale.snapTo(1f)
             bounceScale.animateTo(
                 targetValue = 1f,
                 animationSpec = keyframes {
-                    durationMillis = 920
-                    0.88f at 220 using FastOutSlowInEasing   // slow gentle squash
-                    1.15f at 480 using FastOutSlowInEasing   // smooth rounded outward bloom
-                    0.985f at 700 using FastOutSlowInEasing  // very soft rebound
-                    1.00f at 920 using FastOutSlowInEasing   // feather landing, zero sudden stop
-                }
-            )
-        }
-        launch {
-            bounceRotation.snapTo(0f)
-            bounceRotation.animateTo(
-                targetValue = 0f,
-                animationSpec = keyframes {
-                    durationMillis = 920
-                    (-10f) at 240 using FastOutSlowInEasing  // smooth roll left
-                    5f at 520 using FastOutSlowInEasing     // soft counter roll right
-                    (-1f) at 740 using FastOutSlowInEasing  // micro settle
-                    0f at 920 using FastOutSlowInEasing     // gentle rest without snap
+                    durationMillis = duration
+                    peakScale at peakTime using FastOutSlowInEasing
+                    1.00f at duration using FastOutSlowInEasing
                 }
             )
         }
     }
-
-    val floatingElevation by animateDpAsState(
-        targetValue = if (isExpanded) 12.dp else 0.dp,
-        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
-        label = "settingsFloatingElevation"
-    )
 
     val settingsVer by prefs.settingsChanged.collectAsState()
     val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
@@ -342,7 +334,7 @@ fun SettingsIconButton(
                 performAppHaptic(context, prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light", prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f))
             }
             SettingsClickTracker.isSettingsOpening = true
-            SettingsClickTracker.triggerSettingsBounce()
+            SettingsClickTracker.triggerSettingsOpenBounce()
             iconCoordinates?.let { coords ->
                 val center = coords.boundsInRoot().center
                 val rootSize = coords.findRootCoordinates().size
@@ -365,7 +357,6 @@ fun SettingsIconButton(
                 val s = settingsScale * bounceScale.value
                 scaleX = s
                 scaleY = s
-                rotationZ = bounceRotation.value
                 transformOrigin = TransformOrigin.Center
             }
             .onGloballyPositioned { coords ->
@@ -380,8 +371,8 @@ fun SettingsIconButton(
             },
         shape = settingsShape,
         color = settingsBgColor,
-        shadowElevation = floatingElevation,
-        tonalElevation = floatingElevation,
+        shadowElevation = 0.dp,
+        tonalElevation = 0.dp,
         interactionSource = settingsSource
     ) {
         Box(contentAlignment = Alignment.Center) {

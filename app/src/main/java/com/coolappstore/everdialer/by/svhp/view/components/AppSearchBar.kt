@@ -72,7 +72,7 @@ fun AppSearchBar(
     }
 
     val searchBarFg = if (isSaturatedActive && isSaturatedContainer) {
-        MaterialTheme.colorScheme.onPrimary
+        if (isDark) Color.Black else MaterialTheme.colorScheme.onPrimary
     } else if (isSaturatedActive && isBackgroundTarget) {
         if (isDark) Color.White else Color(0xFF111827)
     } else {
@@ -80,7 +80,7 @@ fun AppSearchBar(
     }
 
     val searchBarPlaceholder = if (isSaturatedActive && isSaturatedContainer) {
-        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+        (if (isDark) Color.Black else MaterialTheme.colorScheme.onPrimary).copy(alpha = 0.7f)
     } else if (isSaturatedActive && isBackgroundTarget) {
         (if (isDark) Color.White else Color(0xFF111827)).copy(alpha = 0.7f)
     } else {

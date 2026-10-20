@@ -159,7 +159,7 @@ fun RecordingsScreen(
             NavBarVisibilityState.hideForSettingsEntry = false
             if (openedFromSettings) {
                 com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.notifyClosing()
-                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.triggerSettingsBounce()
+                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.triggerSettingsCloseBounce()
             }
         }
     }
@@ -202,7 +202,7 @@ fun RecordingsScreen(
                         onBackClick = if (openedFromSettings) {
                             {
                                 com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.notifyClosing()
-                                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.triggerSettingsBounce()
+                                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.triggerSettingsCloseBounce()
                                 navigator.navigateUp()
                             }
                         } else null,

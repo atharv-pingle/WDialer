@@ -182,9 +182,17 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
                     dialpadProgress.snapTo(p)
                 }
                 // When back gesture commits, collapse back into FAB
-                closeDialpad(null)
+                dialpadClosing = true
+                NavBarVisibilityState.hideForDialpad = false
+                dialpadProgress.animateTo(
+                    targetValue = 0f,
+                    animationSpec = tween(durationMillis = 520, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
+                )
+                showDialpad = false
+                dialpadClosing = false
             } catch (e: CancellationException) {
                 // If user cancels back gesture, snap/animate back to full open state
+                dialpadClosing = false
                 dialpadProgress.animateTo(1f, spring(stiffness = Spring.StiffnessMediumLow))
             }
         }

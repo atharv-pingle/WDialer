@@ -27,6 +27,7 @@ import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
 import com.coolappstore.everdialer.by.svhp.view.components.RivoAnimatedSection
 import com.coolappstore.everdialer.by.svhp.view.components.RivoExpressiveCard
 import com.coolappstore.everdialer.by.svhp.view.components.RivoSwitchListItem
+import com.coolappstore.everdialer.by.svhp.view.components.rivoHeadingColor
 import com.coolappstore.everdialer.by.svhp.view.components.settingsSearchHighlight
 import com.coolappstore.everdialer.by.svhp.view.theme.SettingsTransitionStyle
 import com.coolappstore.everdialer.by.svhp.view.theme.settingsMotionBlur
@@ -230,6 +231,6 @@ private fun RaiseToAnswerSectionLabel(text: String) {
         text,
         style = MaterialTheme.typography.labelLarge,
         modifier = Modifier.padding(start = 12.dp, bottom = 8.dp),
-        color = MaterialTheme.colorScheme.primary
+        color = rivoHeadingColor()
     )
 }

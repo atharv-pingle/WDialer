@@ -19,6 +19,7 @@ import com.coolappstore.everdialer.by.svhp.view.components.RivoAnimatedSection
 import com.coolappstore.everdialer.by.svhp.view.components.RivoExpressiveCard
 import com.coolappstore.everdialer.by.svhp.view.components.RivoListItem
 import com.coolappstore.everdialer.by.svhp.view.components.RivoSwitchListItem
+import com.coolappstore.everdialer.by.svhp.view.components.rivoHeadingColor
 import com.coolappstore.everdialer.by.svhp.view.components.settingsSearchHighlight
 import com.coolappstore.everdialer.by.svhp.view.theme.SettingsTransitionStyle
 import com.coolappstore.everdialer.by.svhp.view.theme.settingsMotionBlur
@@ -100,7 +101,7 @@ fun IncomingCallUIScreen(navigator: DestinationsNavigator, highlightKey: String?
                     Text(
                         "Full Screen Display",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = rivoHeadingColor(),
                         modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
                     )
                     RivoExpressiveCard {
@@ -142,7 +143,7 @@ fun IncomingCallUIScreen(navigator: DestinationsNavigator, highlightKey: String?
                     Text(
                         "Appearance & Background",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = rivoHeadingColor(),
                         modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
                     )
                     RivoExpressiveCard {
@@ -231,7 +232,7 @@ fun IncomingCallUIScreen(navigator: DestinationsNavigator, highlightKey: String?
                         Text(
                             "Quick Actions",
                             style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = rivoHeadingColor(),
                             modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
                         )
                         RivoExpressiveCard {

@@ -503,9 +503,9 @@ GitHub: [Download](https://github.com/hari161008/Ever-Dialer/releases) ⬇️
 
 # Used App As The Base And Their Licenses Available In Their Respective Repository
 
-┈➤ [P Dialer](https://github.com/MoHamed-B-M/Pdialer) <br><br>
+┈➤ [P Dialer](https://github.com/MoHamed-B-M/Pdialer)<br><br>
 ┈➤ [ShizuCallRecorder](https://github.com/kitsumed/ShizuCallRecorder)<br><br>
-┈➤ [Liquid Glass](https://github.com/Kyant0/AndroidLiquidGlass) <br><br>
+┈➤ [Liquid Glass](https://github.com/Kyant0/AndroidLiquidGlass)<br><br>
 ┈➤ [Quik SMS](https://github.com/quik-sms/quik)<br><br>
 ┈➤ [Network Switch](https://github.com/aunchagaonkar/NetworkSwitch)<br><br>
 ┈➤ [Raise To Answer](https://github.com/TheLastProject/RaiseToAnswer)<br><br>

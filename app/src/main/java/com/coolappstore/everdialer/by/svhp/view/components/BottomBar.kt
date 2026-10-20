@@ -185,9 +185,15 @@ fun BottomBar(navController: NavController) {
         }
     }
 
+    val isRecordingsFromSettings = currentRoute.contains("recordings_screen", ignoreCase = true) &&
+        (navBackStackEntry?.arguments?.getBoolean("openedFromSettings", false) == true ||
+         navBackStackEntry?.arguments?.getString("openedFromSettings") == "true" ||
+         NavBarVisibilityState.hideForSettingsEntry)
+
     // Only render pill when a visible tab screen is active, and not while a tab screen
-    // (e.g. Recordings) is showing its own full-screen onboarding content.
+    // (e.g. Recordings) is showing its own full-screen onboarding content or opened from settings.
     val isOnTabScreen = visibleTabRoutes.any { currentRoute.contains(it, ignoreCase = true) } &&
+        !isRecordingsFromSettings &&
         !NavBarVisibilityState.hideForOnboarding &&
         !NavBarVisibilityState.hideForSelectionMode &&
         !NavBarVisibilityState.hideForSettingsEntry &&
@@ -201,6 +207,7 @@ fun BottomBar(navController: NavController) {
     // away again in a loop.
     val isOnHiddenTab = TAB_ROUTES.any { currentRoute.contains(it, ignoreCase = true) } &&
         visibleTabRoutes.none { currentRoute.contains(it, ignoreCase = true) } &&
+        !isRecordingsFromSettings &&
         !NavBarVisibilityState.hideForSettingsEntry &&
         !NavBarVisibilityState.hideForSearchResult &&
         !currentRoute.contains(GroupsScreenDestination.route, ignoreCase = true) &&

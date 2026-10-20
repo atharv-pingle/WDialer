@@ -112,10 +112,6 @@ fun RecordingsScreen(
         highlightQuery = ""
     }
 
-    BackHandler(enabled = openedFromSettings && selectedRecording == null && !isAppLocked) {
-        navigator.navigateUp()
-    }
-
     // Re-check disclaimer/permission state whenever this tab (re)appears or the app resumes.
     // Also re-arms App Lock (if enabled) whenever this screen is backgrounded — matching the
     // same behaviour as the bundled Ever Call Recorder's own Activity — since this screen is
@@ -159,7 +155,13 @@ fun RecordingsScreen(
     // from Settings → Call Recording rather than opened as the Recordings tab.
     DisposableEffect(openedFromSettings) {
         NavBarVisibilityState.hideForSettingsEntry = openedFromSettings
-        onDispose { NavBarVisibilityState.hideForSettingsEntry = false }
+        onDispose {
+            NavBarVisibilityState.hideForSettingsEntry = false
+            if (openedFromSettings) {
+                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.notifyClosing()
+                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.triggerSettingsBounce()
+            }
+        }
     }
 
     val appVersion = remember {
@@ -197,7 +199,13 @@ fun RecordingsScreen(
                 Box(modifier = Modifier.fillMaxSize()) {
                     HomeScreen(
                         appVersion = appVersion,
-                        onBackClick = if (openedFromSettings) { { navigator.navigateUp() } } else null,
+                        onBackClick = if (openedFromSettings) {
+                            {
+                                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.notifyClosing()
+                                com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.triggerSettingsBounce()
+                                navigator.navigateUp()
+                            }
+                        } else null,
                         onSettingsClick = {
                             com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.recordNormalized(0.92f, 0.06f)
                             navigator.navigate(com.ramcosta.composedestinations.generated.destinations.CallRecordingSettingsScreenDestination())

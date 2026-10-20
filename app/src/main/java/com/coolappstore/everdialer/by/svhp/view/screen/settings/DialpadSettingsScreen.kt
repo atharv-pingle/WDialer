@@ -16,6 +16,7 @@ import com.coolappstore.everdialer.by.svhp.view.components.RivoAnimatedSection
 import com.coolappstore.everdialer.by.svhp.view.components.RivoExpressiveCard
 import com.coolappstore.everdialer.by.svhp.view.components.RivoSwitchListItem
 import com.coolappstore.everdialer.by.svhp.view.components.SettingsPillTopAppBar
+import com.coolappstore.everdialer.by.svhp.view.components.rivoHeadingColor
 import com.coolappstore.everdialer.by.svhp.view.components.settingsSearchHighlight
 import com.coolappstore.everdialer.by.svhp.view.theme.SettingsTransitionStyle
 import com.coolappstore.everdialer.by.svhp.view.theme.settingsMotionBlur
@@ -66,7 +67,7 @@ fun DialpadSettingsScreen(
                     Text(
                         "Dialpad Options",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = rivoHeadingColor(),
                         modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
                     )
                     RivoExpressiveCard {

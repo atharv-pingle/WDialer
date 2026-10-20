@@ -74,7 +74,7 @@ const val CONTACT_DETAILS_ANIM_DURATION_EXIT = 550
 val ContactDetailsSmoothEase = CubicBezierEasing(0.12f, 0.7f, 0.15f, 1f)
 val ContactDetailsSmoothEaseExit = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 
-const val SETTINGS_SCALE_ENTER_FROM = 0.02f
+const val SETTINGS_SCALE_ENTER_FROM = 0.88f
 const val SETTINGS_SCALE_EXIT_TO = 0.96f
 
 fun isSmsChatRoute(route: String?): Boolean {
@@ -215,13 +215,31 @@ val settingsRoutes = setOf(
     "ratings_web_view_screen",
     "sms_settings_screen",
     "sms_chat_screen",
-    "new_message_screen"
+    "new_message_screen",
+    "blocked_numbers_screen",
+    "blocked_sms_screen"
 )
+
+fun isRecordingsFromSettings(entry: NavBackStackEntry?): Boolean {
+    if (entry == null) return false
+    val route = entry.destination.route ?: return false
+    if (!route.contains("recordings_screen", ignoreCase = true)) return false
+    return entry.arguments?.getBoolean("openedFromSettings", false) == true ||
+           entry.arguments?.getString("openedFromSettings") == "true" ||
+           route.contains("openedFromSettings=true", ignoreCase = true)
+}
 
 fun isSettingsRoute(route: String?): Boolean {
     if (route == null) return false
     val base = route.substringBefore("?").substringBefore("/")
-    return base in settingsRoutes || base.contains("settings", ignoreCase = true) || base.contains("about", ignoreCase = true) || base.contains("contact_details", ignoreCase = true) || base.contains("call_log_detail", ignoreCase = true) || base.contains("search", ignoreCase = true) || base.contains("contact_edit", ignoreCase = true) || base.contains("sms_chat", ignoreCase = true) || base.contains("new_message", ignoreCase = true)
+    if (route.contains("recordings_screen", ignoreCase = true) && route.contains("openedFromSettings=true", ignoreCase = true)) return true
+    return base in settingsRoutes || base.contains("settings", ignoreCase = true) || base.contains("about", ignoreCase = true) || base.contains("contact_details", ignoreCase = true) || base.contains("call_log_detail", ignoreCase = true) || base.contains("search", ignoreCase = true) || base.contains("contact_edit", ignoreCase = true) || base.contains("sms_chat", ignoreCase = true) || base.contains("new_message", ignoreCase = true) || base.contains("blocked", ignoreCase = true)
+}
+
+fun isSettingsRoute(entry: NavBackStackEntry?): Boolean {
+    if (entry == null) return false
+    if (isRecordingsFromSettings(entry)) return true
+    return isSettingsRoute(entry.destination.route)
 }
 
 fun isExpandingRoute(route: String?): Boolean {
@@ -233,6 +251,12 @@ fun isExpandingRoute(route: String?): Boolean {
         base == "contact_details_screen" ||
         base == "call_log_detail_screen" ||
         base == "new_message_screen"
+}
+
+fun isExpandingRoute(entry: NavBackStackEntry?): Boolean {
+    if (entry == null) return false
+    if (isRecordingsFromSettings(entry)) return true
+    return isExpandingRoute(entry.destination.route)
 }
 
 /**
@@ -260,7 +284,7 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
     override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
         val isChat = isSmsChatRoute(targetState.destination.route)
         val isContact = isContactDetailsRoute(targetState.destination.route)
-        val isExpanding = isExpandingRoute(targetState.destination.route)
+        val isExpanding = isExpandingRoute(targetState)
         val duration = when {
             isContact -> CONTACT_DETAILS_ANIM_DURATION_ENTER
             isChat -> CHAT_ANIM_DURATION_ENTER
@@ -284,7 +308,7 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
         }
         val initialScale = when {
             isContact -> 0.28f
-            isExpanding -> 0.02f
+            isExpanding -> 0.04f
             else -> 0.92f
         }
 
@@ -367,7 +391,7 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
     override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
         val isChat = isSmsChatRoute(initialState.destination.route)
         val isContact = isContactDetailsRoute(initialState.destination.route)
-        val isExpanding = isExpandingRoute(initialState.destination.route)
+        val isExpanding = isExpandingRoute(initialState)
         val duration = when {
             isContact -> CONTACT_DETAILS_ANIM_DURATION_EXIT
             isChat -> CHAT_ANIM_DURATION_EXIT
@@ -391,7 +415,7 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
         }
         val targetScale = when {
             isContact -> 0.28f
-            isExpanding -> 0.02f
+            isExpanding -> 0.04f
             else -> 0.92f
         }
 
@@ -477,7 +501,7 @@ fun Modifier.settingsMotionBlur(maxBlurDp: Float = 10f): Modifier {
         )
         val blurRadius = (blurFactor * maxBlurDp).dp
         if (blurRadius > 0.1.dp) {
-            mod = mod.blur(radius = blurRadius, edgeTreatment = BlurredEdgeTreatment.Unbounded)
+            mod = mod.blur(radius = blurRadius, edgeTreatment = BlurredEdgeTreatment.Rectangle)
         }
     }
 

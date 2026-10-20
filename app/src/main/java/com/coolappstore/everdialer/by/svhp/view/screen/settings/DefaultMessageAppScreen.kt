@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
 import com.coolappstore.everdialer.by.svhp.view.components.RivoAnimatedSection
 import com.coolappstore.everdialer.by.svhp.view.components.RivoExpressiveCard
+import com.coolappstore.everdialer.by.svhp.view.components.rivoHeadingColor
 import com.coolappstore.everdialer.by.svhp.view.theme.SettingsTransitionStyle
 import com.coolappstore.everdialer.by.svhp.view.theme.settingsMotionBlur
 import com.ramcosta.composedestinations.annotation.Destination
@@ -68,7 +69,7 @@ fun DefaultMessageAppScreen(navigator: DestinationsNavigator) {
                         Text(
                             "Message App",
                             style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = rivoHeadingColor(),
                             modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
                         )
                         RivoExpressiveCard {

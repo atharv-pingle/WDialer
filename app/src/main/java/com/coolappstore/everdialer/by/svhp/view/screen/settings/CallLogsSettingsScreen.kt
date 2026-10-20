@@ -9,26 +9,44 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.CallMade
 import androidx.compose.material.icons.automirrored.filled.CallMissed
+import androidx.compose.material.icons.automirrored.filled.CallReceived
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.coolappstore.everdialer.by.svhp.controller.util.MissedCallDurationStore
 import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
 import com.coolappstore.everdialer.by.svhp.view.components.RivoAnimatedSection
 import com.coolappstore.everdialer.by.svhp.view.components.RivoExpressiveCard
+import com.coolappstore.everdialer.by.svhp.view.components.RivoListItem
 import com.coolappstore.everdialer.by.svhp.view.components.RivoSwitchListItem
 import com.coolappstore.everdialer.by.svhp.view.components.SettingsPillTopAppBar
+import com.coolappstore.everdialer.by.svhp.view.components.rivoHeadingColor
 import com.coolappstore.everdialer.by.svhp.view.components.settingsSearchHighlight
 import com.coolappstore.everdialer.by.svhp.view.theme.SettingsTransitionStyle
 import com.coolappstore.everdialer.by.svhp.view.theme.settingsMotionBlur
@@ -43,6 +61,7 @@ private val ColorPurple = Color(0xFF9C27B0)
 private val ColorTeal   = Color(0xFF009688)
 private val ColorRed    = Color(0xFFE53935)
 private val ColorAmber  = Color(0xFFFFC107)
+private val ColorOrange = Color(0xFFFF9800)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Destination<RootGraph>(style = SettingsTransitionStyle::class)
@@ -71,6 +90,194 @@ fun CallLogsSettingsScreen(
     var autoResetMissedCallDurationValue by remember { mutableStateOf(prefs.getInt(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_VALUE, 24).toString()) }
     var autoResetMissedCallDurationUnit by remember { mutableStateOf(prefs.getString(PreferenceManager.KEY_AUTO_RESET_MISSED_CALL_DURATION_UNIT, "hours") ?: "hours") }
 
+    // Call UI section checkboxes dialog
+    var showCallUIDialog   by remember { mutableStateOf(false) }
+    var callUIShowToday    by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_UI_SHOW_TODAY, true)) }
+    var callUIShowMissed   by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_UI_SHOW_MISSED, true)) }
+    var callUIShowOutgoing by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_UI_SHOW_OUTGOING, true)) }
+    var callUIShowCallTime by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_UI_SHOW_CALL_TIME, true)) }
+    var callUIShowContacts by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_UI_SHOW_CONTACTS, false)) }
+    var callUIShowGroups   by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_UI_SHOW_GROUPS, false)) }
+
+    data class CallUIOption(val key: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+    val callUIOptions = listOf(
+        CallUIOption("today",     "Today",     Icons.AutoMirrored.Filled.CallReceived),
+        CallUIOption("missed",    "Missed",    Icons.AutoMirrored.Filled.CallMissed),
+        CallUIOption("outgoing",  "Outgoing",  Icons.AutoMirrored.Filled.CallMade),
+        CallUIOption("call_time", "Call Time", Icons.Default.Timer),
+        CallUIOption("contacts",  "Contacts",  Icons.Default.People),
+        CallUIOption("groups",    "Groups",    Icons.Default.Group)
+    )
+
+    val callUIOrder = remember {
+        mutableStateListOf<String>().apply {
+            val saved = prefs.getString(PreferenceManager.KEY_CALL_UI_ORDER, null)
+            val savedKeys = PreferenceManager.parseCallUIOrder(saved)
+            addAll(savedKeys)
+        }
+    }
+    fun persistCallUIOrder() {
+        prefs.setString(PreferenceManager.KEY_CALL_UI_ORDER, callUIOrder.joinToString(","))
+    }
+    fun resetCallUIToDefault() {
+        val defaults = PreferenceManager.DEFAULT_CALL_UI_ORDER.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        callUIOrder.clear()
+        callUIOrder.addAll(defaults)
+        persistCallUIOrder()
+        callUIShowToday    = true;  prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_TODAY,    true)
+        callUIShowMissed   = true;  prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_MISSED,   true)
+        callUIShowOutgoing = true;  prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_OUTGOING, true)
+        callUIShowCallTime = true;  prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_CALL_TIME, true)
+        callUIShowContacts = false; prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_CONTACTS,  false)
+        callUIShowGroups   = false; prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_GROUPS,    false)
+    }
+
+    if (showCallUIDialog) {
+        val density = LocalDensity.current
+        val haptic = LocalHapticFeedback.current
+        val rowHeightDp = 52.dp
+        val rowHeightPx = with(density) { rowHeightDp.toPx() }
+        var draggedKey by remember { mutableStateOf<String?>(null) }
+        var dragOffsetY by remember { mutableStateOf(0f) }
+
+        fun callUIChecked(key: String): Boolean = when (key) {
+            "today"     -> callUIShowToday
+            "missed"    -> callUIShowMissed
+            "outgoing"  -> callUIShowOutgoing
+            "call_time" -> callUIShowCallTime
+            "contacts"  -> callUIShowContacts
+            "groups"    -> callUIShowGroups
+            else        -> true
+        }
+        fun setCallUIChecked(key: String, value: Boolean) {
+            when (key) {
+                "today"     -> { callUIShowToday = value;    prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_TODAY,    value) }
+                "missed"    -> { callUIShowMissed = value;   prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_MISSED,   value) }
+                "outgoing"  -> { callUIShowOutgoing = value; prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_OUTGOING, value) }
+                "call_time" -> { callUIShowCallTime = value; prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_CALL_TIME, value) }
+                "contacts"  -> { callUIShowContacts = value; prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_CONTACTS,  value) }
+                "groups"    -> { callUIShowGroups = value;   prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_GROUPS,    value) }
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = { showCallUIDialog = false },
+            icon = { Icon(Icons.Default.Dashboard, null, tint = ColorOrange) },
+            title = { Text("Calls Section Elements") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        "Toggle which stat cards appear in the Calls home screen, and drag the handle to reorder them.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    val maxListHeight = (LocalConfiguration.current.screenHeightDp.dp * 0.55f).coerceAtLeast(240.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = maxListHeight)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        callUIOrder.forEach { itemKey ->
+                            val option = callUIOptions.firstOrNull { it.key == itemKey } ?: return@forEach
+                            val isDragging = draggedKey == itemKey
+                            key(itemKey) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                    tonalElevation = if (isDragging) 6.dp else 0.dp,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 2.dp)
+                                        .zIndex(if (isDragging) 2f else 0f)
+                                        .graphicsLayer {
+                                            translationY = if (isDragging) dragOffsetY else 0f
+                                        }
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(rowHeightDp)
+                                            .padding(horizontal = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = option.icon,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Spacer(Modifier.width(10.dp))
+                                        Text(option.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                                        Checkbox(
+                                            checked = callUIChecked(itemKey),
+                                            onCheckedChange = { setCallUIChecked(itemKey, it) },
+                                            colors = CheckboxDefaults.colors(
+                                                checkedColor = MaterialTheme.colorScheme.primary,
+                                                uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Icon(
+                                            imageVector = Icons.Filled.DragHandle,
+                                            contentDescription = "Reorder ${option.label}",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier
+                                                .padding(start = 4.dp)
+                                                .pointerInput(itemKey) {
+                                                    detectDragGestures(
+                                                        onDragStart = {
+                                                            draggedKey = itemKey
+                                                            dragOffsetY = 0f
+                                                        },
+                                                        onDragEnd = {
+                                                            draggedKey = null
+                                                            dragOffsetY = 0f
+                                                            persistCallUIOrder()
+                                                        },
+                                                        onDragCancel = {
+                                                            draggedKey = null
+                                                            dragOffsetY = 0f
+                                                        },
+                                                        onDrag = { change, dragAmount ->
+                                                            change.consume()
+                                                            dragOffsetY += dragAmount.y
+                                                            val currentIdx = callUIOrder.indexOf(itemKey)
+                                                            if (currentIdx != -1) {
+                                                                val threshold = rowHeightPx * 0.6f
+                                                                if (dragOffsetY > threshold && currentIdx < callUIOrder.lastIndex) {
+                                                                    val item = callUIOrder.removeAt(currentIdx)
+                                                                    callUIOrder.add(currentIdx + 1, item)
+                                                                    dragOffsetY -= rowHeightPx
+                                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                                } else if (dragOffsetY < -threshold && currentIdx > 0) {
+                                                                    val item = callUIOrder.removeAt(currentIdx)
+                                                                    callUIOrder.add(currentIdx - 1, item)
+                                                                    dragOffsetY += rowHeightPx
+                                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                                }
+                                                            }
+                                                        }
+                                                    )
+                                                }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCallUIDialog = false }) { Text("Done") }
+            },
+            dismissButton = {
+                TextButton(onClick = { resetCallUIToDefault() }) { Text("Default") }
+            }
+        )
+    }
+
     Scaffold(
         modifier = Modifier.settingsMotionBlur(),
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -93,9 +300,31 @@ fun CallLogsSettingsScreen(
             RivoAnimatedSection(delayMs = 0L) {
                 Column {
                     Text(
+                        "Calls Screen Elements",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = rivoHeadingColor(),
+                        modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
+                    )
+                    RivoExpressiveCard {
+                        RivoListItem(
+                            headline = "Calls Section Elements",
+                            supporting = "Toggle and drag to reorder Today, Missed, Outgoing, Call Time, Contacts, Groups cards",
+                            leadingIcon = Icons.Default.Dashboard,
+                            iconContainerColor = ColorOrange,
+                            trailingIcon = Icons.Default.ChevronRight,
+                            modifier = Modifier.settingsSearchHighlight("calls_section_elements", highlightedKey) { highlightedKey = null },
+                            onClick = { showCallUIDialog = true }
+                        )
+                    }
+                }
+            }
+
+            RivoAnimatedSection(delayMs = 40L) {
+                Column {
+                    Text(
                         "Call Log Options",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = rivoHeadingColor(),
                         modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
                     )
                     RivoExpressiveCard {

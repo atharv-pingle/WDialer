@@ -403,15 +403,39 @@ fun RivoExpressiveCard(
 // ─── Section Header ────────────────────────────────────────────────────────────
 
 @Composable
+fun rivoHeadingColor(): Color {
+    val prefs = koinInject<PreferenceManager>()
+    val settingsVer by prefs.settingsChanged.collectAsState()
+    val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
+    val isSaturatedActive = remember(settingsVer, isDark) { prefs.isSaturatedForTheme(isDark) }
+    val isBackgroundTarget = remember(settingsVer) { prefs.getSaturatedTarget() == PreferenceManager.SATURATED_TARGET_BACKGROUND }
+    return if (isSaturatedActive && isBackgroundTarget) {
+        if (isDark) Color.White else Color(0xFF111827)
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+}
+
+@Composable
 fun RivoSectionHeader(title: String, modifier: Modifier = Modifier) {
     Text(
         text = title,
         style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
+        color = rivoHeadingColor(),
         fontWeight = FontWeight.Bold,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 4.dp)
+    )
+}
+
+@Composable
+fun RivoSettingsSectionTitle(title: String, modifier: Modifier = Modifier) {
+    Text(
+        text = com.coolappstore.everdialer.by.svhp.controller.util.tr(title),
+        style = MaterialTheme.typography.labelLarge,
+        color = rivoHeadingColor(),
+        modifier = modifier.padding(start = 12.dp, bottom = 8.dp)
     )
 }
 

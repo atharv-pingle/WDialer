@@ -63,6 +63,19 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
         return order.indexOfFirst { base.contains(it, ignoreCase = true) || it.contains(base, ignoreCase = true) }
     }
 
+    private fun isRecordingsFromSettings(route: String?): Boolean {
+        return route != null && route.contains("recordings_screen", ignoreCase = true) && route.contains("openedFromSettings=true", ignoreCase = true)
+    }
+
+    private fun isRecordingsFromSettings(entry: NavBackStackEntry?): Boolean {
+        if (entry == null) return false
+        if (isRecordingsFromSettings(entry.destination.route)) return true
+        val route = entry.destination.route ?: return false
+        if (!route.contains("recordings_screen", ignoreCase = true)) return false
+        return entry.arguments?.getBoolean("openedFromSettings", false) == true ||
+               entry.arguments?.getString("openedFromSettings") == "true"
+    }
+
     private fun isTabRoute(route: String?): Boolean = routeOrder(route) >= 0
 
     override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
@@ -70,8 +83,8 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
         val toTab   = isTabRoute(targetState.destination.route)
         val fromIdx = routeOrder(initialState.destination.route)
         val toIdx   = routeOrder(targetState.destination.route)
-        val toSettings   = isSettingsRoute(targetState.destination.route)
-        val fromSettings = isSettingsRoute(initialState.destination.route)
+        val toSettings   = isSettingsRoute(targetState)
+        val fromSettings = isSettingsRoute(initialState)
         val isChat = isSmsChatRoute(targetState.destination.route) || isSmsChatRoute(initialState.destination.route)
         val isContact = isContactDetailsRoute(targetState.destination.route) || isContactDetailsRoute(initialState.destination.route)
         val enterDuration = when {
@@ -91,11 +104,23 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
         }
         val initialScale = when {
             isContact -> 0.28f
-            else -> 0.02f
+            else -> 0.04f
         }
         val origin = if (isContact) SettingsClickTracker.lastOrigin else TransformOrigin.Center
 
         when {
+            isRecordingsFromSettings(targetState) -> {
+                if (isWindowsPhoneAnimation()) {
+                    TurnstileNavigationTracker.recordEnter(isBack = false, targetState.destination.route)
+                    fadeIn(tween(SETTINGS_WP_ANIM_DURATION_ENTER, easing = LinearOutSlowInEasing))
+                } else {
+                    scaleIn(
+                        animationSpec = tween(enterDuration, easing = enterEasing),
+                        initialScale = 0.04f,
+                        transformOrigin = SettingsClickTracker.lastOrigin
+                    ) + fadeIn(tween(enterDuration, easing = enterEasingOut))
+                }
+            }
             toSettings -> {
                 if (isWindowsPhoneAnimation()) {
                     TurnstileNavigationTracker.recordEnter(isBack = false, targetState.destination.route)
@@ -113,7 +138,14 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
                     TurnstileNavigationTracker.recordEnter(isBack = true, targetState.destination.route)
                     fadeIn(tween(SETTINGS_WP_ANIM_DURATION_ENTER, easing = LinearOutSlowInEasing))
                 } else {
-                    EnterTransition.None
+                    scaleIn(
+                        animationSpec = tween(enterDuration, easing = enterEasing),
+                        initialScale = SETTINGS_SCALE_EXIT_TO,
+                        transformOrigin = TransformOrigin.Center
+                    ) + fadeIn(
+                        animationSpec = tween(enterDuration, easing = enterEasingOut),
+                        initialAlpha = 0.95f
+                    )
                 }
             }
             fromTab && toTab && !isLandscapeMode -> {
@@ -138,19 +170,34 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
         val toTab   = isTabRoute(targetState.destination.route)
         val fromIdx = routeOrder(initialState.destination.route)
         val toIdx   = routeOrder(targetState.destination.route)
-        val fromSettings = isSettingsRoute(initialState.destination.route)
-        val toSettings   = isSettingsRoute(targetState.destination.route)
+        val fromSettings = isSettingsRoute(initialState)
+        val toSettings   = isSettingsRoute(targetState)
         val isChat = isSmsChatRoute(targetState.destination.route) || isSmsChatRoute(initialState.destination.route)
         val exitDuration = if (isChat) CHAT_ANIM_DURATION_EXIT else SETTINGS_ANIM_DURATION_EXIT
         val exitEasing = if (isChat) ChatSmoothEase else SettingsSmoothEase
         val exitEasingIn = if (isChat) ChatSmoothEaseIn else SettingsSmoothEaseIn
 
         when {
+            isRecordingsFromSettings(initialState) && toSettings -> {
+                if (isWindowsPhoneAnimation()) {
+                    fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
+                } else {
+                    scaleOut(
+                        animationSpec = tween(exitDuration, easing = exitEasing),
+                        targetScale = SETTINGS_SCALE_EXIT_TO,
+                        transformOrigin = TransformOrigin.Center
+                    ) + fadeOut(tween(exitDuration, easing = exitEasingIn))
+                }
+            }
             fromSettings || toSettings -> {
                 if (isWindowsPhoneAnimation()) {
                     fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
                 } else {
-                    ExitTransition.None
+                    scaleOut(
+                        animationSpec = tween(exitDuration, easing = exitEasing),
+                        targetScale = SETTINGS_SCALE_EXIT_TO,
+                        transformOrigin = TransformOrigin.Center
+                    ) + fadeOut(tween(exitDuration, easing = exitEasingIn))
                 }
             }
             fromTab && toTab && !isLandscapeMode -> {
@@ -181,20 +228,42 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
         val toTab   = isTabRoute(targetState.destination.route)
         val fromIdx = routeOrder(initialState.destination.route)
         val toIdx   = routeOrder(targetState.destination.route)
-        val fromSettings = isSettingsRoute(initialState.destination.route)
-        val toSettings   = isSettingsRoute(targetState.destination.route)
+        val fromSettings = isSettingsRoute(initialState)
+        val toSettings   = isSettingsRoute(targetState)
         val isChat = isSmsChatRoute(targetState.destination.route) || isSmsChatRoute(initialState.destination.route)
         val enterDuration = if (isChat) CHAT_ANIM_DURATION_ENTER else SETTINGS_ANIM_DURATION_ENTER
         val enterEasing = if (isChat) ChatSmoothEase else SettingsSmoothEase
         val enterEasingOut = if (isChat) ChatSmoothEaseOut else SettingsSmoothEaseOut
 
         when {
+            isRecordingsFromSettings(targetState) && fromSettings -> {
+                if (isWindowsPhoneAnimation()) {
+                    TurnstileNavigationTracker.recordEnter(isBack = true, targetState.destination.route)
+                    fadeIn(tween(SETTINGS_WP_ANIM_DURATION_ENTER, easing = LinearOutSlowInEasing))
+                } else {
+                    scaleIn(
+                        animationSpec = tween(enterDuration, easing = enterEasing),
+                        initialScale = SETTINGS_SCALE_EXIT_TO,
+                        transformOrigin = TransformOrigin.Center
+                    ) + fadeIn(
+                        animationSpec = tween(enterDuration, easing = enterEasingOut),
+                        initialAlpha = 0.95f
+                    )
+                }
+            }
             fromSettings || toSettings -> {
                 if (isWindowsPhoneAnimation()) {
                     TurnstileNavigationTracker.recordEnter(isBack = true, targetState.destination.route)
                     fadeIn(tween(SETTINGS_WP_ANIM_DURATION_ENTER, easing = LinearOutSlowInEasing))
                 } else {
-                    EnterTransition.None
+                    scaleIn(
+                        animationSpec = tween(enterDuration, easing = enterEasing),
+                        initialScale = SETTINGS_SCALE_EXIT_TO,
+                        transformOrigin = TransformOrigin.Center
+                    ) + fadeIn(
+                        animationSpec = tween(enterDuration, easing = enterEasingOut),
+                        initialAlpha = 0.95f
+                    )
                 }
             }
             fromTab && toTab && !isLandscapeMode -> {
@@ -219,14 +288,29 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
         val toTab   = isTabRoute(targetState.destination.route)
         val fromIdx = routeOrder(initialState.destination.route)
         val toIdx   = routeOrder(targetState.destination.route)
-        val fromSettings = isSettingsRoute(initialState.destination.route)
-        val toSettings   = isSettingsRoute(targetState.destination.route)
+        val fromSettings = isSettingsRoute(initialState)
+        val toSettings   = isSettingsRoute(targetState)
         val isChat = isSmsChatRoute(targetState.destination.route) || isSmsChatRoute(initialState.destination.route)
         val exitDuration = if (isChat) CHAT_ANIM_DURATION_EXIT else SETTINGS_ANIM_DURATION_EXIT
         val exitEasing = if (isChat) ChatSmoothEase else SettingsSmoothEase
         val exitEasingIn = if (isChat) ChatSmoothEaseIn else SettingsSmoothEaseIn
 
         when {
+            isRecordingsFromSettings(initialState) -> {
+                if (isWindowsPhoneAnimation()) {
+                    slideOutHorizontally(
+                        animationSpec = tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing),
+                        targetOffsetX = { full -> full / 6 }
+                    ) + fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
+                } else {
+                    val fadeEasing = CubicBezierEasing(0.15f, 0.15f, 0.35f, 1f)
+                    scaleOut(
+                        animationSpec = tween(exitDuration, easing = exitEasing),
+                        targetScale = 0.04f,
+                        transformOrigin = SettingsClickTracker.lastOrigin
+                    ) + fadeOut(tween(exitDuration, easing = fadeEasing))
+                }
+            }
             fromSettings || toSettings -> {
                 if (isWindowsPhoneAnimation()) {
                     slideOutHorizontally(
@@ -234,7 +318,11 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
                         targetOffsetX = { full -> full / 6 }
                     ) + fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
                 } else {
-                    ExitTransition.None
+                    scaleOut(
+                        animationSpec = tween(exitDuration, easing = exitEasing),
+                        targetScale = SETTINGS_SCALE_EXIT_TO,
+                        transformOrigin = TransformOrigin.Center
+                    ) + fadeOut(tween(exitDuration, easing = exitEasingIn))
                 }
             }
             fromTab && toTab && !isLandscapeMode -> {

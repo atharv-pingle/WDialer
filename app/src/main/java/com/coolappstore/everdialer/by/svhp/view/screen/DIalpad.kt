@@ -414,20 +414,21 @@ fun DialPadScreen(
                     prefs.getBoolean(PreferenceManager.KEY_PREDICTIVE_BACK_GESTURE, true)
                 }
                 if (predictiveBackEnabled) {
-                    PredictiveBackHandler(enabled = true) { progressFlow ->
+                    PredictiveBackHandler(enabled = !dialpadClosing && !didNavigateAway) { progressFlow ->
                         try {
                             progressFlow.collect { backEvent ->
-                                dialpadClosing = true
                                 closeProgress.snapTo(backEvent.progress * 0.45f)
                             }
-                            closeWithSlowAnimation()
+                            dialpadClosing = true
+                            closeProgress.animateTo(1f, slowSlideSpec)
+                            finishDismiss()
                         } catch (e: CancellationException) {
                             dialpadClosing = false
                             closeProgress.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
                         }
                     }
                 } else {
-                    BackHandler(enabled = true) { closeWithSlowAnimation() }
+                    BackHandler(enabled = !dialpadClosing && !didNavigateAway) { closeWithSlowAnimation() }
                 }
                 Column(modifier = Modifier.statusBarsPadding().navigationBarsPadding()) {
                     Box(
@@ -607,6 +608,31 @@ fun DialPadContent(
         }
     }
     val searchFilterState = remember(settingsVerForFilter) { prefs.getSearchFilterState() }
+    val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
+    val isSaturatedActive = remember(settingsVerForFilter, isDark) { prefs.isSaturatedForTheme(isDark) }
+    val isBackgroundTarget = remember(settingsVerForFilter) { prefs.getSaturatedTarget() == PreferenceManager.SATURATED_TARGET_BACKGROUND }
+    val isSaturatedBackground = isSaturatedActive && isBackgroundTarget
+
+    val dialpadSearchBarBg = if (isSaturatedBackground) {
+        if (isDark) Color.Black else Color.White
+    } else {
+        Color.Transparent
+    }
+    val dialpadSearchBarFg = if (isSaturatedBackground) {
+        if (isDark) Color.White else Color(0xFF111827)
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    val dialpadSearchBarPlaceholder = if (isSaturatedBackground) {
+        (if (isDark) Color.White else Color(0xFF111827)).copy(alpha = 0.55f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val dialpadSearchBarBorder = if (isSaturatedBackground) {
+        (if (isDark) Color.White else Color.Black).copy(alpha = 0.15f)
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
     val callLogVM: CallLogViewModel = koinActivityViewModel()
     val callLogsForSearch by callLogVM.allCallLogs.collectAsState()
     val recordingsVM: HomeViewModel = viewModel()
@@ -1053,20 +1079,31 @@ fun DialPadContent(
                         // guarantees the keyboard can't be re-triggered by window refocus or
                         // any other later event during the close animation/teardown.
                         .focusProperties { canFocus = !closing },
-                    placeholder = { Text("Search contacts...") },
-                    leadingIcon = { Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    placeholder = { Text("Search contacts...", color = dialpadSearchBarPlaceholder) },
+                    leadingIcon = { Icon(Icons.Default.Search, null, tint = dialpadSearchBarPlaceholder) },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Close, null)
+                                Icon(Icons.Default.Close, null, tint = dialpadSearchBarPlaceholder)
                             }
                         }
                     },
                     singleLine = true,
                     shape = RoundedCornerShape(28.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                        focusedTextColor = dialpadSearchBarFg,
+                        unfocusedTextColor = dialpadSearchBarFg,
+                        focusedContainerColor = dialpadSearchBarBg,
+                        unfocusedContainerColor = dialpadSearchBarBg,
+                        focusedBorderColor = if (isSaturatedBackground) dialpadSearchBarBorder else MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = dialpadSearchBarBorder,
+                        focusedLeadingIconColor = dialpadSearchBarPlaceholder,
+                        unfocusedLeadingIconColor = dialpadSearchBarPlaceholder,
+                        focusedTrailingIconColor = dialpadSearchBarPlaceholder,
+                        unfocusedTrailingIconColor = dialpadSearchBarPlaceholder,
+                        focusedPlaceholderColor = dialpadSearchBarPlaceholder,
+                        unfocusedPlaceholderColor = dialpadSearchBarPlaceholder,
+                        cursorColor = if (isSaturatedBackground) dialpadSearchBarFg else MaterialTheme.colorScheme.primary
                     ),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
@@ -1443,23 +1480,34 @@ fun DialPadContent(
                         // during the close animation/teardown.
                         .focusProperties { canFocus = !closing }
                         .onFocusChanged { focusState -> searchFieldFocused = focusState.isFocused },
-                    placeholder = { Text("Search contacts...") },
-                    leadingIcon = { Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    placeholder = { Text("Search contacts...", color = dialpadSearchBarPlaceholder) },
+                    leadingIcon = { Icon(Icons.Default.Search, null, tint = dialpadSearchBarPlaceholder) },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = {
                                 searchQuery = ""
                                 focusManager.clearFocus()
                             }) {
-                                Icon(Icons.Default.Close, null)
+                                Icon(Icons.Default.Close, null, tint = dialpadSearchBarPlaceholder)
                             }
                         }
                     },
                     singleLine = true,
                     shape = RoundedCornerShape(28.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                        focusedTextColor = dialpadSearchBarFg,
+                        unfocusedTextColor = dialpadSearchBarFg,
+                        focusedContainerColor = dialpadSearchBarBg,
+                        unfocusedContainerColor = dialpadSearchBarBg,
+                        focusedBorderColor = if (isSaturatedBackground) dialpadSearchBarBorder else MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = dialpadSearchBarBorder,
+                        focusedLeadingIconColor = dialpadSearchBarPlaceholder,
+                        unfocusedLeadingIconColor = dialpadSearchBarPlaceholder,
+                        focusedTrailingIconColor = dialpadSearchBarPlaceholder,
+                        unfocusedTrailingIconColor = dialpadSearchBarPlaceholder,
+                        focusedPlaceholderColor = dialpadSearchBarPlaceholder,
+                        unfocusedPlaceholderColor = dialpadSearchBarPlaceholder,
+                        cursorColor = if (isSaturatedBackground) dialpadSearchBarFg else MaterialTheme.colorScheme.primary
                     ),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,

@@ -172,8 +172,18 @@ fun SearchScreen(
         )
     }
 
+    var hasNavigatedUp by remember { mutableStateOf(false) }
+    val safeNavigateUp: () -> Unit = {
+        if (!hasNavigatedUp) {
+            hasNavigatedUp = true
+            try {
+                navigator.navigateUp()
+            } catch (_: Exception) {}
+        }
+    }
+
     val closeSearch: () -> Unit = {
-        if (!isClosing) {
+        if (!isClosing && !hasNavigatedUp) {
             isClosing = true
             keyboardController?.hide()
             com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.notifyClosing()
@@ -186,7 +196,7 @@ fun SearchScreen(
                         easing = zoomExitEasing
                     )
                 )
-                navigator.navigateUp()
+                safeNavigateUp()
             }
         }
     }
@@ -199,7 +209,7 @@ fun SearchScreen(
     var backSwipeEdge by remember { mutableIntStateOf(0) }
 
     if (predictiveBackEnabled) {
-        PredictiveBackHandler(enabled = !isClosing) { progressFlow ->
+        PredictiveBackHandler(enabled = !isClosing && !hasNavigatedUp) { progressFlow ->
             isPredictiveBackTriggering = true
             keyboardController?.hide()
             try {
@@ -217,33 +227,29 @@ fun SearchScreen(
                 isPredictiveBackTriggering = false
                 com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.notifyClosing()
                 com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker.triggerSearchBounce()
-                coroutineScope.launch {
-                    animProgress.animateTo(
-                        targetValue = 0f,
-                        animationSpec = tween(
-                            durationMillis = 480,
-                            easing = zoomExitEasing
-                        )
+                animProgress.animateTo(
+                    targetValue = 0f,
+                    animationSpec = tween(
+                        durationMillis = 480,
+                        easing = zoomExitEasing
                     )
-                    navigator.navigateUp()
-                }
+                )
+                safeNavigateUp()
             } catch (e: CancellationException) {
                 // Gesture cancelled!
                 isPredictiveBackTriggering = false
                 backSwipeProgress = 0f
-                coroutineScope.launch {
-                    animProgress.animateTo(
-                        targetValue = 1f,
-                        animationSpec = spring(
-                            stiffness = Spring.StiffnessMediumLow,
-                            dampingRatio = Spring.DampingRatioLowBouncy
-                        )
+                animProgress.animateTo(
+                    targetValue = 1f,
+                    animationSpec = spring(
+                        stiffness = Spring.StiffnessMediumLow,
+                        dampingRatio = Spring.DampingRatioLowBouncy
                     )
-                }
+                )
             }
         }
     } else {
-        BackHandler(enabled = !isClosing) {
+        BackHandler(enabled = !isClosing && !hasNavigatedUp) {
             closeSearch()
         }
     }

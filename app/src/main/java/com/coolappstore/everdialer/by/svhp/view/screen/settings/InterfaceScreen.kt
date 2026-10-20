@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import com.coolappstore.everdialer.by.svhp.view.components.RivoCheckboxListItem
+import com.coolappstore.everdialer.by.svhp.view.components.rivoHeadingColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -202,47 +203,6 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
     }
 
 
-    // Call UI section checkboxes dialog
-    var showCallUIDialog   by remember { mutableStateOf(false) }
-    var callUIShowToday    by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_UI_SHOW_TODAY, true)) }
-    var callUIShowMissed   by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_UI_SHOW_MISSED, true)) }
-    var callUIShowOutgoing by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_UI_SHOW_OUTGOING, true)) }
-    var callUIShowCallTime by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_UI_SHOW_CALL_TIME, true)) }
-    var callUIShowContacts by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_UI_SHOW_CONTACTS, false)) }
-    var callUIShowGroups   by remember { mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CALL_UI_SHOW_GROUPS, false)) }
-
-    data class CallUIOption(val key: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
-    val callUIOptions = listOf(
-        CallUIOption("today",     "Today",     Icons.AutoMirrored.Filled.CallReceived),
-        CallUIOption("missed",    "Missed",    Icons.AutoMirrored.Filled.CallMissed),
-        CallUIOption("outgoing",  "Outgoing",  Icons.AutoMirrored.Filled.CallMade),
-        CallUIOption("call_time", "Call Time", Icons.Default.Timer),
-        CallUIOption("contacts",  "Contacts",  Icons.Default.People),
-        CallUIOption("groups",    "Groups",    Icons.Default.Group)
-    )
-
-    val callUIOrder = remember {
-        mutableStateListOf<String>().apply {
-            val saved = prefs.getString(PreferenceManager.KEY_CALL_UI_ORDER, null)
-            val savedKeys = PreferenceManager.parseCallUIOrder(saved)
-            addAll(savedKeys)
-        }
-    }
-    fun persistCallUIOrder() {
-        prefs.setString(PreferenceManager.KEY_CALL_UI_ORDER, callUIOrder.joinToString(","))
-    }
-    fun resetCallUIToDefault() {
-        val defaults = PreferenceManager.DEFAULT_CALL_UI_ORDER.split(",").map { it.trim() }.filter { it.isNotBlank() }
-        callUIOrder.clear()
-        callUIOrder.addAll(defaults)
-        persistCallUIOrder()
-        callUIShowToday    = true;  prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_TODAY,    true)
-        callUIShowMissed   = true;  prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_MISSED,   true)
-        callUIShowOutgoing = true;  prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_OUTGOING, true)
-        callUIShowCallTime = true;  prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_CALL_TIME, true)
-        callUIShowContacts = false; prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_CONTACTS,  false)
-        callUIShowGroups   = false; prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_GROUPS,    false)
-    }
 
     // Default Tab dialog
     var showDefaultTabDialog by remember { mutableStateOf(false) }
@@ -439,152 +399,6 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
         }
     }
 
-    // ── Call UI Dialog ────────────────────────────────────────────────────────
-    if (showCallUIDialog) {
-        val density = LocalDensity.current
-        val haptic = LocalHapticFeedback.current
-        val rowHeightDp = 52.dp
-        val rowHeightPx = with(density) { rowHeightDp.toPx() }
-        var draggedKey by remember { mutableStateOf<String?>(null) }
-        var dragOffsetY by remember { mutableStateOf(0f) }
-
-        fun callUIChecked(key: String): Boolean = when (key) {
-            "today"     -> callUIShowToday
-            "missed"    -> callUIShowMissed
-            "outgoing"  -> callUIShowOutgoing
-            "call_time" -> callUIShowCallTime
-            "contacts"  -> callUIShowContacts
-            "groups"    -> callUIShowGroups
-            else        -> true
-        }
-        fun setCallUIChecked(key: String, value: Boolean) {
-            when (key) {
-                "today"     -> { callUIShowToday = value;    prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_TODAY,    value) }
-                "missed"    -> { callUIShowMissed = value;   prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_MISSED,   value) }
-                "outgoing"  -> { callUIShowOutgoing = value; prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_OUTGOING, value) }
-                "call_time" -> { callUIShowCallTime = value; prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_CALL_TIME, value) }
-                "contacts"  -> { callUIShowContacts = value; prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_CONTACTS,  value) }
-                "groups"    -> { callUIShowGroups = value;   prefs.setBoolean(PreferenceManager.KEY_CALL_UI_SHOW_GROUPS,    value) }
-            }
-        }
-
-        AlertDialog(
-            onDismissRequest = { showCallUIDialog = false },
-            icon = { Icon(Icons.Default.Dashboard, null, tint = ColorOrange) },
-            title = { Text("Calls Section Elements") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        "Toggle which stat cards appear in the Calls home screen, and drag the handle to reorder them.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    val maxListHeight = (LocalConfiguration.current.screenHeightDp.dp * 0.55f).coerceAtLeast(240.dp)
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = maxListHeight)
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        callUIOrder.forEach { itemKey ->
-                            val option = callUIOptions.firstOrNull { it.key == itemKey } ?: return@forEach
-                            val isDragging = draggedKey == itemKey
-                            key(itemKey) {
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant,
-                                    tonalElevation = if (isDragging) 6.dp else 0.dp,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 2.dp)
-                                        .zIndex(if (isDragging) 2f else 0f)
-                                        .graphicsLayer {
-                                            translationY = if (isDragging) dragOffsetY else 0f
-                                        }
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(rowHeightDp)
-                                            .padding(horizontal = 16.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = option.icon,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Spacer(Modifier.width(10.dp))
-                                        Text(option.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                                        Checkbox(
-                                            checked = callUIChecked(itemKey),
-                                            onCheckedChange = { setCallUIChecked(itemKey, it) },
-                                            colors = CheckboxDefaults.colors(
-                                                checkedColor = MaterialTheme.colorScheme.primary,
-                                                uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        )
-                                        Spacer(Modifier.width(4.dp))
-                                        Icon(
-                                            imageVector = Icons.Filled.DragHandle,
-                                            contentDescription = "Reorder ${option.label}",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier
-                                                .padding(start = 4.dp)
-                                                .pointerInput(itemKey) {
-                                                    detectDragGestures(
-                                                        onDragStart = {
-                                                            draggedKey = itemKey
-                                                            dragOffsetY = 0f
-                                                        },
-                                                        onDragEnd = {
-                                                            draggedKey = null
-                                                            dragOffsetY = 0f
-                                                            persistCallUIOrder()
-                                                        },
-                                                        onDragCancel = {
-                                                            draggedKey = null
-                                                            dragOffsetY = 0f
-                                                        },
-                                                        onDrag = { change, dragAmount ->
-                                                            change.consume()
-                                                            dragOffsetY += dragAmount.y
-                                                            val currentIdx = callUIOrder.indexOf(itemKey)
-                                                            if (currentIdx != -1) {
-                                                                val threshold = rowHeightPx * 0.6f
-                                                                if (dragOffsetY > threshold && currentIdx < callUIOrder.lastIndex) {
-                                                                    val item = callUIOrder.removeAt(currentIdx)
-                                                                    callUIOrder.add(currentIdx + 1, item)
-                                                                    dragOffsetY -= rowHeightPx
-                                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                                } else if (dragOffsetY < -threshold && currentIdx > 0) {
-                                                                    val item = callUIOrder.removeAt(currentIdx)
-                                                                    callUIOrder.add(currentIdx - 1, item)
-                                                                    dragOffsetY += rowHeightPx
-                                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                                }
-                                                            }
-                                                        }
-                                                    )
-                                                }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showCallUIDialog = false }) { Text("Done") }
-            },
-            dismissButton = {
-                TextButton(onClick = { resetCallUIToDefault() }) { Text("Default") }
-            }
-        )
-    }
 
     // ── Animation Style Dialog ───────────────────────────────────────────────
     if (showAnimationStyleDialog) {
@@ -954,7 +768,7 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                     RivoAnimatedSection(delayMs = 0L) {
                         Column {
                             Text("App Theme", style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = rivoHeadingColor(),
                                 modifier = Modifier.padding(start = 12.dp, bottom = 8.dp))
                             RivoExpressiveCard {
                                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1095,7 +909,7 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                     RivoAnimatedSection(delayMs = 60L) {
                         Column {
                             Text("Theme Colors", style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = rivoHeadingColor(),
                                 modifier = Modifier.padding(start = 12.dp, bottom = 8.dp))
                             RivoExpressiveCard {
                                 RivoSwitchListItem(
@@ -1564,7 +1378,7 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                     RivoAnimatedSection(delayMs = 70L) {
                         Column {
                             Text("Fonts", style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = rivoHeadingColor(),
                                 modifier = Modifier.padding(start = 12.dp, bottom = 8.dp))
                             RivoExpressiveCard {
                                 Column(modifier = Modifier
@@ -1600,7 +1414,7 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                     RivoAnimatedSection(delayMs = 75L) {
                         Column {
                             Text("Roundness", style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = rivoHeadingColor(),
                                 modifier = Modifier.padding(start = 12.dp, bottom = 8.dp))
                             RivoExpressiveCard {
                                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
@@ -1719,7 +1533,7 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                     RivoAnimatedSection(delayMs = 80L) {
                         Column {
                             Text("Visual Effects", style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = rivoHeadingColor(),
                                 modifier = Modifier.padding(start = 12.dp, bottom = 8.dp))
                             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
                                 RivoExpressiveCard {
@@ -1871,7 +1685,7 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                     RivoAnimatedSection(delayMs = 100L) {
                         Column {
                             Text("Call UI", style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = rivoHeadingColor(),
                                 modifier = Modifier.padding(start = 12.dp, bottom = 8.dp))
                             RivoExpressiveCard {
                                 RivoListItem(
@@ -1897,17 +1711,6 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                                     onClick = { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.CallerUIScreenDestination()) }
                                 )
 
-                                HorizontalDivider(Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                RivoListItem(
-                                    headline = "Calls Section Elements",
-                                    supporting = "Toggle and drag to reorder Today, Missed, Outgoing, Call Time, Contacts, Groups cards",
-                                    leadingIcon = Icons.Default.Dashboard,
-                                    iconContainerColor = ColorOrange,
-                                    trailingIcon = Icons.Default.ChevronRight,
-                                    modifier = Modifier.settingsSearchHighlight("calls_section_elements", highlightedKey) { highlightedKey = null },
-                                    onClick = { showCallUIDialog = true }
-                                )
                             }
                         }
                     }
@@ -1916,7 +1719,7 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                     RivoAnimatedSection(delayMs = 130L) {
                         Column {
                             Text("UI Elements", style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = rivoHeadingColor(),
                                 modifier = Modifier.padding(start = 12.dp, bottom = 8.dp))
                             RivoExpressiveCard {
                                 RivoListItem(
@@ -2007,7 +1810,7 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                     RivoAnimatedSection(delayMs = 160L) {
                         Column {
                             Text("Avatars", style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = rivoHeadingColor(),
                                 modifier = Modifier.padding(start = 12.dp, bottom = 8.dp))
                             RivoExpressiveCard {
                                 RivoSwitchListItem(
@@ -2075,7 +1878,7 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                         Text(
                             "App",
                             style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = rivoHeadingColor(),
                             modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
                         )
                         RivoExpressiveCard {

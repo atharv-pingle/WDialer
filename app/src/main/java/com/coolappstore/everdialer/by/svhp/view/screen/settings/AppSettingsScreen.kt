@@ -668,7 +668,7 @@ private fun AppSettingsSectionLabel(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
+        color = rivoHeadingColor(),
         modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
     )
 }

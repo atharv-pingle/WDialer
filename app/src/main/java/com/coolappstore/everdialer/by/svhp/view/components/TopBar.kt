@@ -289,8 +289,14 @@ fun SettingsIconButton(
     val solidIconsDynamic = remember(settingsVer) { prefs.getBoolean(PreferenceManager.KEY_SOLID_ICONS_DYNAMIC, false) }
     val circleIcons = remember(settingsVer) { prefs.getBoolean(PreferenceManager.KEY_CIRCLE_ICONS, false) }
     val solidStyle = remember(settingsVer, isDark) { prefs.getSolidIconsStyle(isDark) }
+    val isBackgroundTarget = remember(settingsVer) { prefs.getSaturatedTarget() == PreferenceManager.SATURATED_TARGET_BACKGROUND }
 
     val (settingsBgColor, settingsFgColor) = when {
+        isSaturatedActive && isBackgroundTarget -> {
+            val primary = MaterialTheme.colorScheme.primary
+            val isBright = androidx.core.graphics.ColorUtils.calculateLuminance(primary.toArgb()) > 0.45
+            primary to (if (isBright) Color(0xFF1C1B1F) else Color.White)
+        }
         isSaturatedActive || (solidIcons && solidIconsDynamic) -> {
             if (solidStyle == PreferenceManager.SOLID_ICONS_STYLE_BRIGHT) {
                 val primary = MaterialTheme.colorScheme.primary
@@ -434,9 +440,12 @@ fun SettingsPillTopAppBar(
     val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
     val isSaturatedActive = remember(settingsVer, isDark) { prefs.isSaturatedForTheme(isDark) }
     val isDynamic = remember(settingsVer) { prefs.getBoolean(PreferenceManager.KEY_DYNAMIC_COLORS, true) }
+    val isBackgroundTarget = remember(settingsVer) { prefs.getSaturatedTarget() == PreferenceManager.SATURATED_TARGET_BACKGROUND }
     val usePrimary = isSaturatedActive || !isDynamic
 
-    val pillBackground = if (isSaturatedActive) {
+    val pillBackground = if (isSaturatedActive && isBackgroundTarget) {
+        if (isDark) Color.Black else Color.White
+    } else if (isSaturatedActive) {
         MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.70f)
     } else {
         MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.65f)
@@ -468,12 +477,19 @@ fun SettingsPillTopAppBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (onBackClick != null) {
+                    val backBtnBg = if (usePrimary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer
+                    val isBackBtnBright = androidx.core.graphics.ColorUtils.calculateLuminance(backBtnBg.toArgb()) > 0.45
+                    val backBtnFg = if (usePrimary) {
+                        if (isBackBtnBright) Color(0xFF1C1B1F) else Color.White
+                    } else {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    }
                     FilledIconButton(
                         onClick = onBackClick,
                         modifier = Modifier.size(44.dp),
                         colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = if (usePrimary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = if (usePrimary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+                            containerColor = backBtnBg,
+                            contentColor = backBtnFg
                         )
                     ) {
                         Icon(
@@ -494,7 +510,7 @@ fun SettingsPillTopAppBar(
                         MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 20.sp,
-                            color = MaterialTheme.colorScheme.primary
+                            color = rivoHeadingColor()
                         )
                     ) {
                         title()
@@ -527,7 +543,7 @@ fun SettingsPillTopAppBar(
                 text = title,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 20.sp,
-                color = MaterialTheme.colorScheme.primary,
+                color = rivoHeadingColor(),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

@@ -339,10 +339,10 @@ val globalSettingsSearchEntries: List<GlobalSettingsSearchEntry> by lazy {
         GlobalSettingsSearchEntry("Hangup Animation", "Animate the screen when a call ends", "hangup_animation", Icons.Outlined.Palette, GsColorRed) { it.navigate(InterfaceScreenDestination(highlightKey = "hangup_animation")) },
 
         // ── Call UI ──────────────────────────────────────────────────────────────
-        GlobalSettingsSearchEntry("Call UI", "Incoming Call UI, Ongoing Call UI and Calls Section Elements", "call_ui_section", Icons.Outlined.Call, GsColorGreen) { it.navigate(InterfaceScreenDestination(highlightKey = "incoming_call_ui_link")) },
+        GlobalSettingsSearchEntry("Call UI", "Incoming Call UI and Ongoing Call UI", "call_ui_section", Icons.Outlined.Call, GsColorGreen) { it.navigate(InterfaceScreenDestination(highlightKey = "incoming_call_ui_link")) },
         GlobalSettingsSearchEntry("Incoming Call UI", "Call UI: Customize the incoming call screen appearance", "incoming_call_ui_link", Icons.Outlined.CallReceived, GsColorGreen) { it.navigate(IncomingCallUIScreenDestination()) },
         GlobalSettingsSearchEntry("Ongoing Call UI", "Call UI: Customize the in-call screen layout and controls", "caller_ui_link", Icons.Outlined.Person, GsColorBlue) { it.navigate(CallerUIScreenDestination()) },
-        GlobalSettingsSearchEntry("Calls Section Elements", "Call UI: Toggle and drag to reorder Today, Missed, Outgoing, Call Time, Contacts, Groups cards", "calls_section_elements", Icons.Default.Dashboard, GsColorOrange) { it.navigate(InterfaceScreenDestination(highlightKey = "calls_section_elements")) },
+        GlobalSettingsSearchEntry("Calls Section Elements", "Call Logs: Toggle and drag to reorder Today, Missed, Outgoing, Call Time, Contacts, Groups cards", "calls_section_elements", Icons.Default.Dashboard, GsColorOrange) { it.navigate(CallLogsSettingsScreenDestination(highlightKey = "calls_section_elements")) },
 
         // ── UI Elements ──────────────────────────────────────────────────────────
         GlobalSettingsSearchEntry("UI Elements", "Call Logs, Dialpad, Contact info, Favourites, Navigation, Context Menu and Contact Info Elements", "ui_elements_section", Icons.Outlined.Widgets, GsColorPurple) { it.navigate(InterfaceScreenDestination(highlightKey = "call_logs_settings_link")) },

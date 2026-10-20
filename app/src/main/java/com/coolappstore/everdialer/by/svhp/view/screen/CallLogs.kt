@@ -38,6 +38,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinActivityViewModel
 import org.koin.compose.koinInject
+import com.coolappstore.everdialer.by.svhp.view.theme.ExpandingScreenContainer
 import com.coolappstore.everdialer.by.svhp.view.theme.SettingsTransitionStyle
 import java.util.Locale
 import com.coolappstore.everdialer.by.svhp.controller.ContactsViewModel
@@ -114,21 +115,22 @@ fun CallLogFullScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        if (contactName != null) "History with $contactName" else "Call History",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navigator.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
+    ExpandingScreenContainer(onClose = { navigator.navigateUp() }) { closeWithAnimation ->
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            if (contactName != null) "History with $contactName" else "Call History",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { closeWithAnimation() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -287,5 +289,6 @@ fun CallLogFullScreen(
                 onClick = { scope.launch { listState.animateScrollToItem(0) } }
             )
         }
+    }
     }
 }

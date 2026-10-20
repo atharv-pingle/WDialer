@@ -68,7 +68,12 @@ import com.coolappstore.everdialer.by.svhp.modal.data.SmsMessage
 import com.coolappstore.everdialer.by.svhp.view.components.RivoAvatar
 import com.coolappstore.everdialer.by.svhp.view.components.RivoDropdownMenu
 import com.coolappstore.everdialer.by.svhp.view.components.RivoDropdownMenuItem
+import com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker
 import com.coolappstore.everdialer.by.svhp.view.theme.SettingsTransitionStyle
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import com.coolappstore.everdialer.by.svhp.view.theme.settingsMotionBlur
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -603,13 +608,22 @@ fun SmsChatScreen(
             } else {
                 TopAppBar(
                     title = {
+                        var pillCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
                         Surface(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.surfaceContainerHigh,
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                             modifier = Modifier
+                                .onGloballyPositioned { pillCoords = it }
                                 .clip(CircleShape)
                                 .clickable {
+                                    pillCoords?.let { coords ->
+                                        val center = coords.boundsInRoot().center
+                                        val rootSize = coords.findRootCoordinates().size
+                                        SettingsClickTracker.recordTap(
+                                            center.x, center.y, rootSize.width.toFloat(), rootSize.height.toFloat()
+                                        )
+                                    }
                                     navigator.navigate(
                                         ContactDetailsScreenDestination(
                                             contactId = matchedContact?.id,

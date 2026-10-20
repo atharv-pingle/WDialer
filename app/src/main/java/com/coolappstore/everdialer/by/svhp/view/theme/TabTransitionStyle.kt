@@ -102,10 +102,7 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
             isChat -> ChatSmoothEaseOut
             else -> SettingsSmoothEaseOut
         }
-        val initialScale = when {
-            isContact -> 0.28f
-            else -> 0.04f
-        }
+        val initialScale = 0.04f
         val origin = if (isContact) SettingsClickTracker.lastOrigin else TransformOrigin.Center
 
         when {
@@ -173,9 +170,22 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
         val fromSettings = isSettingsRoute(initialState)
         val toSettings   = isSettingsRoute(targetState)
         val isChat = isSmsChatRoute(targetState.destination.route) || isSmsChatRoute(initialState.destination.route)
-        val exitDuration = if (isChat) CHAT_ANIM_DURATION_EXIT else SETTINGS_ANIM_DURATION_EXIT
-        val exitEasing = if (isChat) ChatSmoothEase else SettingsSmoothEase
-        val exitEasingIn = if (isChat) ChatSmoothEaseIn else SettingsSmoothEaseIn
+        val isContact = isContactDetailsRoute(targetState.destination.route) || isContactDetailsRoute(initialState.destination.route)
+        val exitDuration = when {
+            isContact -> CONTACT_DETAILS_ANIM_DURATION_ENTER
+            isChat -> CHAT_ANIM_DURATION_EXIT
+            else -> SETTINGS_ANIM_DURATION_EXIT
+        }
+        val exitEasing = when {
+            isContact -> ContactDetailsSmoothEase
+            isChat -> ChatSmoothEase
+            else -> SettingsSmoothEase
+        }
+        val exitEasingIn = when {
+            isContact -> ContactDetailsSmoothEase
+            isChat -> ChatSmoothEaseIn
+            else -> SettingsSmoothEaseIn
+        }
 
         when {
             isRecordingsFromSettings(initialState) && toSettings -> {
@@ -231,9 +241,23 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
         val fromSettings = isSettingsRoute(initialState)
         val toSettings   = isSettingsRoute(targetState)
         val isChat = isSmsChatRoute(targetState.destination.route) || isSmsChatRoute(initialState.destination.route)
-        val enterDuration = if (isChat) CHAT_ANIM_DURATION_ENTER else if (fromSettings) SETTINGS_ANIM_DURATION_EXIT else SETTINGS_ANIM_DURATION_ENTER
-        val enterEasing = if (isChat) ChatSmoothEase else SettingsSmoothEase
-        val enterEasingOut = if (isChat) ChatSmoothEaseOut else SettingsSmoothEaseOut
+        val isContact = isContactDetailsRoute(targetState.destination.route) || isContactDetailsRoute(initialState.destination.route)
+        val enterDuration = when {
+            isContact -> CONTACT_DETAILS_ANIM_DURATION_EXIT
+            isChat -> CHAT_ANIM_DURATION_ENTER
+            fromSettings -> SETTINGS_ANIM_DURATION_EXIT
+            else -> SETTINGS_ANIM_DURATION_ENTER
+        }
+        val enterEasing = when {
+            isContact -> ContactDetailsSmoothEaseExit
+            isChat -> ChatSmoothEase
+            else -> SettingsSmoothEase
+        }
+        val enterEasingOut = when {
+            isContact -> ContactDetailsSmoothEaseExit
+            isChat -> ChatSmoothEaseOut
+            else -> SettingsSmoothEaseOut
+        }
 
         when {
             isRecordingsFromSettings(targetState) && fromSettings -> {
@@ -291,9 +315,22 @@ object TabTransitionStyle : NavHostAnimatedDestinationStyle() {
         val fromSettings = isSettingsRoute(initialState)
         val toSettings   = isSettingsRoute(targetState)
         val isChat = isSmsChatRoute(targetState.destination.route) || isSmsChatRoute(initialState.destination.route)
-        val exitDuration = if (isChat) CHAT_ANIM_DURATION_EXIT else SETTINGS_ANIM_DURATION_EXIT
-        val exitEasing = if (isChat) ChatSmoothEase else SettingsSmoothEase
-        val exitEasingIn = if (isChat) ChatSmoothEaseIn else SettingsSmoothEaseIn
+        val isContact = isContactDetailsRoute(targetState.destination.route) || isContactDetailsRoute(initialState.destination.route)
+        val exitDuration = when {
+            isContact -> CONTACT_DETAILS_ANIM_DURATION_EXIT
+            isChat -> CHAT_ANIM_DURATION_EXIT
+            else -> SETTINGS_ANIM_DURATION_EXIT
+        }
+        val exitEasing = when {
+            isContact -> ContactDetailsSmoothEaseExit
+            isChat -> ChatSmoothEase
+            else -> SettingsSmoothEase
+        }
+        val exitEasingIn = when {
+            isContact -> ContactDetailsSmoothEaseExit
+            isChat -> ChatSmoothEaseIn
+            else -> SettingsSmoothEaseIn
+        }
 
         when {
             isRecordingsFromSettings(initialState) -> {

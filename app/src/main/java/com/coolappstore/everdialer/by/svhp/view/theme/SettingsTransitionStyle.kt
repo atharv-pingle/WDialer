@@ -69,9 +69,9 @@ val ChatSmoothEase = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 val ChatSmoothEaseOut = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 val ChatSmoothEaseIn = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
 
-const val CONTACT_DETAILS_ANIM_DURATION_ENTER = 680
-const val CONTACT_DETAILS_ANIM_DURATION_EXIT = 550
-val ContactDetailsSmoothEase = CubicBezierEasing(0.12f, 0.7f, 0.15f, 1f)
+const val CONTACT_DETAILS_ANIM_DURATION_ENTER = 800
+const val CONTACT_DETAILS_ANIM_DURATION_EXIT = 800
+val ContactDetailsSmoothEase = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 val ContactDetailsSmoothEaseExit = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 
 const val SETTINGS_SCALE_ENTER_FROM = 0.88f
@@ -334,11 +334,11 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
         val isRootSettings = targetState.destination.route?.substringBefore("?")?.substringBefore("/") == "settings_screen"
         val origin = when {
             isRootSettings -> SettingsClickTracker.settingsIconOrigin
-            isExpanding -> SettingsClickTracker.lastOrigin
+            isExpanding || isContact -> SettingsClickTracker.lastOrigin
             else -> TransformOrigin.Center
         }
         val initialScale = when {
-            isContact -> 0.28f
+            isContact -> 0.04f
             isExpanding -> 0.04f
             else -> 0.92f
         }
@@ -449,11 +449,11 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
         }
         val origin = when {
             isRootSettings -> SettingsClickTracker.settingsIconOrigin
-            isExpanding -> SettingsClickTracker.lastOrigin
+            isExpanding || isContact -> SettingsClickTracker.lastOrigin
             else -> TransformOrigin.Center
         }
         val targetScale = when {
-            isContact -> 0.28f
+            isContact -> 0.04f
             isExpanding -> 0.04f
             else -> 0.92f
         }
@@ -464,7 +464,7 @@ object SettingsTransitionStyle : NavHostAnimatedDestinationStyle() {
                 targetOffsetX = { full -> full / 6 }
             ) + fadeOut(tween(SETTINGS_WP_ANIM_DURATION_EXIT, easing = FastOutLinearInEasing))
         } else {
-            val fadeEasing = if (isContact) ContactDetailsSmoothEaseExit else if (isExpanding) SettingsSmoothEase else easingIn
+            val fadeEasing = if (isContact || isExpanding) SettingsSmoothEase else easingIn
             scaleOut(
                 animationSpec = tween(duration, easing = easing),
                 targetScale = targetScale,

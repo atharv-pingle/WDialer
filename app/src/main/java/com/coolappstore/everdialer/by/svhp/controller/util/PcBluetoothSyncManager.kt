@@ -8,9 +8,21 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
+import android.content.BroadcastReceiver
+import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.database.ContentObserver
+import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.provider.CallLog
+import android.provider.ContactsContract
+import android.provider.Telephony
+import android.telecom.TelecomManager
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.coolappstore.everdialer.by.svhp.modal.`interface`.ICallLogRepository
@@ -134,6 +146,22 @@ class PcBluetoothSyncManager(
             } else {
                 Log.d(TAG, "triggerSyncNow: socket not connected, triggering immediate connect")
                 start()
+            }
+        }
+    }
+
+    fun triggerImmediateSync() {
+        val writer = activeWriter
+        val socket = activeSocket
+        if (writer != null && socket != null && socket.isConnected) {
+            scope.launch(Dispatchers.IO) {
+                delay(350)
+                try {
+                    Log.i(TAG, "triggerImmediateSync: pushing fresh data to PC...")
+                    sendSyncData(writer)
+                } catch (e: Exception) {
+                    Log.w(TAG, "triggerImmediateSync error: ${e.message}")
+                }
             }
         }
     }
@@ -280,30 +308,122 @@ class PcBluetoothSyncManager(
                 EVER_DIALER_SYNC_UUID
             )
 
-            withTimeoutOrNull(4000) {
-                while (scope.isActive) {
-                    val clientSocket = try {
-                        serverSocket.accept()
-                    } catch (e: Exception) {
-                        null
-                    }
+            val timeoutJob = scope.launch {
+                delay(3000)
+                try { serverSocket?.close() } catch (_: Exception) {}
+            }
 
-                    if (clientSocket != null) {
-                        val clientDevName = clientSocket.remoteDevice?.name ?: "Ever Dialer PC"
-                        Log.i(TAG, "Accepted incoming connection from $clientDevName")
-                        handleConnection(clientSocket, clientDevName)
-                        break
-                    }
-                    delay(300)
+            val clientSocket = try {
+                withContext(Dispatchers.IO) {
+                    serverSocket.accept()
                 }
+            } catch (e: Exception) {
+                null
+            } finally {
+                timeoutJob.cancel()
+            }
+
+            if (clientSocket != null) {
+                val clientDevName = clientSocket.remoteDevice?.name ?: "Ever Dialer PC"
+                Log.i(TAG, "Accepted incoming connection from $clientDevName")
+                handleConnection(clientSocket, clientDevName)
             }
         } catch (e: Exception) {
-            Log.d(TAG, "Server socket listen error: ${e.message}")
+            Log.d(TAG, "Server socket listen note: ${e.message}")
         } finally {
             try {
                 serverSocket?.close()
             } catch (_: Exception) {}
         }
+    }
+
+    private fun computeStateFingerprint(): String {
+        val sb = StringBuilder()
+        // 1. Call log
+        try {
+            context.contentResolver.query(
+                CallLog.Calls.CONTENT_URI,
+                arrayOf(CallLog.Calls._ID, CallLog.Calls.DATE),
+                null, null,
+                "${CallLog.Calls.DATE} DESC LIMIT 1"
+            )?.use { c ->
+                if (c.moveToFirst()) {
+                    sb.append("calls:").append(c.getLong(0)).append("-").append(c.getLong(1)).append(";")
+                }
+            }
+        } catch (_: Exception) {}
+
+        // 2. Contacts
+        try {
+            context.contentResolver.query(
+                ContactsContract.Contacts.CONTENT_URI,
+                arrayOf(
+                    ContactsContract.Contacts._ID,
+                    ContactsContract.Contacts.STARRED,
+                    ContactsContract.Contacts.CONTACT_LAST_UPDATED_TIMESTAMP
+                ),
+                null, null,
+                "${ContactsContract.Contacts.CONTACT_LAST_UPDATED_TIMESTAMP} DESC LIMIT 1"
+            )?.use { c ->
+                sb.append("cnt:").append(c.count).append(",")
+                if (c.moveToFirst()) {
+                    val sIdx = c.getColumnIndex(ContactsContract.Contacts.STARRED)
+                    val tIdx = c.getColumnIndex(ContactsContract.Contacts.CONTACT_LAST_UPDATED_TIMESTAMP)
+                    if (sIdx >= 0) sb.append(c.getInt(sIdx)).append(",")
+                    if (tIdx >= 0) sb.append(c.getLong(tIdx)).append(";")
+                }
+            }
+        } catch (_: Exception) {}
+
+        // Starred contacts count
+        try {
+            context.contentResolver.query(
+                ContactsContract.Contacts.CONTENT_URI,
+                arrayOf(ContactsContract.Contacts._ID),
+                "${ContactsContract.Contacts.STARRED} = 1",
+                null, null
+            )?.use { c ->
+                sb.append("fav:").append(c.count).append(";")
+            }
+        } catch (_: Exception) {}
+
+        // 3. SMS (query by highest _ID and DATE, and conversation snippet/date)
+        try {
+            context.contentResolver.query(
+                Telephony.Sms.CONTENT_URI,
+                arrayOf(Telephony.Sms._ID, Telephony.Sms.DATE, Telephony.Sms.READ),
+                null, null,
+                "${Telephony.Sms._ID} DESC LIMIT 1"
+            )?.use { c ->
+                if (c.moveToFirst()) {
+                    sb.append("sms:").append(c.getLong(0)).append("-").append(c.getLong(1)).append("-").append(c.getInt(2)).append(";")
+                }
+            }
+        } catch (_: Exception) {}
+
+        try {
+            context.contentResolver.query(
+                Uri.parse("content://mms-sms/conversations"),
+                arrayOf("date", "snippet"),
+                null, null,
+                "date DESC LIMIT 1"
+            )?.use { c ->
+                if (c.moveToFirst()) {
+                    val d = c.getLong(0)
+                    val s = c.getString(1)?.hashCode() ?: 0
+                    sb.append("mms_conv:").append(d).append("-").append(s).append(";")
+                }
+            }
+        } catch (_: Exception) {}
+
+        // 4. Notes
+        try {
+            val notes = NoteManager.getNotesDir(context).listFiles() ?: emptyArray()
+            val maxMod = notes.maxOfOrNull { it.lastModified() } ?: 0L
+            sb.append("notes:").append(notes.size).append("-").append(maxMod)
+        } catch (_: Exception) {}
+
+        return sb.toString()
     }
 
     private suspend fun handleConnection(socket: BluetoothSocket, deviceName: String) {
@@ -316,10 +436,72 @@ class PcBluetoothSyncManager(
 
         val reader = BufferedReader(InputStreamReader(socket.inputStream, Charsets.UTF_8))
 
-        // Immediately send full sync data upon connection
+        var lastFingerprint = computeStateFingerprint()
+
+        // 1. Send full sync data immediately upon connection
         sendSyncData(writer)
 
-        // Read incoming commands from Ever Dialer PC
+        // 2. Set up ContentObserver for real-time changes (calls, contacts, SMS)
+        val contentObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            private var lastTrigger = 0L
+            override fun onChange(selfChange: Boolean) {
+                val now = System.currentTimeMillis()
+                if (now - lastTrigger > 500) {
+                    lastTrigger = now
+                    scope.launch(Dispatchers.IO) {
+                        delay(400)
+                        val newFp = computeStateFingerprint()
+                        if (newFp != lastFingerprint) {
+                            Log.i(TAG, "ContentObserver: data change detected on phone, syncing to PC...")
+                            lastFingerprint = newFp
+                            sendSyncData(writer)
+                        }
+                    }
+                }
+            }
+        }
+
+        try {
+            context.contentResolver.registerContentObserver(CallLog.Calls.CONTENT_URI, true, contentObserver)
+            context.contentResolver.registerContentObserver(ContactsContract.Contacts.CONTENT_URI, true, contentObserver)
+            context.contentResolver.registerContentObserver(Telephony.Sms.CONTENT_URI, true, contentObserver)
+            context.contentResolver.registerContentObserver(Telephony.Sms.Inbox.CONTENT_URI, true, contentObserver)
+            context.contentResolver.registerContentObserver(Uri.parse("content://mms-sms/conversations"), true, contentObserver)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to register content observers: ${e.message}")
+        }
+
+        val smsReceiver = object : BroadcastReceiver() {
+            override fun onReceive(pContext: Context?, intent: Intent?) {
+                Log.i(TAG, "Dynamic SMS broadcast received (${intent?.action}), triggering sync...")
+                triggerImmediateSync()
+            }
+        }
+        try {
+            val filter = IntentFilter().apply {
+                addAction(Telephony.Sms.Intents.SMS_RECEIVED_ACTION)
+                addAction(Telephony.Sms.Intents.SMS_DELIVER_ACTION)
+            }
+            ContextCompat.registerReceiver(context, smsReceiver, filter, ContextCompat.RECEIVER_EXPORTED)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not register dynamic SMS receiver: ${e.message}")
+        }
+
+        // 3. Periodic change-detector coroutine (runs every 2.5s for notes or missed provider events)
+        val periodicSyncJob = scope.launch(Dispatchers.IO) {
+            while (isActive && socket.isConnected) {
+                delay(2500)
+                if (!socket.isConnected) break
+                val newFp = computeStateFingerprint()
+                if (newFp != lastFingerprint) {
+                    Log.i(TAG, "Periodic check detected data change on phone: syncing to PC...")
+                    lastFingerprint = newFp
+                    sendSyncData(writer)
+                }
+            }
+        }
+
+        // 4. Read incoming commands from Ever Dialer PC
         try {
             while (scope.isActive && socket.isConnected) {
                 val line = withContext(Dispatchers.IO) {
@@ -332,12 +514,64 @@ class PcBluetoothSyncManager(
                     val cmd = cmdObj.optString("cmd")
                     when (cmd) {
                         "request_sync" -> {
+                            lastFingerprint = computeStateFingerprint()
                             sendSyncData(writer)
+                        }
+                        "make_call" -> {
+                            val number = cmdObj.optString("number")
+                            Log.i(TAG, "Executing make_call for $number via Ever Dialer")
+                            if (number.isNotBlank()) {
+                                withContext(Dispatchers.Main) {
+                                    val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
+                                    val accounts = try { telecomManager?.callCapablePhoneAccounts ?: emptyList() } catch (_: Throwable) { emptyList() }
+                                    val defaultSim = prefs.getInt(PreferenceManager.KEY_DEFAULT_SIM, 1)
+                                    val handle = if (accounts.isNotEmpty()) {
+                                        getPhoneAccountForSimSlot(context, accounts, if (defaultSim == 2) 1 else 0)
+                                    } else null
+                                    makeCall(context, number, accountHandle = handle, skipConfirm = true)
+                                }
+                            }
+                        }
+                        "send_sms" -> {
+                            val phone = cmdObj.optString("phone").ifBlank { cmdObj.optString("number") }
+                            val text = cmdObj.optString("text").ifBlank { cmdObj.optString("body") }
+                            Log.i(TAG, "Executing send_sms via Ever Dialer to $phone: $text")
+                            if (phone.isNotBlank() && text.isNotBlank()) {
+                                val success = smsRepository.sendSms(phone, text)
+                                Log.i(TAG, "send_sms result: $success")
+                                delay(400)
+                                lastFingerprint = computeStateFingerprint()
+                                sendSyncData(writer)
+                            }
+                        }
+                        "toggle_favorite" -> {
+                            val contactId = cmdObj.optString("contactId")
+                            val isFav = cmdObj.optBoolean("isFavorite", false)
+                            Log.i(TAG, "Executing toggle_favorite for contactId $contactId -> $isFav")
+                            if (contactId.isNotBlank()) {
+                                try {
+                                    val values = ContentValues().apply {
+                                        put(ContactsContract.Contacts.STARRED, if (isFav) 1 else 0)
+                                    }
+                                    context.contentResolver.update(
+                                        ContactsContract.Contacts.CONTENT_URI,
+                                        values,
+                                        "${ContactsContract.Contacts._ID} = ?",
+                                        arrayOf(contactId)
+                                    )
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Error toggling favorite for $contactId: ${e.message}")
+                                }
+                                delay(300)
+                                lastFingerprint = computeStateFingerprint()
+                                sendSyncData(writer)
+                            }
                         }
                         "add_note" -> {
                             val title = cmdObj.optString("title", "Untitled Note")
                             val content = cmdObj.optString("content", "")
                             NoteManager.writeNote(context, title, "", content)
+                            lastFingerprint = computeStateFingerprint()
                             sendSyncData(writer)
                         }
                         "delete_note" -> {
@@ -349,6 +583,7 @@ class PcBluetoothSyncManager(
                                     NoteManager.deleteNoteFile(file)
                                 }
                             }
+                            lastFingerprint = computeStateFingerprint()
                             sendSyncData(writer)
                         }
                     }
@@ -359,6 +594,13 @@ class PcBluetoothSyncManager(
         } catch (e: Exception) {
             Log.d(TAG, "Connection lost: ${e.message}")
         } finally {
+            try {
+                context.unregisterReceiver(smsReceiver)
+            } catch (_: Exception) {}
+            periodicSyncJob.cancel()
+            try {
+                context.contentResolver.unregisterContentObserver(contentObserver)
+            } catch (_: Exception) {}
             closeActiveConnection()
             _status.value = PcSyncStatus.DISCONNECTED
             _connectedDeviceName.value = null
@@ -444,7 +686,7 @@ class PcBluetoothSyncManager(
 
                 for (conv in convs) {
                     val msgs = try {
-                        smsRepository.getMessagesForThread(conv.threadId).take(20)
+                        smsRepository.getMessagesForThread(conv.threadId).takeLast(50)
                     } catch (_: Exception) {
                         emptyList()
                     }

@@ -116,6 +116,11 @@ class SmsReceiver : BroadcastReceiver() {
                 // Broadcast in-process event to instantly update active screens
                 SmsEventBus.notifyNewSms(if (threadId > 0) threadId else null)
 
+                try {
+                    val syncMgr = org.koin.core.context.GlobalContext.get().getOrNull<com.coolappstore.everdialer.by.svhp.controller.util.PcBluetoothSyncManager>()
+                    syncMgr?.triggerImmediateSync()
+                } catch (_: Throwable) {}
+
                 // Resolve contact name and photo for notification
                 val prefs = PreferenceManager(context)
                 val isBlocked = com.coolappstore.everdialer.by.svhp.controller.util.BlockedNumbersManager.isBlocked(context, prefs, address)

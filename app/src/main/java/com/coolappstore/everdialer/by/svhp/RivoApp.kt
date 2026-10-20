@@ -22,6 +22,9 @@ class RivoApp : ShizuApplication() {
             com.coolappstore.everdialer.by.svhp.controller.util.AppLanguageManager.applyLocale(this, appLang, recreateActivity = false)
         } catch (_: Throwable) {}
         com.coolappstore.everdialer.by.svhp.controller.FakeCallConnectionService.ensureRegistered(this)
+        try {
+            org.koin.core.context.GlobalContext.get().get<com.coolappstore.everdialer.by.svhp.controller.util.PcBluetoothSyncManager>()
+        } catch (_: Throwable) {}
         initMissedCallBadgeObserver()
     }
 

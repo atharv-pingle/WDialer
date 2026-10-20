@@ -1276,7 +1276,25 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                                 modifier = Modifier.settingsSearchHighlight("app_settings", highlightedSettingKey) { highlightedSettingKey = null },
                                 onClick = { navigator.navigate(AppSettingsScreenDestination()) }
                             )
-                            CardDivider()
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        RivoExpressiveCard {
+                            RivoListItem(
+                                headline = "PC Connect",
+                                supporting = "Connect and sync with Ever Dialer PC over Bluetooth",
+                                leadingIcon = Icons.Outlined.Devices,
+                                iconContainerColor = Color(0xFF1E88E5),
+                                trailingIcon = Icons.Default.ChevronRight,
+                                modifier = Modifier.settingsSearchHighlight("pc_connect", highlightedSettingKey) { highlightedSettingKey = null },
+                                onClick = { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.PcConnectScreenDestination()) }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        RivoExpressiveCard {
                             RivoListItem(
                                 headline = "Sim And Call Placement",
                                 supporting = "Default SIM, SIM colors, confirm calls, and contacts",

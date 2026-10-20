@@ -861,6 +861,14 @@ class PreferenceManager(context: Context) {
 
         // Confirm placing a call
         const val KEY_CONFIRM_PLACING_CALL         = "confirm_placing_call"
+
+        // PC Connect & Bluetooth PC Sync
+        const val KEY_PC_SYNC_FAVOURITES           = "pc_sync_favourites"
+        const val KEY_PC_SYNC_CALL_LOGS            = "pc_sync_call_logs"
+        const val KEY_PC_SYNC_CONTACTS             = "pc_sync_contacts"
+        const val KEY_PC_SYNC_SMS                  = "pc_sync_sms"
+        const val KEY_PC_SYNC_NOTES                = "pc_sync_notes"
+        const val KEY_PC_SYNC_BLUETOOTH_ENABLED    = "pc_sync_bluetooth_enabled"
     }
 }
 

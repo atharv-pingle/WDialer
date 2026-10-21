@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -707,6 +708,11 @@ private fun FavoriteContactCard(
                         while (true) {
                             val down = awaitFirstDown(requireUnconsumed = false)
                             isPressed = true
+                            if (currentEvent.buttons.isSecondaryPressed) {
+                                isPressed = false
+                                if (selectionMode) onSelectToggle?.invoke() else showMenu = true
+                                continue
+                            }
                             val startPos = down.position
                             val touchSlop = viewConfiguration.touchSlop
                             var longPressTriggered = false

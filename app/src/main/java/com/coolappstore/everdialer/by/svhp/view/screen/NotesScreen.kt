@@ -25,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.zIndex
 import kotlin.math.abs
@@ -599,7 +601,17 @@ fun NoteCard(note: NoteEntry, photoUri: String? = null, isSelected: Boolean = fa
                 indication = null,
                 onClick = onClick,
                 onLongClick = onLongClick
-            ),
+            )
+            .pointerInput(onLongClick) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        if (event.type == PointerEventType.Press && event.buttons.isSecondaryPressed) {
+                            onLongClick()
+                        }
+                    }
+                }
+            },
         shape = RoundedCornerShape(20.dp),
         color = cardBgColor
     ) {

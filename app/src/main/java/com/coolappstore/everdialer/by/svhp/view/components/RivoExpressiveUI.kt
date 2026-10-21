@@ -9,6 +9,10 @@ import android.os.VibratorManager
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.indication
+import androidx.compose.ui.input.pointer.isSecondaryPressed
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.core.Animatable
 import kotlinx.coroutines.CancellationException
@@ -835,6 +839,18 @@ fun RivoListItem(
                     },
                     onLongClick = onLongClick
                 )
+                .pointerInput(onLongClick) {
+                    if (onLongClick != null) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                if (event.type == PointerEventType.Press && event.buttons.isSecondaryPressed) {
+                                    onLongClick()
+                                }
+                            }
+                        }
+                    }
+                }
                 .padding(horizontal = 12.dp, vertical = if (compact) 6.dp else 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

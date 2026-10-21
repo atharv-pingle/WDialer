@@ -567,10 +567,83 @@ class PcBluetoothSyncManager(
                                 sendSyncData(writer)
                             }
                         }
+                        "delete_call_log" -> {
+                            val id = cmdObj.optString("id")
+                            val number = cmdObj.optString("number")
+                            Log.i(TAG, "Executing delete_call_log id=$id, number=$number")
+                            try {
+                                if (id.isNotBlank() && id.toLongOrNull() != null) {
+                                    context.contentResolver.delete(
+                                        CallLog.Calls.CONTENT_URI,
+                                        "${CallLog.Calls._ID} = ?",
+                                        arrayOf(id)
+                                    )
+                                } else if (number.isNotBlank()) {
+                                    context.contentResolver.delete(
+                                        CallLog.Calls.CONTENT_URI,
+                                        "${CallLog.Calls.NUMBER} = ?",
+                                        arrayOf(number)
+                                    )
+                                }
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error deleting call log: ${e.message}")
+                            }
+                            delay(300)
+                            lastFingerprint = computeStateFingerprint()
+                            sendSyncData(writer)
+                        }
+                        "delete_sms_thread" -> {
+                            val threadIdStr = cmdObj.optString("threadId")
+                            val threadId = threadIdStr.replace("thread_", "").toLongOrNull()
+                            Log.i(TAG, "Executing delete_sms_thread threadId=$threadId")
+                            if (threadId != null && threadId > 0) {
+                                smsRepository.deleteThread(threadId)
+                                delay(300)
+                                lastFingerprint = computeStateFingerprint()
+                                sendSyncData(writer)
+                            }
+                        }
+                        "mark_sms_read" -> {
+                            val threadIdStr = cmdObj.optString("threadId")
+                            val threadId = threadIdStr.replace("thread_", "").toLongOrNull()
+                            Log.i(TAG, "Executing mark_sms_read threadId=$threadId")
+                            if (threadId != null && threadId > 0) {
+                                smsRepository.markThreadAsRead(threadId)
+                                delay(300)
+                                lastFingerprint = computeStateFingerprint()
+                                sendSyncData(writer)
+                            }
+                        }
+                        "block_number" -> {
+                            val number = cmdObj.optString("number")
+                            Log.i(TAG, "Executing block_number for $number")
+                            if (number.isNotBlank()) {
+                                BlockedNumbersManager.block(context, prefs, number)
+                            }
+                        }
                         "add_note" -> {
                             val title = cmdObj.optString("title", "Untitled Note")
                             val content = cmdObj.optString("content", "")
                             NoteManager.writeNote(context, title, "", content)
+                            lastFingerprint = computeStateFingerprint()
+                            sendSyncData(writer)
+                        }
+                        "edit_note" -> {
+                            val id = cmdObj.optString("id")
+                            val title = cmdObj.optString("title", "Untitled Note")
+                            val content = cmdObj.optString("content", "")
+                            Log.i(TAG, "Executing edit_note id=$id title=$title")
+                            if (id.isNotBlank()) {
+                                val file = NoteManager.getNotesDir(context).listFiles()
+                                    ?.firstOrNull { it.nameWithoutExtension == id }
+                                if (file != null) {
+                                    file.writeText(content)
+                                } else {
+                                    NoteManager.writeNote(context, title, "", content)
+                                }
+                            } else {
+                                NoteManager.writeNote(context, title, "", content)
+                            }
                             lastFingerprint = computeStateFingerprint()
                             sendSyncData(writer)
                         }

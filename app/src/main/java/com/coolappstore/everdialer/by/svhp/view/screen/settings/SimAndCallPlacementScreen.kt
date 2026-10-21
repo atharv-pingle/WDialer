@@ -81,6 +81,17 @@ fun SimAndCallPlacementScreen(
     var missedCallNotification by remember {
         mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_MISSED_CALL_NOTIFICATION, false))
     }
+    var showDefaultSpeakerMicDialog by remember { mutableStateOf(false) }
+    val settingsVersion by prefs.settingsChanged.collectAsState()
+    val defaultSpeakerRoute = remember(settingsVersion) {
+        prefs.getString(PreferenceManager.KEY_DEFAULT_SPEAKER_ROUTE, PreferenceManager.SPEAKER_ROUTE_EXTERNAL) ?: PreferenceManager.SPEAKER_ROUTE_EXTERNAL
+    }
+    val defaultMicRoute = remember(settingsVersion) {
+        prefs.getString(PreferenceManager.KEY_DEFAULT_MIC_ROUTE, PreferenceManager.MIC_ROUTE_EXTERNAL) ?: PreferenceManager.MIC_ROUTE_EXTERNAL
+    }
+    val usePreviousAudioConfig = remember(settingsVersion) {
+        prefs.getBoolean(PreferenceManager.KEY_USE_PREVIOUS_CALL_AUDIO_CONFIG, false)
+    }
 
     if (showContactsToDisplayDialog) {
         val contactsVM: ContactsViewModel = org.koin.compose.viewmodel.koinActivityViewModel()
@@ -298,8 +309,41 @@ fun SimAndCallPlacementScreen(
                                 }
                             }
                         )
+                        HorizontalDivider(
+                            Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+                        RivoListItem(
+                            headline = "Default speaker and mic",
+                            supporting = if (usePreviousAudioConfig) {
+                                "Use previously used configuration"
+                            } else {
+                                val spkLabel = when (defaultSpeakerRoute) {
+                                    PreferenceManager.SPEAKER_ROUTE_EAR -> "Ear speaker"
+                                    PreferenceManager.SPEAKER_ROUTE_SPEAKER -> "Speaker"
+                                    else -> "External speaker"
+                                }
+                                val micLabel = when (defaultMicRoute) {
+                                    PreferenceManager.MIC_ROUTE_SYSTEM -> "System"
+                                    else -> "External"
+                                }
+                                "Speaker: $spkLabel • Mic: $micLabel"
+                            },
+                            leadingIcon = Icons.Outlined.HeadsetMic,
+                            iconContainerColor = ColorIndigo,
+                            trailingIcon = Icons.Default.ChevronRight,
+                            modifier = Modifier.settingsSearchHighlight("default_speaker_mic", highlightedKey) { highlightedKey = null },
+                            onClick = { showDefaultSpeakerMicDialog = true }
+                        )
                     }
                 }
+            }
+
+            if (showDefaultSpeakerMicDialog) {
+                DefaultSpeakerMicDialog(
+                    prefs = prefs,
+                    onDismiss = { showDefaultSpeakerMicDialog = false }
+                )
             }
 
             RivoAnimatedSection(delayMs = 30L) {

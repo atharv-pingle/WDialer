@@ -53,7 +53,6 @@ object CallButtonPrefs {
         CallButtonSpec(ID_NOTE,      "Note",       Icons.Default.EditNote,   Color(0xFF2196F3)),
         CallButtonSpec(ID_MUTE,      "Mute",       Icons.Default.Mic,        Color(0xFFE53935)),
         CallButtonSpec(ID_SPEAKER,   "Speaker",    Icons.Default.VolumeDown, Color(0xFF4CAF50)),
-        CallButtonSpec(ID_BLUETOOTH, "Bluetooth",  Icons.Default.Bluetooth,  Color(0xFF1976D2)),
         CallButtonSpec(ID_MORE,      "More",       Icons.Default.MoreHoriz,  Color(0xFF757575)),
         CallButtonSpec(ID_RECORD,    "Record",     Icons.Default.FiberManualRecord, Color(0xFFE53935)),
         CallButtonSpec(ID_HANGUP,    "Hang Up",    Icons.Default.CallEnd,    Color(0xFFD32F2F))
@@ -61,7 +60,7 @@ object CallButtonPrefs {
 
     val ALL_IDS: List<String> = SPECS.map { it.id }
 
-    const val DEFAULT_ORDER = "hold,add,dialpad,note,mute,speaker,bluetooth,more,record,hangup"
+    const val DEFAULT_ORDER = "hold,add,dialpad,note,mute,speaker,more,record,hangup"
     // "more" and "record" are new — both off by default (unticked in the 3-dot menu) so
     // existing users see the same buttons as before until they opt in.
     const val DEFAULT_DISABLED = "more,record"

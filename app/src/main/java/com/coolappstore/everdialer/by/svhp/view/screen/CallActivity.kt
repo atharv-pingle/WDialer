@@ -901,16 +901,27 @@ fun ExpressiveCallScreen(
     val isSpeakerOn = audioState?.route == CallAudioState.ROUTE_SPEAKER
     val isBluetoothActive = audioState?.route == CallAudioState.ROUTE_BLUETOOTH
 
-    // Bluetooth availability detection
+    // External audio device availability detection (Bluetooth + Wired Headset)
     var isBluetoothConnected by remember { mutableStateOf(false) }
+    var isWiredHeadsetConnected by remember { mutableStateOf(false) }
+    var showAudioSwitcherPopup by remember { mutableStateOf(false) }
+    var showMicSwitcherPopup by remember { mutableStateOf(false) }
+    var selectedMicRoute by remember {
+        mutableStateOf(prefs?.getString(PreferenceManager.KEY_LAST_USED_MIC_ROUTE, PreferenceManager.MIC_ROUTE_EXTERNAL) ?: PreferenceManager.MIC_ROUTE_EXTERNAL)
+    }
+
     DisposableEffect(context) {
         val btAdapter = BluetoothAdapter.getDefaultAdapter()
-        // Initial check via supported routes in audioState or via BluetoothProfile proxy
         fun checkBtConnected(): Boolean {
             val supportedMask = audioState?.supportedRouteMask ?: 0
             return (supportedMask and CallAudioState.ROUTE_BLUETOOTH) != 0
         }
+        fun checkWiredConnected(): Boolean {
+            val supportedMask = audioState?.supportedRouteMask ?: 0
+            return (supportedMask and CallAudioState.ROUTE_WIRED_HEADSET) != 0
+        }
         isBluetoothConnected = checkBtConnected()
+        isWiredHeadsetConnected = checkWiredConnected()
 
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: android.content.Context, intent: Intent) {
@@ -923,24 +934,35 @@ fun ExpressiveCallScreen(
                         val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.STATE_OFF)
                         if (state == BluetoothAdapter.STATE_OFF) isBluetoothConnected = false
                     }
+                    Intent.ACTION_HEADSET_PLUG -> {
+                        val state = intent.getIntExtra("state", 0)
+                        isWiredHeadsetConnected = state == 1
+                    }
                 }
             }
         }
         val filter = IntentFilter().apply {
             addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+            addAction(Intent.ACTION_HEADSET_PLUG)
         }
         context.registerReceiver(receiver, filter)
         onDispose { context.unregisterReceiver(receiver) }
     }
 
-    // Also update bluetooth connected from audioState changes
+    // Also update external connected from audioState changes
     LaunchedEffect(audioState) {
         val supportedMask = audioState?.supportedRouteMask ?: 0
         if ((supportedMask and CallAudioState.ROUTE_BLUETOOTH) != 0) {
             isBluetoothConnected = true
         }
+        if ((supportedMask and CallAudioState.ROUTE_WIRED_HEADSET) != 0) {
+            isWiredHeadsetConnected = true
+        }
     }
+
+    val isExternalConnected = isBluetoothConnected || isWiredHeadsetConnected ||
+        ((audioState?.supportedRouteMask ?: 0) and (CallAudioState.ROUTE_BLUETOOTH or CallAudioState.ROUTE_WIRED_HEADSET)) != 0
     // When answered from notification, skip the incoming screen by treating
     // a brief STATE_RINGING flash as already-active for UI purposes
     val effectiveCallState = if (skipIncomingScreen && callState == Call.STATE_RINGING) Call.STATE_ACTIVE else callState
@@ -1054,16 +1076,12 @@ fun ExpressiveCallScreen(
     val activeButtonIds = remember(settingsVersion) {
         prefs?.let { CallButtonPrefs.getActiveActionIds(it) } ?: listOf(
             CallButtonPrefs.ID_HOLD, CallButtonPrefs.ID_ADD, CallButtonPrefs.ID_DIALPAD,
-            CallButtonPrefs.ID_NOTE, CallButtonPrefs.ID_MUTE, CallButtonPrefs.ID_SPEAKER,
-            CallButtonPrefs.ID_BLUETOOTH
+            CallButtonPrefs.ID_NOTE, CallButtonPrefs.ID_MUTE, CallButtonPrefs.ID_SPEAKER
         )
     }
-    // Bluetooth is only actually shown while a headset is connected for this call — otherwise
-    // it's dropped from the grid entirely (not just hidden in an empty slot), so the remaining
-    // buttons reflow to fill the freed-up space instead of leaving a blank row/column behind.
-    val displayedButtonIds = remember(activeButtonIds, isBluetoothConnected) {
-        if (isBluetoothConnected) activeButtonIds
-        else activeButtonIds.filter { it != CallButtonPrefs.ID_BLUETOOTH }
+    // Standalone Bluetooth button is removed from ongoing call screen in favor of the speaker/mic switcher popups.
+    val displayedButtonIds = remember(activeButtonIds) {
+        activeButtonIds.filter { it != CallButtonPrefs.ID_BLUETOOTH }
     }
     // Freeform layout — when enabled in Settings → Appearance → Caller UI, buttons are rendered
     // at the exact custom positions configured there instead of the fixed 3-per-row grid. The
@@ -1453,32 +1471,45 @@ fun ExpressiveCallScreen(
             ) { showNoteWindow = !showNoteWindow }
             CallButtonPrefs.ID_MUTE -> AnimatedCallButton(
                 icon = if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
-                label = "Mute", isActive = isMuted,
+                label = if (isMuted) "Unmute" else "Mute",
+                isActive = isMuted,
                 btnColor = controlBtnColor, activeBtnColor = controlBtnActiveColor,
-                fgColor = controlBtnFg, activeFgColor = controlBtnActiveFg
-            ) { CallService.setMuted(!isMuted) }
-            CallButtonPrefs.ID_SPEAKER -> AnimatedCallButton(
-                icon = if (isSpeakerOn) Icons.AutoMirrored.Filled.VolumeUp else Icons.Default.VolumeDown,
-                label = "Speaker", isActive = isSpeakerOn,
-                btnColor = controlBtnColor, activeBtnColor = controlBtnActiveColor,
-                fgColor = controlBtnFg, activeFgColor = controlBtnActiveFg
+                fgColor = controlBtnFg, activeFgColor = controlBtnActiveFg,
+                hasDropdown = isExternalConnected,
+                onDropdownClick = { showMicSwitcherPopup = true }
             ) {
-                CallService.setAudioRoute(if (isSpeakerOn) CallAudioState.ROUTE_EARPIECE else CallAudioState.ROUTE_SPEAKER)
-            }
-            // displayedButtonIds already excludes Bluetooth entirely while no headset is
-            // connected, so this branch only ever runs while it actually is connected — no
-            // reserved blank slot needed anymore, the grid simply reflows around its absence.
-            CallButtonPrefs.ID_BLUETOOTH -> if (isBluetoothConnected) {
-                AnimatedCallButton(
-                    icon = if (isBluetoothActive) Icons.Default.Bluetooth else Icons.Default.BluetoothDisabled,
-                    label = "Bluetooth", isActive = isBluetoothActive,
-                    btnColor = controlBtnColor, activeBtnColor = controlBtnActiveColor,
-                    fgColor = controlBtnFg, activeFgColor = controlBtnActiveFg
-                ) {
-                    if (isBluetoothActive) CallService.setAudioRoute(CallAudioState.ROUTE_EARPIECE)
-                    else CallService.setAudioRoute(CallAudioState.ROUTE_BLUETOOTH)
+                if (isExternalConnected) {
+                    showMicSwitcherPopup = true
+                } else {
+                    CallService.setMuted(!isMuted)
                 }
             }
+            CallButtonPrefs.ID_SPEAKER -> AnimatedCallButton(
+                icon = when {
+                    isBluetoothActive -> Icons.Default.Bluetooth
+                    audioState?.route == CallAudioState.ROUTE_WIRED_HEADSET -> Icons.Default.Headset
+                    isSpeakerOn -> Icons.AutoMirrored.Filled.VolumeUp
+                    else -> Icons.Default.VolumeDown
+                },
+                label = when {
+                    isBluetoothActive -> "Bluetooth"
+                    audioState?.route == CallAudioState.ROUTE_WIRED_HEADSET -> "Headset"
+                    isSpeakerOn -> "Speaker"
+                    else -> "Ear speaker"
+                },
+                isActive = isSpeakerOn || isBluetoothActive || audioState?.route == CallAudioState.ROUTE_WIRED_HEADSET,
+                btnColor = controlBtnColor, activeBtnColor = controlBtnActiveColor,
+                fgColor = controlBtnFg, activeFgColor = controlBtnActiveFg,
+                hasDropdown = isExternalConnected,
+                onDropdownClick = { showAudioSwitcherPopup = true }
+            ) {
+                if (isExternalConnected) {
+                    showAudioSwitcherPopup = true
+                } else {
+                    CallService.setAudioRoute(if (isSpeakerOn) CallAudioState.ROUTE_EARPIECE else CallAudioState.ROUTE_SPEAKER)
+                }
+            }
+            CallButtonPrefs.ID_BLUETOOTH -> { /* Standalone Bluetooth button removed */ }
             CallButtonPrefs.ID_RECORD -> AnimatedCallButton(
                 icon = Icons.Default.FiberManualRecord,
                 label = if (isManuallyRecording) "Stop" else "Record",
@@ -2567,6 +2598,209 @@ fun ExpressiveCallScreen(
             }
         }
     }
+
+    if (showAudioSwitcherPopup) {
+        Dialog(onDismissRequest = { showAudioSwitcherPopup = false }) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+            ) {
+                Column(modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.AutoMirrored.Filled.VolumeUp, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            "Audio Output",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+
+                    val isEarActive = audioState?.route == CallAudioState.ROUTE_EARPIECE
+                    val isSpeakerActive = audioState?.route == CallAudioState.ROUTE_SPEAKER
+                    val isExtActive = audioState?.route == CallAudioState.ROUTE_BLUETOOTH || audioState?.route == CallAudioState.ROUTE_WIRED_HEADSET
+
+                    // Ear speaker
+                    PopupSwitcherOptionRow(
+                        icon = Icons.Default.PhoneInTalk,
+                        title = "Ear speaker",
+                        subtitle = "Phone earpiece",
+                        isSelected = isEarActive,
+                        onClick = {
+                            CallService.setAudioRoute(CallAudioState.ROUTE_EARPIECE)
+                            prefs?.setString(PreferenceManager.KEY_LAST_USED_SPEAKER_ROUTE, PreferenceManager.SPEAKER_ROUTE_EAR)
+                            showAudioSwitcherPopup = false
+                        }
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    // Speaker
+                    PopupSwitcherOptionRow(
+                        icon = Icons.AutoMirrored.Filled.VolumeUp,
+                        title = "Speaker",
+                        subtitle = "Loudspeaker",
+                        isSelected = isSpeakerActive,
+                        onClick = {
+                            CallService.setAudioRoute(CallAudioState.ROUTE_SPEAKER)
+                            prefs?.setString(PreferenceManager.KEY_LAST_USED_SPEAKER_ROUTE, PreferenceManager.SPEAKER_ROUTE_SPEAKER)
+                            showAudioSwitcherPopup = false
+                        }
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    // External speaker
+                    PopupSwitcherOptionRow(
+                        icon = if (isBluetoothConnected) Icons.Default.Bluetooth else Icons.Default.Headset,
+                        title = "External speaker",
+                        subtitle = if (isBluetoothConnected) "Connected Bluetooth" else "Connected Headset",
+                        isSelected = isExtActive,
+                        onClick = {
+                            val route = if (isBluetoothConnected) CallAudioState.ROUTE_BLUETOOTH else CallAudioState.ROUTE_WIRED_HEADSET
+                            CallService.setAudioRoute(route)
+                            prefs?.setString(PreferenceManager.KEY_LAST_USED_SPEAKER_ROUTE, PreferenceManager.SPEAKER_ROUTE_EXTERNAL)
+                            showAudioSwitcherPopup = false
+                        }
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
+            }
+        }
+    }
+
+    if (showMicSwitcherPopup) {
+        Dialog(onDismissRequest = { showMicSwitcherPopup = false }) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+            ) {
+                Column(modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Mic, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            "Microphone",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+
+                    // Mute option
+                    Surface(
+                        onClick = { CallService.setMuted(!isMuted) },
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isMuted) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (isMuted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
+                                        null,
+                                        tint = if (isMuted) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "Mute Microphone",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    if (isMuted) "Microphone is muted" else "Microphone is active",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (isMuted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = isMuted,
+                                onCheckedChange = { CallService.setMuted(it) }
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Spacer(Modifier.height(6.dp))
+
+                    Text(
+                        "Input Switcher",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+                    )
+
+                    // System
+                    PopupSwitcherOptionRow(
+                        icon = Icons.Default.PhoneAndroid,
+                        title = "System",
+                        subtitle = "Device built-in microphone",
+                        isSelected = selectedMicRoute == PreferenceManager.MIC_ROUTE_SYSTEM,
+                        onClick = {
+                            selectedMicRoute = PreferenceManager.MIC_ROUTE_SYSTEM
+                            prefs?.setString(PreferenceManager.KEY_LAST_USED_MIC_ROUTE, PreferenceManager.MIC_ROUTE_SYSTEM)
+                            showMicSwitcherPopup = false
+                        }
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    // External
+                    PopupSwitcherOptionRow(
+                        icon = Icons.Default.HeadsetMic,
+                        title = "External",
+                        subtitle = "Connected headset / Bluetooth microphone",
+                        isSelected = selectedMicRoute == PreferenceManager.MIC_ROUTE_EXTERNAL,
+                        onClick = {
+                            selectedMicRoute = PreferenceManager.MIC_ROUTE_EXTERNAL
+                            prefs?.setString(PreferenceManager.KEY_LAST_USED_MIC_ROUTE, PreferenceManager.MIC_ROUTE_EXTERNAL)
+                            if (audioState?.route != CallAudioState.ROUTE_BLUETOOTH && audioState?.route != CallAudioState.ROUTE_WIRED_HEADSET) {
+                                val route = if (isBluetoothConnected) CallAudioState.ROUTE_BLUETOOTH else CallAudioState.ROUTE_WIRED_HEADSET
+                                CallService.setAudioRoute(route)
+                            }
+                            showMicSwitcherPopup = false
+                        }
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
+            }
+        }
+    }
     }
 
     if (showCallingCardPopup) {
@@ -3008,6 +3242,8 @@ fun AnimatedCallButton(
     fgColor: Color = Color.White,
     activeFgColor: Color = Color.Black,
     labelColor: Color? = null,
+    hasDropdown: Boolean = false,
+    onDropdownClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     val interaction = remember { MutableInteractionSource() }
@@ -3018,9 +3254,39 @@ fun AnimatedCallButton(
     val iconSize = (26.dp * sizeScale)
     val radius by animateDpAsState(if (isPressed) 16.dp * sizeScale else 32.dp * sizeScale, spring(stiffness = Spring.StiffnessMedium), label = "btnRadius")
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Surface(onClick = onClick, modifier = Modifier.size(btnSize).scale(if (isPressed) 0.9f else 1f), shape = RoundedCornerShape(radius), color = if (isActive) activeBtnColor else btnColor, interactionSource = interaction) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = if (isActive) activeFgColor else fgColor, modifier = Modifier.size(iconSize))
+        Box(contentAlignment = Alignment.Center) {
+            Surface(
+                onClick = onClick,
+                modifier = Modifier.size(btnSize).scale(if (isPressed) 0.9f else 1f),
+                shape = RoundedCornerShape(radius),
+                color = if (isActive) activeBtnColor else btnColor,
+                interactionSource = interaction
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, null, tint = if (isActive) activeFgColor else fgColor, modifier = Modifier.size(iconSize))
+                }
+            }
+            if (hasDropdown) {
+                val arrowSize = (24.dp * sizeScale).coerceAtLeast(20.dp)
+                Surface(
+                    onClick = { onDropdownClick?.invoke() ?: onClick() },
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.surface),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 3.dp, y = 3.dp)
+                        .size(arrowSize)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Switch",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size((16.dp * sizeScale).coerceAtLeast(14.dp))
+                        )
+                    }
+                }
             }
         }
         if (showLabel) {
@@ -3033,6 +3299,72 @@ fun AnimatedCallButton(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+        }
+    }
+}
+
+@Composable
+private fun PopupSwitcherOptionRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f) else MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surfaceContainerHighest,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                )
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (isSelected) {
+                Spacer(Modifier.width(8.dp))
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }

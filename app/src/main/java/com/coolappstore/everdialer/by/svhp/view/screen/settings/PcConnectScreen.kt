@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
@@ -65,6 +66,9 @@ fun PcConnectScreen(navigator: DestinationsNavigator) {
     var syncNotes by remember {
         mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_PC_SYNC_NOTES, true))
     }
+    var syncContactPfp by remember {
+        mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_PC_SYNC_CONTACT_PFP, true))
+    }
 
     Scaffold(
         modifier = Modifier.settingsMotionBlur(),
@@ -110,7 +114,6 @@ fun PcConnectScreen(navigator: DestinationsNavigator) {
                         },
                         shape = RoundedCornerShape(LocalCardCornerRadius.current),
                         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.85f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -245,6 +248,24 @@ fun PcConnectScreen(navigator: DestinationsNavigator) {
                             }
                         )
                     }
+                }
+            }
+
+            RivoAnimatedSection(delayMs = if (!bluetoothSyncEnabled) 100L else 50L) {
+                RivoExpressiveCard {
+                    RivoSwitchListItem(
+                        headline = "Contact PFP",
+                        supporting = "Sync contact profile pictures to PC",
+                        leadingIcon = Icons.Default.AccountCircle,
+                        iconContainerColor = Color(0xFF009688),
+                        checked = syncContactPfp,
+                        enabled = bluetoothSyncEnabled,
+                        onCheckedChange = { isChecked ->
+                            syncContactPfp = isChecked
+                            prefs.setBoolean(PreferenceManager.KEY_PC_SYNC_CONTACT_PFP, isChecked)
+                            syncManager.triggerSyncNow()
+                        }
+                    )
                 }
             }
         }

@@ -878,6 +878,7 @@ class PreferenceManager(context: Context) {
         const val KEY_PC_SYNC_CONTACTS             = "pc_sync_contacts"
         const val KEY_PC_SYNC_SMS                  = "pc_sync_sms"
         const val KEY_PC_SYNC_NOTES                = "pc_sync_notes"
+        const val KEY_PC_SYNC_CONTACT_PFP          = "pc_sync_contact_pfp"
         const val KEY_PC_SYNC_BLUETOOTH_ENABLED    = "pc_sync_bluetooth_enabled"
     }
 }

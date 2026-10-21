@@ -750,6 +750,9 @@ class CallService : InCallService() {
             try {
                 com.coolappstore.everdialer.by.svhp.controller.util.MissedCallBadgeManager.updateBadge(this)
             } catch (_: Exception) {}
+            try {
+                org.koin.core.context.GlobalContext.get().getOrNull<com.coolappstore.everdialer.by.svhp.controller.util.PcBluetoothSyncManager>()?.triggerImmediateSync()
+            } catch (_: Throwable) {}
         }, 300)
     }
 

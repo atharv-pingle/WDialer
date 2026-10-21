@@ -92,12 +92,18 @@ class BiometricCallActivity : FragmentActivity() {
             val touchOnlyEnabled = prefs.getBoolean(PreferenceManager.KEY_HAPTIC_TOUCH_ONLY, false)
             val appHapticsEnabled = prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)
 
-            if (touchOnlyEnabled && appHapticsEnabled) {
+            if (appHapticsEnabled) {
                 when (ev.actionMasked) {
                     android.view.MotionEvent.ACTION_DOWN -> {
                         touchDownX = ev.x
                         touchDownY = ev.y
                         pendingTouchHapticFired = false
+                        if (touchOnlyEnabled) {
+                            val strength = prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light"
+                            val customIntensity = prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f)
+                            com.coolappstore.everdialer.by.svhp.view.components.performAppHaptic(this, strength, customIntensity, fromDirectTouch = true)
+                            pendingTouchHapticFired = true
+                        }
                     }
                     android.view.MotionEvent.ACTION_MOVE -> {
                         val dx = ev.x - touchDownX

@@ -112,7 +112,7 @@ fun performAppHaptic(
         }
 
         val now = android.os.SystemClock.uptimeMillis()
-        if (now - lastAppHapticTime < 50L) return
+        if (now - lastAppHapticTime < 80L) return
         lastAppHapticTime = now
 
         val durationMs: Long

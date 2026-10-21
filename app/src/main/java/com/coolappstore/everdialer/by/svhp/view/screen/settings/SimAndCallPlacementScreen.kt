@@ -53,6 +53,7 @@ fun SimAndCallPlacementScreen(
     highlightKey: String? = null
 ) {
     val prefs = koinInject<PreferenceManager>()
+    val syncManager = koinInject<com.coolappstore.everdialer.by.svhp.controller.util.PcBluetoothSyncManager>()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
@@ -240,6 +241,7 @@ fun SimAndCallPlacementScreen(
                             onCheckedChange = {
                                 confirmPlacingCall = it
                                 prefs.setBoolean(PreferenceManager.KEY_CONFIRM_PLACING_CALL, it)
+                                try { syncManager.triggerSyncNow() } catch (_: Exception) {}
                             }
                         )
                         if (hasTwoSims) {

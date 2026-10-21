@@ -9,15 +9,20 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
 import android.content.BroadcastReceiver
+import android.content.ContentProviderOperation
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.database.ContentObserver
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
+import android.util.Base64
+import java.io.ByteArrayOutputStream
 import android.os.Looper
 import android.provider.CallLog
 import android.provider.ContactsContract
@@ -25,6 +30,7 @@ import android.provider.Telephony
 import android.telecom.TelecomManager
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.coolappstore.everdialer.by.svhp.modal.data.getPhoneTypeLabel
 import com.coolappstore.everdialer.by.svhp.modal.`interface`.ICallLogRepository
 import com.coolappstore.everdialer.by.svhp.modal.`interface`.IContactsRepository
 import com.coolappstore.everdialer.by.svhp.modal.`interface`.ISmsRepository
@@ -81,6 +87,9 @@ class PcBluetoothSyncManager(
     private var activeWriter: BufferedWriter? = null
 
     init {
+        NoteManager.onNotesChanged = {
+            triggerImmediateSync()
+        }
         val isEnabled = prefs.getBoolean(PreferenceManager.KEY_PC_SYNC_BLUETOOTH_ENABLED, false)
         if (isEnabled) {
             start()
@@ -424,6 +433,9 @@ class PcBluetoothSyncManager(
             sb.append("notes:").append(notes.size).append("-").append(maxMod)
         } catch (_: Exception) {}
 
+        // 5. Settings that affect PC
+        sb.append(";confirm_call:").append(prefs.getBoolean(PreferenceManager.KEY_CONFIRM_PLACING_CALL, false))
+
         return sb.toString()
     }
 
@@ -447,10 +459,18 @@ class PcBluetoothSyncManager(
             private var lastTrigger = 0L
             override fun onChange(selfChange: Boolean) {
                 val now = System.currentTimeMillis()
-                if (now - lastTrigger > 100) {
+                if (now - lastTrigger > 50) {
                     lastTrigger = now
                     scope.launch(Dispatchers.IO) {
-                        val newFp = computeStateFingerprint()
+                        var newFp = computeStateFingerprint()
+                        if (newFp == lastFingerprint) {
+                            delay(150)
+                            newFp = computeStateFingerprint()
+                        }
+                        if (newFp == lastFingerprint) {
+                            delay(350)
+                            newFp = computeStateFingerprint()
+                        }
                         if (newFp != lastFingerprint) {
                             Log.i(TAG, "ContentObserver: data change detected on phone, syncing to PC...")
                             lastFingerprint = newFp
@@ -487,10 +507,10 @@ class PcBluetoothSyncManager(
             Log.w(TAG, "Could not register dynamic SMS receiver: ${e.message}")
         }
 
-        // 3. Periodic change-detector coroutine (runs every 2.5s for notes or missed provider events)
+        // 3. Periodic change-detector coroutine (runs every 800ms for notes or missed provider events)
         val periodicSyncJob = scope.launch(Dispatchers.IO) {
             while (isActive && socket.isConnected) {
-                delay(2500)
+                delay(800)
                 if (!socket.isConnected) break
                 val newFp = computeStateFingerprint()
                 if (newFp != lastFingerprint) {
@@ -560,6 +580,41 @@ class PcBluetoothSyncManager(
                                     )
                                 } catch (e: Exception) {
                                     Log.e(TAG, "Error toggling favorite for $contactId: ${e.message}")
+                                }
+                                lastFingerprint = computeStateFingerprint()
+                                sendSyncData(writer)
+                            }
+                        }
+                        "add_contact" -> {
+                            val name = cmdObj.optString("name")
+                            val phone = cmdObj.optString("phone").ifBlank { cmdObj.optString("number") }
+                            Log.i(TAG, "Executing add_contact name=$name, phone=$phone")
+                            if (name.isNotBlank() || phone.isNotBlank()) {
+                                try {
+                                    val ops = ArrayList<ContentProviderOperation>()
+                                    val rawContactInsertIndex = ops.size
+                                    ops.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                                        .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
+                                        .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
+                                        .build())
+                                    if (name.isNotBlank()) {
+                                        ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                                            .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactInsertIndex)
+                                            .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                                            .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, name)
+                                            .build())
+                                    }
+                                    if (phone.isNotBlank()) {
+                                        ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                                            .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactInsertIndex)
+                                            .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
+                                            .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phone)
+                                            .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
+                                            .build())
+                                    }
+                                    context.contentResolver.applyBatch(ContactsContract.AUTHORITY, ops)
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Error adding contact: ${e.message}")
                                 }
                                 lastFingerprint = computeStateFingerprint()
                                 sendSyncData(writer)
@@ -675,6 +730,42 @@ class PcBluetoothSyncManager(
         }
     }
 
+    private val photoCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    private fun loadPhotoBase64(context: Context, photoUriString: String?): String? {
+        if (photoUriString.isNullOrBlank()) return null
+        photoCache[photoUriString]?.let { return it }
+
+        return try {
+            val uri = Uri.parse(photoUriString)
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                val originalBitmap = BitmapFactory.decodeStream(stream) ?: return null
+                val maxDim = 96
+                val width = originalBitmap.width
+                val height = originalBitmap.height
+                val scaledBitmap = if (width > maxDim || height > maxDim) {
+                    val ratio = width.toFloat() / height.toFloat()
+                    val (newW, newH) = if (ratio > 1) {
+                        Pair(maxDim, (maxDim / ratio).toInt().coerceAtLeast(1))
+                    } else {
+                        Pair((maxDim * ratio).toInt().coerceAtLeast(1), maxDim)
+                    }
+                    Bitmap.createScaledBitmap(originalBitmap, newW, newH, true)
+                } else {
+                    originalBitmap
+                }
+                val outputStream = ByteArrayOutputStream()
+                scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
+                val bytes = outputStream.toByteArray()
+                val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                photoCache[photoUriString] = b64
+                b64
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     private suspend fun sendSyncData(writer: BufferedWriter) = withContext(Dispatchers.IO) {
         try {
             _status.value = PcSyncStatus.SYNCING
@@ -684,6 +775,7 @@ class PcBluetoothSyncManager(
             val syncContacts = prefs.getBoolean(PreferenceManager.KEY_PC_SYNC_CONTACTS, true)
             val syncSms = prefs.getBoolean(PreferenceManager.KEY_PC_SYNC_SMS, true)
             val syncNotes = prefs.getBoolean(PreferenceManager.KEY_PC_SYNC_NOTES, true)
+            val syncContactPfp = prefs.getBoolean(PreferenceManager.KEY_PC_SYNC_CONTACT_PFP, true)
 
             // 1. Real Contacts (Only saved contacts from phone)
             val contactsArray = JSONArray()
@@ -703,12 +795,58 @@ class PcBluetoothSyncManager(
 
                 for (c in filtered) {
                     val phone = c.phones.firstOrNull()?.number ?: c.phoneNumbers.firstOrNull() ?: ""
+                    val pfpBase64 = if (syncContactPfp) loadPhotoBase64(context, c.photoUri) else null
+
+                    val phonesJson = JSONArray()
+                    if (c.phones.isNotEmpty()) {
+                        for (p in c.phones) {
+                            phonesJson.put(JSONObject().apply {
+                                put("number", p.number)
+                                put("type", p.type)
+                                put("label", getPhoneTypeLabel(p.type, p.label))
+                            })
+                        }
+                    } else {
+                        for (num in c.phoneNumbers) {
+                            phonesJson.put(JSONObject().apply {
+                                put("number", num)
+                                put("type", 2)
+                                put("label", "Mobile")
+                            })
+                        }
+                    }
+
+                    val emailsJson = JSONArray()
+                    for (e in c.emails) {
+                        emailsJson.put(e)
+                    }
+
+                    val addressesJson = JSONArray()
+                    for (a in c.addresses) {
+                        addressesJson.put(a)
+                    }
+
+                    val accountsJson = JSONArray()
+                    for (acc in c.sourceAccounts) {
+                        accountsJson.put(acc)
+                    }
+
                     val cObj = JSONObject().apply {
                         put("id", c.id)
                         put("name", c.name.ifBlank { phone })
                         put("phone", phone)
                         put("isFavorite", c.isFavorite)
                         put("account", c.sourceAccounts.firstOrNull() ?: "Phone")
+                        if (pfpBase64 != null) {
+                            put("photoBase64", pfpBase64)
+                        }
+                        put("phones", phonesJson)
+                        put("emails", emailsJson)
+                        put("addresses", addressesJson)
+                        put("accounts", accountsJson)
+                        if (!c.note.isNullOrBlank()) {
+                            put("note", c.note)
+                        }
                     }
                     contactsArray.put(cObj)
                 }
@@ -746,7 +884,7 @@ class PcBluetoothSyncManager(
             val smsArray = JSONArray()
             if (syncSms) {
                 val convs = try {
-                    smsRepository.getConversations().take(50)
+                    smsRepository.getConversations().take(30)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error fetching SMS conversations: ${e.message}")
                     emptyList()
@@ -754,7 +892,7 @@ class PcBluetoothSyncManager(
 
                 for (conv in convs) {
                     val msgs = try {
-                        smsRepository.getMessagesForThread(conv.threadId).takeLast(50)
+                        smsRepository.getMessagesForThread(conv.threadId).takeLast(25)
                     } catch (_: Exception) {
                         emptyList()
                     }
@@ -804,12 +942,25 @@ class PcBluetoothSyncManager(
                 }
             }
 
+            val confirmPlacingCall = prefs.getBoolean(PreferenceManager.KEY_CONFIRM_PLACING_CALL, false)
+            val enabledFeatures = JSONObject().apply {
+                put("favourites", syncFavorites)
+                put("callLogs", syncCallLogs)
+                put("contacts", syncContacts)
+                put("sms", syncSms)
+                put("notes", syncNotes)
+                put("contactPfp", syncContactPfp)
+                put("confirmPlacingCall", confirmPlacingCall)
+            }
+
             // Build wrapper payload
             val payload = JSONObject().apply {
                 put("contacts", contactsArray)
                 put("callLogs", callLogsArray)
                 put("smsThreads", smsArray)
                 put("notes", notesArray)
+                put("enabledFeatures", enabledFeatures)
+                put("confirmPlacingCall", confirmPlacingCall)
                 put("deviceName", Build.MODEL)
                 put("timestamp", System.currentTimeMillis())
             }

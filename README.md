@@ -408,7 +408,7 @@ GitHub: [Download](https://github.com/hari161008/Ever-Dialer/releases) ⬇️
 227. 🎚️ **Dual Independent Light & Dark Saturation Sliders** – Fine-tune accent color saturation separately for Light theme and Dark theme (20% to 200%).
 228. 🔆 **Solid Action Icons (Bright vs Dim Styles)** – Switch solid icon themes between *Bright High-Contrast* and *Dimmed Subtle* styles for dark mode.
 229. 🔘 **Circle Action Icons Styling** – Toggle rounded circular backgrounds for action icons throughout the entire app interface.
-230. 🔤 **Built-in Designer Font Presets** – Select from 4 curated expressive fonts: *Playwrite USA Modern*, *Comfortaa*, *Patrick Hand*, and *Gochi Hand*.
+230. 🔤 **Built-in Designer Font Presets** – Select from 5 curated expressive fonts: *Playwrite USA Modern*, *Comfortaa*, *Patrick Hand*, *Gochi Hand*, and *Advent Pro*.
 231. 📁 **Custom TTF / OTF Font File Loader** – Import any custom TrueType or OpenType font file from device storage with live preview.
 232. 📏 **Font Height Scaling Slider** – Fine-tune vertical font proportions from 0.8x to 1.3x independently from base size.
 233. 📐 **Font Width Scaling Slider** – Adjust horizontal font expansion and condensation from 0.8x to 1.3x.
@@ -518,4 +518,5 @@ GitHub: [Download](https://github.com/hari161008/Ever-Dialer/releases) ⬇️
 ┈➤ [Playwrite USA Modern](https://fonts.google.com/specimen/Playwrite+US+Modern)<br><br>
 ┈➤ [Comfortaa](https://fonts.google.com/specimen/Comfortaa)<br><br>
 ┈➤ [Patrick Hand](https://fonts.google.com/specimen/Patrick+Hand)<br><br>
-┈➤ [Gochi Hand](https://fonts.google.com/specimen/Gochi+Hand)
+┈➤ [Gochi Hand](https://fonts.google.com/specimen/Gochi+Hand)<br><br>
+┈➤ [Advent Pro](https://fonts.google.com/specimen/Advent+Pro)

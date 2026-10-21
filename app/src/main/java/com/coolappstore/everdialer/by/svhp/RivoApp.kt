@@ -23,7 +23,12 @@ class RivoApp : ShizuApplication() {
         } catch (_: Throwable) {}
         com.coolappstore.everdialer.by.svhp.controller.FakeCallConnectionService.ensureRegistered(this)
         try {
-            org.koin.core.context.GlobalContext.get().get<com.coolappstore.everdialer.by.svhp.controller.util.PcBluetoothSyncManager>()
+            val syncManager = org.koin.core.context.GlobalContext.get().get<com.coolappstore.everdialer.by.svhp.controller.util.PcBluetoothSyncManager>()
+            val prefs = PreferenceManager(this)
+            if (prefs.getBoolean(PreferenceManager.KEY_PC_SYNC_BLUETOOTH_ENABLED, false)) {
+                com.coolappstore.everdialer.by.svhp.controller.PcSyncService.start(this)
+                syncManager.start()
+            }
         } catch (_: Throwable) {}
         initMissedCallBadgeObserver()
     }

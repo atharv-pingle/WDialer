@@ -1,21 +1,31 @@
 package com.coolappstore.everdialer.by.svhp.view.screen.settings
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
+import com.coolappstore.everdialer.by.svhp.view.components.LocalCardCornerRadius
 import com.coolappstore.everdialer.by.svhp.view.components.RivoAnimatedSection
 import com.coolappstore.everdialer.by.svhp.view.components.RivoExpressiveCard
 import com.coolappstore.everdialer.by.svhp.view.components.RivoSwitchListItem
@@ -34,6 +44,11 @@ fun PcConnectScreen(navigator: DestinationsNavigator) {
     val prefs = koinInject<PreferenceManager>()
     val syncManager = koinInject<com.coolappstore.everdialer.by.svhp.controller.util.PcBluetoothSyncManager>()
     val scrollState = rememberScrollState()
+
+    val settingsVer by prefs.settingsChanged.collectAsState()
+    val bluetoothSyncEnabled = remember(settingsVer) {
+        prefs.getBoolean(PreferenceManager.KEY_PC_SYNC_BLUETOOTH_ENABLED, false)
+    }
 
     var syncFavorites by remember {
         mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_PC_SYNC_FAVOURITES, true))
@@ -58,7 +73,7 @@ fun PcConnectScreen(navigator: DestinationsNavigator) {
             SettingsPillTopAppBar(
                 title = "PC Connect",
                 onBackClick = { navigator.navigateUp() },
-                actions = {
+                endActions = {
                     IconButton(
                         onClick = {
                             navigator.navigate(
@@ -85,7 +100,69 @@ fun PcConnectScreen(navigator: DestinationsNavigator) {
                 .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + navBarBottom),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            RivoAnimatedSection(delayMs = 0L) {
+            if (!bluetoothSyncEnabled) {
+                RivoAnimatedSection(delayMs = 0L) {
+                    Surface(
+                        onClick = {
+                            navigator.navigate(
+                                com.ramcosta.composedestinations.generated.destinations.PcSyncSettingsScreenDestination()
+                            )
+                        },
+                        shape = RoundedCornerShape(LocalCardCornerRadius.current),
+                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.85f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.18f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Spacer(Modifier.width(14.dp))
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "Bluetooth PC Sync is disabled",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = "Turn on Bluetooth PC Sync from the PC Connect settings page to enable sync.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.85f)
+                                )
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = "Go to Settings",
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            RivoAnimatedSection(delayMs = if (!bluetoothSyncEnabled) 50L else 0L) {
                 Column {
                     SectionLabel("To sync")
                     RivoExpressiveCard {
@@ -96,6 +173,7 @@ fun PcConnectScreen(navigator: DestinationsNavigator) {
                             leadingIcon = Icons.Default.Favorite,
                             iconContainerColor = Color(0xFFE91E63),
                             checked = syncFavorites,
+                            enabled = bluetoothSyncEnabled,
                             onCheckedChange = { isChecked ->
                                 syncFavorites = isChecked
                                 prefs.setBoolean(PreferenceManager.KEY_PC_SYNC_FAVOURITES, isChecked)
@@ -111,6 +189,7 @@ fun PcConnectScreen(navigator: DestinationsNavigator) {
                             leadingIcon = Icons.Default.History,
                             iconContainerColor = Color(0xFF4CAF50),
                             checked = syncCallLogs,
+                            enabled = bluetoothSyncEnabled,
                             onCheckedChange = { isChecked ->
                                 syncCallLogs = isChecked
                                 prefs.setBoolean(PreferenceManager.KEY_PC_SYNC_CALL_LOGS, isChecked)
@@ -126,6 +205,7 @@ fun PcConnectScreen(navigator: DestinationsNavigator) {
                             leadingIcon = Icons.Default.Person,
                             iconContainerColor = Color(0xFF2196F3),
                             checked = syncContacts,
+                            enabled = bluetoothSyncEnabled,
                             onCheckedChange = { isChecked ->
                                 syncContacts = isChecked
                                 prefs.setBoolean(PreferenceManager.KEY_PC_SYNC_CONTACTS, isChecked)
@@ -141,6 +221,7 @@ fun PcConnectScreen(navigator: DestinationsNavigator) {
                             leadingIcon = Icons.Default.Chat,
                             iconContainerColor = Color(0xFF9C27B0),
                             checked = syncSms,
+                            enabled = bluetoothSyncEnabled,
                             onCheckedChange = { isChecked ->
                                 syncSms = isChecked
                                 prefs.setBoolean(PreferenceManager.KEY_PC_SYNC_SMS, isChecked)
@@ -156,6 +237,7 @@ fun PcConnectScreen(navigator: DestinationsNavigator) {
                             leadingIcon = Icons.Default.Note,
                             iconContainerColor = Color(0xFFFF9800),
                             checked = syncNotes,
+                            enabled = bluetoothSyncEnabled,
                             onCheckedChange = { isChecked ->
                                 syncNotes = isChecked
                                 prefs.setBoolean(PreferenceManager.KEY_PC_SYNC_NOTES, isChecked)

@@ -37,6 +37,8 @@
         android:minSdkVersion="34" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"
         android:minSdkVersion="34" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"
+        android:minSdkVersion="34" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"
         android:minSdkVersion="29" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -1989,6 +1991,11 @@
                 <data android:scheme="mmsto" />
             </intent-filter>
         </service>
+
+        <service
+            android:name=".controller.PcSyncService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
 
     </application>
 

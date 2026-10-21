@@ -424,7 +424,8 @@ fun SettingsPillTopAppBar(
     title: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     onBackClick: (() -> Unit)? = null,
-    actions: @Composable (RowScope.() -> Unit)? = null
+    actions: @Composable (RowScope.() -> Unit)? = null,
+    endActions: @Composable (RowScope.() -> Unit)? = null
 ) {
     val prefs = koinInject<PreferenceManager>()
     val settingsVer by prefs.settingsChanged.collectAsState()
@@ -518,6 +519,27 @@ fun SettingsPillTopAppBar(
                 }
             }
         }
+
+        if (endActions != null) {
+            Surface(
+                modifier = Modifier.wrapContentSize().align(Alignment.CenterEnd),
+                shape = RoundedCornerShape(pillCornerRadius),
+                color = pillBackground,
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+                border = BorderStroke(1.dp, borderColor)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .wrapContentWidth()
+                        .heightIn(min = 58.dp)
+                        .padding(horizontal = 7.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    endActions()
+                }
+            }
+        }
     }
 }
 
@@ -526,7 +548,8 @@ fun SettingsPillTopAppBar(
     title: String,
     modifier: Modifier = Modifier,
     onBackClick: (() -> Unit)? = null,
-    actions: @Composable (RowScope.() -> Unit)? = null
+    actions: @Composable (RowScope.() -> Unit)? = null,
+    endActions: @Composable (RowScope.() -> Unit)? = null
 ) {
     SettingsPillTopAppBar(
         title = {
@@ -541,7 +564,8 @@ fun SettingsPillTopAppBar(
         },
         modifier = modifier,
         onBackClick = onBackClick,
-        actions = actions
+        actions = actions,
+        endActions = endActions
     )
 }
 

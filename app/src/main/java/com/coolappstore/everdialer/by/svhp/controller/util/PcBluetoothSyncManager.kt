@@ -100,8 +100,10 @@ class PcBluetoothSyncManager(
     fun onBluetoothSyncToggled(enabled: Boolean) {
         prefs.setBoolean(PreferenceManager.KEY_PC_SYNC_BLUETOOTH_ENABLED, enabled)
         if (enabled) {
+            com.coolappstore.everdialer.by.svhp.controller.PcSyncService.start(context)
             start()
         } else {
+            com.coolappstore.everdialer.by.svhp.controller.PcSyncService.stop(context)
             stop()
         }
     }
@@ -155,7 +157,6 @@ class PcBluetoothSyncManager(
         val socket = activeSocket
         if (writer != null && socket != null && socket.isConnected) {
             scope.launch(Dispatchers.IO) {
-                delay(350)
                 try {
                     Log.i(TAG, "triggerImmediateSync: pushing fresh data to PC...")
                     sendSyncData(writer)
@@ -446,10 +447,9 @@ class PcBluetoothSyncManager(
             private var lastTrigger = 0L
             override fun onChange(selfChange: Boolean) {
                 val now = System.currentTimeMillis()
-                if (now - lastTrigger > 500) {
+                if (now - lastTrigger > 100) {
                     lastTrigger = now
                     scope.launch(Dispatchers.IO) {
-                        delay(400)
                         val newFp = computeStateFingerprint()
                         if (newFp != lastFingerprint) {
                             Log.i(TAG, "ContentObserver: data change detected on phone, syncing to PC...")
@@ -539,7 +539,6 @@ class PcBluetoothSyncManager(
                             if (phone.isNotBlank() && text.isNotBlank()) {
                                 val success = smsRepository.sendSms(phone, text)
                                 Log.i(TAG, "send_sms result: $success")
-                                delay(400)
                                 lastFingerprint = computeStateFingerprint()
                                 sendSyncData(writer)
                             }
@@ -562,7 +561,6 @@ class PcBluetoothSyncManager(
                                 } catch (e: Exception) {
                                     Log.e(TAG, "Error toggling favorite for $contactId: ${e.message}")
                                 }
-                                delay(300)
                                 lastFingerprint = computeStateFingerprint()
                                 sendSyncData(writer)
                             }
@@ -588,7 +586,6 @@ class PcBluetoothSyncManager(
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error deleting call log: ${e.message}")
                             }
-                            delay(300)
                             lastFingerprint = computeStateFingerprint()
                             sendSyncData(writer)
                         }
@@ -598,7 +595,6 @@ class PcBluetoothSyncManager(
                             Log.i(TAG, "Executing delete_sms_thread threadId=$threadId")
                             if (threadId != null && threadId > 0) {
                                 smsRepository.deleteThread(threadId)
-                                delay(300)
                                 lastFingerprint = computeStateFingerprint()
                                 sendSyncData(writer)
                             }
@@ -609,7 +605,6 @@ class PcBluetoothSyncManager(
                             Log.i(TAG, "Executing mark_sms_read threadId=$threadId")
                             if (threadId != null && threadId > 0) {
                                 smsRepository.markThreadAsRead(threadId)
-                                delay(300)
                                 lastFingerprint = computeStateFingerprint()
                                 sendSyncData(writer)
                             }

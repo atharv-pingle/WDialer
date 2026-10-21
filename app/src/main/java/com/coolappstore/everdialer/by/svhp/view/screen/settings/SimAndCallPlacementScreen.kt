@@ -309,10 +309,21 @@ fun SimAndCallPlacementScreen(
                                 }
                             }
                         )
-                        HorizontalDivider(
-                            Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
+                    }
+                }
+            }
+
+            if (showDefaultSpeakerMicDialog) {
+                DefaultSpeakerMicDialog(
+                    prefs = prefs,
+                    onDismiss = { showDefaultSpeakerMicDialog = false }
+                )
+            }
+
+            RivoAnimatedSection(delayMs = 30L) {
+                Column {
+                    SimCallSectionLabel("Sound & Vibration")
+                    RivoExpressiveCard {
                         RivoListItem(
                             headline = "Default speaker and mic",
                             supporting = if (usePreviousAudioConfig) {
@@ -336,19 +347,7 @@ fun SimAndCallPlacementScreen(
                             onClick = { showDefaultSpeakerMicDialog = true }
                         )
                     }
-                }
-            }
-
-            if (showDefaultSpeakerMicDialog) {
-                DefaultSpeakerMicDialog(
-                    prefs = prefs,
-                    onDismiss = { showDefaultSpeakerMicDialog = false }
-                )
-            }
-
-            RivoAnimatedSection(delayMs = 30L) {
-                Column {
-                    SimCallSectionLabel("Sound & Vibration")
+                    Spacer(Modifier.height(12.dp))
                     RivoExpressiveCard {
                         RivoListItem(
                             headline = "Sound & Vibration",

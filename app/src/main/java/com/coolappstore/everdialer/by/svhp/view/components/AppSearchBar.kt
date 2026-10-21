@@ -24,8 +24,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
@@ -141,32 +147,59 @@ fun AppSearchBar(
                 }
             }
         } else {
-            TextField(
+            BasicTextField(
                 value = query,
                 onValueChange = onQueryChange,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier),
-                placeholder = {
-                    Text(
-                        text = if (animProgress < 0.35f) placeholderText else tr("Search in Ever Dialer"),
-                        color = searchBarPlaceholder,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                },
-                leadingIcon = {
-                    IconButton(onClick = { onBackClick?.invoke() }) {
-                        val iconRotation = lerp(-90f, 0f, animProgress)
-                        Icon(
-                            imageVector = if (animProgress < 0.35f) Icons.Default.Search else Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = searchBarFg,
-                            modifier = Modifier.graphicsLayer { rotationZ = iconRotation }
-                        )
-                    }
-                },
-                trailingIcon = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    color = searchBarFg,
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                ),
+                cursorBrush = SolidColor(searchBarFg),
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Search
+                ),
+                keyboardActions = KeyboardActions(
+                    onSearch = { onSearchAction?.invoke() }
+                ),
+                singleLine = true,
+                decorationBox = { innerTextField ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(start = 4.dp, end = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { onBackClick?.invoke() }) {
+                            val iconRotation = lerp(-90f, 0f, animProgress)
+                            Icon(
+                                imageVector = if (animProgress < 0.35f) Icons.Default.Search else Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = searchBarFg,
+                                modifier = Modifier.graphicsLayer { rotationZ = iconRotation }
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 4.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (query.text.isEmpty()) {
+                                Text(
+                                    text = if (animProgress < 0.35f) placeholderText else tr("Search in Ever Dialer"),
+                                    color = searchBarPlaceholder,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            innerTextField()
+                        }
                         if (query.text.isNotEmpty() && onClearClick != null) {
                             IconButton(onClick = onClearClick) {
                                 Icon(Icons.Default.Close, contentDescription = "Clear", tint = searchBarFg)
@@ -178,23 +211,7 @@ fun AppSearchBar(
                             }
                         }
                     }
-                },
-                colors = TextFieldDefaults.colors(
-                    focusedTextColor = searchBarFg,
-                    unfocusedTextColor = searchBarFg,
-                    cursorColor = searchBarFg,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                    imeAction = ImeAction.Search
-                ),
-                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                    onSearch = { onSearchAction?.invoke() }
-                ),
-                singleLine = true
+                }
             )
         }
     }

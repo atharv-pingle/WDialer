@@ -435,6 +435,9 @@ class PcBluetoothSyncManager(
 
         // 5. Settings that affect PC
         sb.append(";confirm_call:").append(prefs.getBoolean(PreferenceManager.KEY_CONFIRM_PLACING_CALL, false))
+        sb.append(";pin_msg:").append(prefs.getString(PreferenceManager.KEY_PINNED_SMS_MESSAGES, ""))
+        sb.append(";star_msg:").append(prefs.getString(PreferenceManager.KEY_STARRED_SMS_MESSAGES, ""))
+        sb.append(";pin_thr:").append(prefs.getString(PreferenceManager.KEY_PINNED_SMS_THREADS, ""))
 
         return sb.toString()
     }
@@ -660,6 +663,39 @@ class PcBluetoothSyncManager(
                             Log.i(TAG, "Executing mark_sms_read threadId=$threadId")
                             if (threadId != null && threadId > 0) {
                                 smsRepository.markThreadAsRead(threadId)
+                                lastFingerprint = computeStateFingerprint()
+                                sendSyncData(writer)
+                            }
+                        }
+                        "pin_sms_message" -> {
+                            val messageIdStr = cmdObj.optString("messageId").replace("msg_", "")
+                            val messageId = messageIdStr.toLongOrNull()
+                            val pinned = cmdObj.optBoolean("pinned", true)
+                            Log.i(TAG, "Executing pin_sms_message messageId=$messageId pinned=$pinned")
+                            if (messageId != null) {
+                                prefs.setSmsMessagePinned(messageId, pinned)
+                                lastFingerprint = computeStateFingerprint()
+                                sendSyncData(writer)
+                            }
+                        }
+                        "star_sms_message" -> {
+                            val messageIdStr = cmdObj.optString("messageId").replace("msg_", "")
+                            val messageId = messageIdStr.toLongOrNull()
+                            val starred = cmdObj.optBoolean("starred", true)
+                            Log.i(TAG, "Executing star_sms_message messageId=$messageId starred=$starred")
+                            if (messageId != null) {
+                                prefs.setSmsMessageStarred(messageId, starred)
+                                lastFingerprint = computeStateFingerprint()
+                                sendSyncData(writer)
+                            }
+                        }
+                        "delete_sms_message" -> {
+                            val messageIdStr = cmdObj.optString("messageId").replace("msg_", "")
+                            val messageId = messageIdStr.toLongOrNull()
+                            val isMms = cmdObj.optBoolean("isMms", false)
+                            Log.i(TAG, "Executing delete_sms_message messageId=$messageId isMms=$isMms")
+                            if (messageId != null) {
+                                smsRepository.deleteMessage(messageId, isMms)
                                 lastFingerprint = computeStateFingerprint()
                                 sendSyncData(writer)
                             }
@@ -904,6 +940,8 @@ class PcBluetoothSyncManager(
                             put("body", m.body)
                             put("timestamp", m.date)
                             put("isOutgoing", m.isOutgoing)
+                            put("isPinned", prefs.isSmsMessagePinned(m.id))
+                            put("isStarred", prefs.isSmsMessageStarred(m.id))
                         }
                         msgsArray.put(mObj)
                     }
@@ -915,6 +953,7 @@ class PcBluetoothSyncManager(
                         put("snippet", conv.snippet)
                         put("timestamp", conv.date)
                         put("unreadCount", conv.unreadCount)
+                        put("isPinned", prefs.getPinnedSmsThreads().contains(conv.threadId))
                         put("messages", msgsArray)
                     }
                     smsArray.put(tObj)
@@ -953,12 +992,19 @@ class PcBluetoothSyncManager(
                 put("confirmPlacingCall", confirmPlacingCall)
             }
 
+            val starredMsgIds = JSONArray(prefs.getStarredSmsMessages().map { it.toString() })
+            val pinnedMsgIds = JSONArray(prefs.getPinnedSmsMessages().map { it.toString() })
+            val pinnedThreadIds = JSONArray(prefs.getPinnedSmsThreads().map { it.toString() })
+
             // Build wrapper payload
             val payload = JSONObject().apply {
                 put("contacts", contactsArray)
                 put("callLogs", callLogsArray)
                 put("smsThreads", smsArray)
                 put("notes", notesArray)
+                put("starredSmsMessageIds", starredMsgIds)
+                put("pinnedSmsMessageIds", pinnedMsgIds)
+                put("pinnedSmsThreadIds", pinnedThreadIds)
                 put("enabledFeatures", enabledFeatures)
                 put("confirmPlacingCall", confirmPlacingCall)
                 put("deviceName", Build.MODEL)

@@ -18,9 +18,14 @@ import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
+import android.net.wifi.WifiManager
+import android.os.BatteryManager
 import android.os.Build
 import android.os.Handler
+import android.telephony.TelephonyManager
 import android.util.Base64
 import java.io.ByteArrayOutputStream
 import android.os.Looper
@@ -510,7 +515,9 @@ class PcBluetoothSyncManager(
             Log.w(TAG, "Could not register dynamic SMS receiver: ${e.message}")
         }
 
-        // 3. Periodic change-detector coroutine (runs every 800ms for notes or missed provider events)
+        // 3. Periodic change-detector coroutine (runs every 800ms for notes or missed provider events + telemetry)
+        var ticks = 0
+        var lastTelemFp = ""
         val periodicSyncJob = scope.launch(Dispatchers.IO) {
             while (isActive && socket.isConnected) {
                 delay(800)
@@ -520,6 +527,15 @@ class PcBluetoothSyncManager(
                     Log.i(TAG, "Periodic check detected data change on phone: syncing to PC...")
                     lastFingerprint = newFp
                     sendSyncData(writer)
+                }
+                ticks++
+                if (ticks % 4 == 0) { // Every ~3.2 seconds check if telemetry (battery, wifi, signal) changed
+                    val telem = getDeviceTelemetry()
+                    val telemFp = telem.toString()
+                    if (telemFp != lastTelemFp) {
+                        lastTelemFp = telemFp
+                        sendTelemetry(writer)
+                    }
                 }
             }
         }
@@ -539,6 +555,9 @@ class PcBluetoothSyncManager(
                         "request_sync" -> {
                             lastFingerprint = computeStateFingerprint()
                             sendSyncData(writer)
+                        }
+                        "request_telemetry" -> {
+                            sendTelemetry(writer)
                         }
                         "make_call" -> {
                             val number = cmdObj.optString("number")
@@ -1008,6 +1027,7 @@ class PcBluetoothSyncManager(
                 put("enabledFeatures", enabledFeatures)
                 put("confirmPlacingCall", confirmPlacingCall)
                 put("deviceName", Build.MODEL)
+                put("telemetry", getDeviceTelemetry())
                 put("timestamp", System.currentTimeMillis())
             }
 
@@ -1026,6 +1046,74 @@ class PcBluetoothSyncManager(
         } catch (e: Exception) {
             Log.e(TAG, "Error sending sync data: ${e.message}", e)
             _status.value = PcSyncStatus.ERROR
+        }
+    }
+
+    private fun getDeviceTelemetry(): JSONObject {
+        val obj = JSONObject()
+        try {
+            // 1. Battery
+            val batteryFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+            val batteryIntent = context.registerReceiver(null, batteryFilter)
+            val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+            val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+            val status = batteryIntent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+            val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                    status == BatteryManager.BATTERY_STATUS_FULL
+            val batteryPct = if (level >= 0 && scale > 0) (level * 100 / scale) else -1
+            obj.put("batteryLevel", batteryPct)
+            obj.put("isCharging", isCharging)
+
+            // 2. Wi-Fi
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            val activeNet = cm?.activeNetwork
+            val caps = cm?.getNetworkCapabilities(activeNet)
+            val isWifiConnected = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+            if (isWifiConnected) {
+                val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+                val rssi = wm?.connectionInfo?.rssi ?: -127
+                val wifiLevel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    wm?.calculateSignalLevel(rssi) ?: 4
+                } else {
+                    @Suppress("DEPRECATION")
+                    WifiManager.calculateSignalLevel(rssi, 5)
+                }
+                obj.put("wifiLevel", wifiLevel.coerceIn(0, 4))
+                obj.put("isWifiConnected", true)
+            } else {
+                obj.put("wifiLevel", -1)
+                obj.put("isWifiConnected", false)
+            }
+
+            // 3. Cellular Signal
+            val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+            val cellLevel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                try {
+                    tm?.signalStrength?.level ?: -1
+                } catch (_: Throwable) { -1 }
+            } else {
+                -1
+            }
+            obj.put("cellularLevel", cellLevel.coerceIn(-1, 4))
+        } catch (e: Exception) {
+            Log.w(TAG, "Error gathering telemetry: ${e.message}")
+        }
+        return obj
+    }
+
+    private fun sendTelemetry(writer: BufferedWriter) {
+        try {
+            val telem = getDeviceTelemetry()
+            val root = JSONObject().apply {
+                put("type", "telemetry")
+                put("payload", telem)
+            }
+            writer.write(root.toString())
+            writer.write("\n")
+            writer.flush()
+            Log.d(TAG, "Telemetry update sent: $telem")
+        } catch (e: Exception) {
+            Log.w(TAG, "Error sending telemetry: ${e.message}")
         }
     }
 }

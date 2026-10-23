@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Ever Dialer</string>
+    <string name="app_name">WDialer</string>
     <string name="widget_description">المكالمات الأخيرة مع الاتصال السريع</string>
     <string name="widget_direct_call_title">اتصال مباشر</string>
     <string name="widget_direct_call_description">اتصل بجهة اتصال بضغطة واحدة</string>

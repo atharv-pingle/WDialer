@@ -1,4 +1,4 @@
-# Ever Dialer And Ever SMS
+# WDialer
 <br>
 
 <img src="https://raw.githubusercontent.com/hari161008/Website-For-Everlasting-Android-Tweak/main/Ever%20Dialer/Assets/Banner%20and%20Icon/Ever%20Dialer%20Banner.png" width="100%" />

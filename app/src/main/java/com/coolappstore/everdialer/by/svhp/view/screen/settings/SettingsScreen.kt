@@ -1041,7 +1041,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                         RivoExpressiveCard {
                             RivoListItem(
                                 headline = "Rate and Review",
-                                supporting = "Share your feedback about Ever Dialer",
+                                supporting = "Share your feedback about WDialer",
                                 leadingIcon = Icons.Default.Star,
                                 iconContainerColor = ColorCyan,
                                 trailingIcon = Icons.Default.ChevronRight,
@@ -1054,7 +1054,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                             CardDivider()
                             RivoListItem(
                                 headline = "Check Ratings and Reviews",
-                                supporting = "See what others are saying about Ever Dialer",
+                                supporting = "See what others are saying about WDialer",
                                 leadingIcon = Icons.Default.Reviews,
                                 iconContainerColor = ColorGreen,
                                 trailingIcon = Icons.Default.ChevronRight,
@@ -1283,7 +1283,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                         RivoExpressiveCard {
                             RivoListItem(
                                 headline = "PC Connect",
-                                supporting = "Connect and sync with Ever Dialer PC over Bluetooth",
+                                supporting = "Connect and sync with WDialer PC over Bluetooth",
                                 leadingIcon = Icons.Outlined.Devices,
                                 iconContainerColor = Color(0xFF1E88E5),
                                 trailingIcon = Icons.Default.ChevronRight,
@@ -1454,7 +1454,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                     Column {
                         SectionLabel("About")
                         RivoExpressiveCard {
-                            RivoListItem(headline = "About Ever Dialer", supporting = "Version $APP_VERSION · Developer info", leadingIcon = Icons.Outlined.Info, iconContainerColor = ColorBluGrey, trailingIcon = Icons.Default.ChevronRight, modifier = Modifier.settingsSearchHighlight("about_app", highlightedSettingKey) { highlightedSettingKey = null }, onClick = { navigator.navigate(AboutAppScreenDestination()) })
+                            RivoListItem(headline = "About WDialer", supporting = "Version $APP_VERSION · Developer info", leadingIcon = Icons.Outlined.Info, iconContainerColor = ColorBluGrey, trailingIcon = Icons.Default.ChevronRight, modifier = Modifier.settingsSearchHighlight("about_app", highlightedSettingKey) { highlightedSettingKey = null }, onClick = { navigator.navigate(AboutAppScreenDestination()) })
                         }
                     }
                 }

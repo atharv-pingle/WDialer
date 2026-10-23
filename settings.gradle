@@ -23,7 +23,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Pdialer"
+rootProject.name = "WDialer"
 include ':app'
 include ':recorder'
 include ':networkswitch'

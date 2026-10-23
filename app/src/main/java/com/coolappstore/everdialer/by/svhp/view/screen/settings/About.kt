@@ -121,7 +121,7 @@ fun AboutAppScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             com.coolappstore.everdialer.by.svhp.view.components.SettingsPillTopAppBar(
-                title = "About Ever Dialer",
+                title = "About WDialer",
                 onBackClick = { navigator.navigateUp() }
             )
         }
@@ -176,7 +176,7 @@ fun AboutAppScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                                             .data(R.mipmap.ic_launcher)
                                             .crossfade(true)
                                             .build(),
-                                        contentDescription = "Ever Dialer Icon",
+                                        contentDescription = "WDialer Icon",
                                         modifier = Modifier.size(68.dp),
                                         contentScale = ContentScale.Fit
                                     )
@@ -391,7 +391,7 @@ fun AboutAppScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Ever Dialer • Material You • Built with ♥",
+                    text = "WDialer • Material You • Built with ♥",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )

@@ -1,12 +1,8 @@
 package com.coolappstore.everdialer.by.svhp.controller.util
 
 import android.app.DownloadManager
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.content.pm.PackageInstaller
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -16,7 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
-import java.io.FileInputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -120,7 +115,7 @@ fun enqueueApkDownload(context: Context, apkUrl: String): Long? {
         if (file.exists()) file.delete()
 
         val request = DownloadManager.Request(Uri.parse(apkUrl)).apply {
-            setTitle("Ever Dialer Update")
+            setTitle("WDialer Update")
             setDescription("Downloading latest version…")
             // Show during download only — no "completed" notification (we launch installer directly)
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
@@ -135,74 +130,23 @@ fun enqueueApkDownload(context: Context, apkUrl: String): Long? {
 }
 
 /**
- * Trigger the PackageInstaller UI immediately and delete the APK only on a successful install.
+ * Opens the downloaded APK with the system installer via safe user Intent.
  */
 fun installApkAndScheduleDelete(context: Context, file: File) {
     try {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            val packageInstaller = context.packageManager.packageInstaller
-            val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
-            val sessionId = packageInstaller.createSession(params)
-            val session = packageInstaller.openSession(sessionId)
-
-            FileInputStream(file).use { fis ->
-                session.openWrite("package", 0, file.length()).use { os ->
-                    fis.copyTo(os)
-                    session.fsync(os)
-                }
-            }
-
-            val installResultAction = "${context.packageName}.INSTALL_RESULT"
-
-            // Delete APK only on STATUS_SUCCESS
-            val resultReceiver = object : BroadcastReceiver() {
-                override fun onReceive(ctx: Context?, intent: Intent?) {
-                    try { context.unregisterReceiver(this) } catch (_: Exception) {}
-                    val status = intent?.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)
-                    if (status == PackageInstaller.STATUS_SUCCESS) {
-                        try { file.delete() } catch (_: Exception) {}
-                    }
-                }
-            }
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.registerReceiver(resultReceiver, IntentFilter(installResultAction), Context.RECEIVER_NOT_EXPORTED)
-            } else {
-                @Suppress("UnspecifiedRegisterReceiverFlag")
-                context.registerReceiver(resultReceiver, IntentFilter(installResultAction))
-            }
-
-            val intent = Intent(installResultAction)
-            val pi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.getBroadcast(context, sessionId, intent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-            } else {
-                PendingIntent.getBroadcast(context, sessionId, intent, PendingIntent.FLAG_UPDATE_CURRENT)
-            }
-
-            session.commit(pi.intentSender)
+        val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
         } else {
-            installApkLegacy(context, file)
+            Uri.fromFile(file)
         }
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+        context.startActivity(intent)
     } catch (e: Exception) {
-        try { installApkLegacy(context, file) } catch (_: Exception) {
-            Toast.makeText(context, "Install failed: ${e.message}", Toast.LENGTH_LONG).show()
-        }
+        Toast.makeText(context, "Unable to launch installer: ${e.message}", Toast.LENGTH_LONG).show()
     }
-}
-
-private fun installApkLegacy(context: Context, file: File) {
-    val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
-    } else {
-        Uri.fromFile(file)
-    }
-    val intent = Intent(Intent.ACTION_VIEW).apply {
-        setDataAndType(uri, "application/vnd.android.package-archive")
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-    }
-    context.startActivity(intent)
-    // Best-effort delete after 90s for legacy path
-    Thread { Thread.sleep(90_000); try { file.delete() } catch (_: Exception) {} }.start()
 }
 
 // Keep old name for call-site compatibility

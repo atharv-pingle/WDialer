@@ -35,17 +35,17 @@ interface UnifiedCallLogDao {
     suspend fun insert(callLog: UnifiedCallLog): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(callLogs: List<UnifiedCallLog>)
+    suspend fun insertAll(callLogs: List<UnifiedCallLog>): List<Long>
 
     @Update
-    suspend fun update(callLog: UnifiedCallLog)
+    suspend fun update(callLog: UnifiedCallLog): Int
 
     @Query("DELETE FROM unified_call_logs WHERE id = :id")
-    suspend fun deleteById(id: Long)
+    suspend fun deleteById(id: Long): Int
 
     @Query("DELETE FROM unified_call_logs WHERE phoneNumber = :phoneNumber")
-    suspend fun deleteByNumber(phoneNumber: String)
+    suspend fun deleteByNumber(phoneNumber: String): Int
 
     @Query("DELETE FROM unified_call_logs")
-    suspend fun clearAll()
+    suspend fun clearAll(): Int
 }

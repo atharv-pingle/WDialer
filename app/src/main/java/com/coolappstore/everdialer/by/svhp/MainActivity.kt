@@ -350,7 +350,7 @@ class MainActivity : FragmentActivity() {
                             prefs.setBoolean("wa_notification_prompt_shown", true)
                             showNotificationAccessDialog = false
                         },
-                        icon = { Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        icon = { Icon(Icons.Default.Call, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                         title = { Text("Log WhatsApp Calls") },
                         text = {
                             Text("Enable Notification Access so WDialer can detect incoming and missed WhatsApp calls and show them in your call history.")

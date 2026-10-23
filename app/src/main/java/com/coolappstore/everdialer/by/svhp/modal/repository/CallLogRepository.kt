@@ -616,12 +616,14 @@ class CallLogRepository(
             // Also delete any WhatsApp call logs from the local database
             try {
                 val unifiedDao = AppDatabase.getInstance(context).unifiedCallLogDao()
-                for (entry in entries) {
-                    if (entry.isWhatsApp || entry.callIds.any { it < 0 }) {
-                        unifiedDao.deleteByNumber(entry.number)
-                        for (cid in entry.callIds) {
-                            if (cid < 0) {
-                                unifiedDao.deleteById(-cid)
+                kotlinx.coroutines.runBlocking {
+                    for (entry in entries) {
+                        if (entry.isWhatsApp || entry.callIds.any { it < 0 }) {
+                            unifiedDao.deleteByNumber(entry.number)
+                            for (cid in entry.callIds) {
+                                if (cid < 0) {
+                                    unifiedDao.deleteById(-cid)
+                                }
                             }
                         }
                     }

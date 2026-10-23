@@ -31,6 +31,18 @@ jobs:
       - name: Make Gradle Wrapper Executable
         run: chmod +x gradlew
 
+      - name: Generate Release Keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore app/release.keystore \
+            -alias wdialer \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass wdialer_password \
+            -keypass wdialer_password \
+            -dname "CN=WDialer, OU=App, O=WDialer, L=SanFrancisco, S=CA, C=US"
+
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
 
@@ -71,14 +83,12 @@ jobs:
           make_latest: true
           overwrite: true
           body: |
-            ## WDialer Release - Android APK 📞
+            ## WDialer Release - WhatsApp & Cellular Android Dialer 📞
 
-            - **Jetpack Compose with Material 3 Expressive UI**
-            - **Predictive T9 Search & Dual-SIM Intelligence**
-            - **Privacy-First & Google Play Protect Compliant**
-            - **Integrated SMS Messaging with Floating Quick Reply**
-            - **Unannounced Call Recording support via Shizuku**
-            - **Custom Edge-to-Edge Caller UI & Liquid Glass Shader Effects**
+            - **Direct 1-Tap WhatsApp Voice Calls** from T9 dialpad, contact cards, and recents.
+            - **Unified Call Log** combining Cellular and WhatsApp call events.
+            - **Material 3 Expressive UI** with clean dark/light theming.
+            - **Privacy-First & Play Protect Clean**: Zero bloat, clean permissions, and pure native calling.
 
             👉 **Direct Download**: Download `${{ steps.versioning.outputs.apk_file }}` below to install directly on your Android device.
         env:

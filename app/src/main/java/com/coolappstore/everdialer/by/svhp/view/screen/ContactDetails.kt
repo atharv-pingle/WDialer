@@ -2367,17 +2367,6 @@ fun ContactDetailsScreen(
                                         Spacer(Modifier.width(6.dp))
                                         Text(if (currentNote.isBlank()) "Add note..." else "Edit note")
                                     }
-
-                                    // When "Integrate Notes Section" is turned OFF in Settings → Calls & System,
-                                    // this app Notes section and the call recording notes (kept inside Ever Call
-                                    // Recorder's playback screen) are merged: surface a quick link here so both
-                                    // notes live in one place from the user's perspective. When the toggle is ON
-                                    // (default) the two notes sections stay fully separate, as before.
-                                    val integrateNotes = remember(settingsVer) {
-                                        prefs.getBoolean(PreferenceManager.KEY_INTEGRATE_NOTES, true)
-                                    }
-                                    if (!integrateNotes) {
-                                        // Call recording notes button removed
                                 }
                             }
                         }

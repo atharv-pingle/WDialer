@@ -687,6 +687,7 @@ fun CallLogFullContent(
             val base = if (hiddenIds.isEmpty()) logs else logs.filter { it.contactId == null || it.contactId !in hiddenIds }
             when (selectedFilter) {
                 CallLogFilter.All -> base
+                CallLogFilter.WhatsApp -> base.filter { it.isWhatsApp }
                 CallLogFilter.Contacts -> base.filter { it.name != null && it.name != it.number && !it.isCallerIdName }
                 CallLogFilter.Favourites -> {
                     base.filter { log ->

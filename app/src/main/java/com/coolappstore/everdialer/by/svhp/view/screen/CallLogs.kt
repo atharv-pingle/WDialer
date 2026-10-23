@@ -179,6 +179,7 @@ fun CallLogFullScreen(
                     val finalLogs = remember(filteredLogsByContact, selectedFilter) {
                         when (selectedFilter) {
                             CallLogFilter.All -> filteredLogsByContact
+                            CallLogFilter.WhatsApp -> filteredLogsByContact.filter { it.isWhatsApp }
                             CallLogFilter.Contacts -> filteredLogsByContact.filter { it.name != null && it.name != it.number && !it.isCallerIdName }
                             CallLogFilter.Favourites -> {
                                 val favoriteContactIds = contacts.filter { it.isFavorite }.map { it.id }.toSet()

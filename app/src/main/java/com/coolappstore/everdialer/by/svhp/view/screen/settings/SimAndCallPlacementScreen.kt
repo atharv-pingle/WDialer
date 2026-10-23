@@ -79,6 +79,7 @@ fun SimAndCallPlacementScreen(
     var confirmPlacingCall by remember {
         mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CONFIRM_PLACING_CALL, false))
     }
+    val settingsVersion by prefs.settingsChanged.collectAsState()
     var showCallingMethodDialog by remember { mutableStateOf(false) }
     var defaultCallingMethod by remember(settingsVersion) {
         mutableStateOf(prefs.getString(PreferenceManager.KEY_DEFAULT_CALLING_METHOD, "whatsapp") ?: "whatsapp")
@@ -91,7 +92,6 @@ fun SimAndCallPlacementScreen(
         mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_MISSED_CALL_NOTIFICATION, false))
     }
     var showDefaultSpeakerMicDialog by remember { mutableStateOf(false) }
-    val settingsVersion by prefs.settingsChanged.collectAsState()
     val defaultSpeakerRoute = remember(settingsVersion) {
         prefs.getString(PreferenceManager.KEY_DEFAULT_SPEAKER_ROUTE, PreferenceManager.SPEAKER_ROUTE_EXTERNAL) ?: PreferenceManager.SPEAKER_ROUTE_EXTERNAL
     }

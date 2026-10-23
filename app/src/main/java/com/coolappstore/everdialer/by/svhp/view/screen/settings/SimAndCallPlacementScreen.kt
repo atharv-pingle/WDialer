@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
+import com.coolappstore.everdialer.by.svhp.controller.WhatsAppCallNotificationListenerService
 import com.coolappstore.everdialer.by.svhp.view.components.*
 import com.coolappstore.everdialer.by.svhp.view.theme.SettingsTransitionStyle
 import com.coolappstore.everdialer.by.svhp.view.theme.settingsMotionBlur
@@ -77,6 +78,13 @@ fun SimAndCallPlacementScreen(
     }
     var confirmPlacingCall by remember {
         mutableStateOf(prefs.getBoolean(PreferenceManager.KEY_CONFIRM_PLACING_CALL, false))
+    }
+    var showCallingMethodDialog by remember { mutableStateOf(false) }
+    var defaultCallingMethod by remember(settingsVersion) {
+        mutableStateOf(prefs.getString(PreferenceManager.KEY_DEFAULT_CALLING_METHOD, "whatsapp") ?: "whatsapp")
+    }
+    val isNotificationAccessGranted = remember(settingsVersion) {
+        WhatsAppCallNotificationListenerService.isNotificationAccessGranted(context)
     }
     var showSimColorDialog by remember { mutableStateOf(false) }
     var missedCallNotification by remember {
@@ -184,6 +192,48 @@ fun SimAndCallPlacementScreen(
         )
     }
 
+    if (showCallingMethodDialog) {
+        AlertDialog(
+            onDismissRequest = { showCallingMethodDialog = false },
+            title = { Text("Default Calling Method") },
+            text = {
+                Column {
+                    listOf(
+                        "whatsapp" to "WhatsApp Call (Recommended)",
+                        "cellular" to "Cellular (Carrier SIM)"
+                    ).forEach { (key, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    defaultCallingMethod = key
+                                    prefs.setString(PreferenceManager.KEY_DEFAULT_CALLING_METHOD, key)
+                                    showCallingMethodDialog = false
+                                }
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = defaultCallingMethod == key,
+                                onClick = {
+                                    defaultCallingMethod = key
+                                    prefs.setString(PreferenceManager.KEY_DEFAULT_CALLING_METHOD, key)
+                                    showCallingMethodDialog = false
+                                }
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(label, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCallingMethodDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     Scaffold(
         modifier = Modifier.settingsMotionBlur(),
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -206,6 +256,36 @@ fun SimAndCallPlacementScreen(
             SettingsSearchEntryPoint(navigator = navigator)
 
             RivoAnimatedSection(delayMs = 0L) {
+                Column {
+                    SimCallSectionLabel("WDialer Calling Service")
+                    RivoExpressiveCard {
+                        RivoListItem(
+                            headline = "Default Calling Method",
+                            supporting = if (defaultCallingMethod == "whatsapp") "WhatsApp Call (Direct VoIP)" else "Cellular (Carrier SIM)",
+                            leadingIcon = Icons.Outlined.Call,
+                            iconContainerColor = ColorGreen,
+                            trailingIcon = Icons.Default.ChevronRight,
+                            onClick = { showCallingMethodDialog = true }
+                        )
+                        HorizontalDivider(
+                            Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+                        RivoListItem(
+                            headline = "WhatsApp Notification Call Logger",
+                            supporting = if (isNotificationAccessGranted) "Active • Incoming & missed calls logged" else "Tap to grant notification access",
+                            leadingIcon = Icons.Outlined.NotificationsActive,
+                            iconContainerColor = Color(0xFF6750A4),
+                            trailingIcon = Icons.Default.ChevronRight,
+                            onClick = {
+                                WhatsAppCallNotificationListenerService.openNotificationAccessSettings(context)
+                            }
+                        )
+                    }
+                }
+            }
+
+            RivoAnimatedSection(delayMs = 40L) {
                 Column {
                     SimCallSectionLabel("Accounts & Placement")
                     RivoExpressiveCard {

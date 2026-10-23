@@ -84,6 +84,7 @@ import com.coolappstore.everdialer.by.svhp.controller.ContactsViewModel
 import com.coolappstore.everdialer.by.svhp.controller.util.NoteManager
 import com.coolappstore.everdialer.by.svhp.controller.util.QrCodeUtils
 import com.coolappstore.everdialer.by.svhp.controller.util.makeCall
+import com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher
 import com.coolappstore.everdialer.by.svhp.controller.util.placeCallWithSimPreference
 import com.coolappstore.everdialer.by.svhp.controller.util.placeCallWithContactSimPreference
 import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
@@ -452,10 +453,15 @@ fun ContactDetailsScreen(
     }
 
     val initiateCall = { number: String ->
-        placeCallWithContactSimPreference(
-            context, number, contactSimChoice, simPref, recentSimSlotForContact
-        ) {
-            pendingNumber = number; showSimPicker = true
+        val defaultCallMethod = prefs.getString(PreferenceManager.KEY_DEFAULT_CALLING_METHOD, "whatsapp")
+        if (defaultCallMethod == "whatsapp" && WhatsAppCallLauncher.isWhatsAppInstalled(context)) {
+            WhatsAppCallLauncher.launchVoiceCall(context, number, contact?.name ?: displayName)
+        } else {
+            placeCallWithContactSimPreference(
+                context, number, contactSimChoice, simPref, recentSimSlotForContact
+            ) {
+                pendingNumber = number; showSimPicker = true
+            }
         }
     }
 
@@ -2371,23 +2377,7 @@ fun ContactDetailsScreen(
                                         prefs.getBoolean(PreferenceManager.KEY_INTEGRATE_NOTES, true)
                                     }
                                     if (!integrateNotes) {
-                                        HorizontalDivider(Modifier.padding(horizontal = 4.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                        TextButton(
-                                            onClick = {
-                                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                                                    // Call recording not supported
-                                                    try { context.startActivity(launch) } catch (_: Exception) {}
-                                                } else {
-                                                    android.widget.Toast.makeText(context, "Call Recording requires Android 11 or newer", android.widget.Toast.LENGTH_SHORT).show()
-                                                }
-                                            },
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Icon(Icons.Default.FiberManualRecord, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
-                                            Spacer(Modifier.width(6.dp))
-                                            Text("View call recording notes for this contact")
-                                        }
-                                    }
+                                        // Call recording notes button removed
                                 }
                             }
                         }

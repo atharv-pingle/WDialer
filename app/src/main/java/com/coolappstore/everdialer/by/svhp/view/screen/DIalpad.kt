@@ -9,6 +9,7 @@ import android.media.AudioAttributes
 import android.media.SoundPool
 import android.os.Build
 import android.provider.ContactsContract
+import com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher
 import android.telecom.TelecomManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import kotlinx.coroutines.Job
@@ -935,6 +936,14 @@ fun DialPadContent(
         // for proper carrier-stack routing without looping back to this app.
         if (processSecretCodeIfNeeded(cleanNum)) {
             replaceNumber("")
+            return
+        }
+        val isSpecial = cleanNum.startsWith("*") || cleanNum.startsWith("#")
+        val defaultCallingMethod = prefs.getString(PreferenceManager.KEY_DEFAULT_CALLING_METHOD, "whatsapp")
+        if (!isSpecial && defaultCallingMethod == "whatsapp" && WhatsAppCallLauncher.isWhatsAppInstalled(context)) {
+            val matchingContact = allContacts.firstOrNull { c -> c.phoneNumbers.any { numbersLikelyMatch(it, cleanNum) } }
+            WhatsAppCallLauncher.launchVoiceCall(context, cleanNum, matchingContact?.name)
+            forgetNumberIfMemoryDisabled()
             return
         }
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {

@@ -100,7 +100,12 @@ class PreferenceManager(context: Context) {
     fun setContactSimChoice(contactKey: String, choice: String) =
         setString(KEY_CONTACT_SIM_CHOICE_PREFIX + contactKey, choice)
 
-    fun getDefaultSwipeAction(section: String, direction: String): String = "none"
+    fun getDefaultSwipeAction(section: String, direction: String): String {
+        if (section == "call_logs") {
+            return if (direction == "right") "whatsapp_call" else "whatsapp_chat"
+        }
+        return "none"
+    }
 
     fun getSwipeAction(section: String, direction: String): String {
         if (section == "sms") {
@@ -468,6 +473,7 @@ class PreferenceManager(context: Context) {
         const val KEY_COLORFUL_AVATARS      = "colorful_avatars"
         const val KEY_SHOW_PICTURE          = "show_picture"
         const val KEY_ICON_ONLY_NAV         = "icon_only_nav"
+        const val KEY_DEFAULT_CALLING_METHOD = "default_calling_method" // "whatsapp" | "cellular"
         const val KEY_DTMF_TONE             = "dtmf_tone"
         const val KEY_DIALPAD_TONE_STYLE    = "dialpad_tone_style" // "standard" | "piano" | "water_drop" | "mechanical" | "scifi"
         const val KEY_DIALPAD_VIBRATION     = "dialpad_vibration"

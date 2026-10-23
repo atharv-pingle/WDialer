@@ -758,6 +758,7 @@ fun RivoListItem(
     trailingIcon: ImageVector? = null,
     trailingIconTint: Color? = null,
     trailingIconContainerColor: Color? = null,
+    onTrailingIconClick: (() -> Unit)? = null,
     trailingText: String? = null,
     trailingTextColor: Color? = null,
     trailingSubText: String? = null,
@@ -768,6 +769,7 @@ fun RivoListItem(
     headlineEndContent: (@Composable () -> Unit)? = null,
     supportingEndContent: (@Composable () -> Unit)? = null,
     avatarName: String? = null,
+    avatarBadge: (@Composable () -> Unit)? = null,
     avatarForcePersonIcon: Boolean = false,
     photoUri: String? = null,
     avatarObeySolidIcons: Boolean = true,
@@ -855,26 +857,33 @@ fun RivoListItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (avatarName != null || photoUri != null) {
-                RivoAvatar(
-                    name = avatarName ?: "",
-                    photoUri = photoUri,
-                    forcePersonIcon = avatarForcePersonIcon,
-                    obeySolidIcons = avatarObeySolidIcons,
-                    size = 48.dp,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .onGloballyPositioned { coords -> avatarCoords = coords }
-                        .then(
-                            if (onAvatarClick != null)
-                                Modifier
-                                     .clip(CircleShape)
-                                     .combinedClickable(onClick = {
-                                         recordAvatarClick()
-                                         onAvatarClick()
-                                     })
-                            else Modifier
-                        )
-                )
+                Box(modifier = Modifier.size(48.dp)) {
+                    RivoAvatar(
+                        name = avatarName ?: "",
+                        photoUri = photoUri,
+                        forcePersonIcon = avatarForcePersonIcon,
+                        obeySolidIcons = avatarObeySolidIcons,
+                        size = 48.dp,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .onGloballyPositioned { coords -> avatarCoords = coords }
+                            .then(
+                                if (onAvatarClick != null)
+                                    Modifier
+                                         .clip(CircleShape)
+                                         .combinedClickable(onClick = {
+                                             recordAvatarClick()
+                                             onAvatarClick()
+                                         })
+                                else Modifier
+                            )
+                    )
+                    if (avatarBadge != null) {
+                        Box(modifier = Modifier.align(Alignment.BottomEnd)) {
+                            avatarBadge()
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.width(16.dp))
             } else if (leadingIcon != null) {
                 RivoIconBox(
@@ -997,13 +1006,18 @@ fun RivoListItem(
                     Surface(
                         shape = CircleShape,
                         color = trailingIconContainerColor,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier
+                            .size(36.dp)
+                            .then(
+                                if (onTrailingIconClick != null) Modifier.clickable(onClick = onTrailingIconClick)
+                                else Modifier
+                            )
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 trailingIcon, null,
                                 tint = trailingIconTint ?: MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(17.dp).then(mirrorModifier)
+                                modifier = Modifier.size(18.dp).then(mirrorModifier)
                             )
                         }
                     }

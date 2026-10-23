@@ -63,6 +63,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
 import com.coolappstore.everdialer.by.svhp.controller.CallService
+import com.coolappstore.everdialer.by.svhp.controller.WhatsAppCallNotificationListenerService
 import com.coolappstore.everdialer.by.svhp.controller.util.DefaultDialerManager
 import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
 import com.coolappstore.everdialer.by.svhp.controller.util.placeCallHonoringContactSim
@@ -301,10 +302,17 @@ class MainActivity : FragmentActivity() {
                 var showWelcomeDialog by remember { mutableStateOf(false) }
                 var showTelegramDialog by remember { mutableStateOf(false) }
                 var showFullScreenIntentDialog by remember { mutableStateOf(false) }
+                var showNotificationAccessDialog by remember { mutableStateOf(false) }
+                val hasNotificationAccess = remember {
+                    WhatsAppCallNotificationListenerService.isNotificationAccessGranted(this@MainActivity)
+                }
                 LaunchedEffect(Unit) {
                     if (needsWelcomeDialog) {
                         kotlinx.coroutines.delay(400)
                         showWelcomeDialog = true
+                    } else if (!hasNotificationAccess && !prefs.getBoolean("wa_notification_prompt_shown", false)) {
+                        kotlinx.coroutines.delay(600)
+                        showNotificationAccessDialog = true
                     } else if (!prefs.getBoolean(PreferenceManager.KEY_TELEGRAM_SHOWN, false)) {
                         // Welcome already done but Telegram dialog not yet shown — show it
                         kotlinx.coroutines.delay(800)
@@ -331,6 +339,39 @@ class MainActivity : FragmentActivity() {
                                 showTelegramDialog = true
                             } else if (needsFullScreenIntentPermission()) {
                                 showFullScreenIntentDialog = true
+                            }
+                        }
+                    )
+                }
+
+                if (showNotificationAccessDialog) {
+                    AlertDialog(
+                        onDismissRequest = {
+                            prefs.setBoolean("wa_notification_prompt_shown", true)
+                            showNotificationAccessDialog = false
+                        },
+                        icon = { Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        title = { Text("Log WhatsApp Calls") },
+                        text = {
+                            Text("Enable Notification Access so WDialer can detect incoming and missed WhatsApp calls and show them in your call history.")
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    prefs.setBoolean("wa_notification_prompt_shown", true)
+                                    showNotificationAccessDialog = false
+                                    WhatsAppCallNotificationListenerService.openNotificationAccessSettings(this@MainActivity)
+                                }
+                            ) {
+                                Text("Enable")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = {
+                                prefs.setBoolean("wa_notification_prompt_shown", true)
+                                showNotificationAccessDialog = false
+                            }) {
+                                Text("Later")
                             }
                         }
                     )

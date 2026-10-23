@@ -18,7 +18,9 @@ data class CallLogEntry(
     /** 0-based SIM slot this call was made/received on, or -1 if unknown/single-SIM device. */
     val simSlot: Int = -1,
     val callIds: List<Long> = emptyList(),
-    val dates: List<Long> = emptyList()
+    val dates: List<Long> = emptyList(),
+    val isWhatsApp: Boolean = false,
+    val mediaType: String = "VOICE"
 ) {
     val count: Int get() = types.size.coerceAtLeast(1)
 }

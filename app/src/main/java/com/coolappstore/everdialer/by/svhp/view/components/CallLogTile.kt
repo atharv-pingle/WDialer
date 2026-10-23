@@ -9,6 +9,7 @@ import android.provider.ContactsContract
 import android.telecom.PhoneAccountHandle
 import android.telecom.TelecomManager
 import android.widget.Toast
+import com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -252,6 +253,8 @@ fun CallLogTileSimple(
     val trailingContainerColor = if (isMissed || isBlocked) {
         if (isSaturatedActive) MaterialTheme.colorScheme.error
         else MaterialTheme.colorScheme.errorContainer
+    } else if (log.isWhatsApp) {
+        Color(0xFF25D366)
     } else {
         if (isSaturatedActive) MaterialTheme.colorScheme.primary
         else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
@@ -260,6 +263,8 @@ fun CallLogTileSimple(
     val trailingTint = if (isMissed || isBlocked) {
         if (isSaturatedActive) MaterialTheme.colorScheme.onError
         else MaterialTheme.colorScheme.onErrorContainer
+    } else if (log.isWhatsApp) {
+        Color.White
     } else {
         if (isSaturatedActive) MaterialTheme.colorScheme.onPrimary
         else MaterialTheme.colorScheme.onPrimaryContainer
@@ -384,6 +389,8 @@ fun CallLogTile(
     val trailingContainerColor = if (isMissed || isBlocked) {
         if (isSaturatedActive) MaterialTheme.colorScheme.error
         else MaterialTheme.colorScheme.errorContainer
+    } else if (log.isWhatsApp) {
+        Color(0xFF25D366)
     } else {
         if (isSaturatedActive) MaterialTheme.colorScheme.primary
         else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
@@ -392,6 +399,8 @@ fun CallLogTile(
     val trailingTint = if (isMissed || isBlocked) {
         if (isSaturatedActive) MaterialTheme.colorScheme.onError
         else MaterialTheme.colorScheme.onErrorContainer
+    } else if (log.isWhatsApp) {
+        Color.White
     } else {
         if (isSaturatedActive) MaterialTheme.colorScheme.onPrimary
         else MaterialTheme.colorScheme.onPrimaryContainer
@@ -523,6 +532,15 @@ fun CallLogTile(
         val handleSwipeAction: (String) -> Unit = { actionKey ->
             when (actionKey) {
                 "call", "call_back" -> onButtonClick(log)
+                "whatsapp_call" -> {
+                    WhatsAppCallLauncher.launchVoiceCall(context, log.number, displayName)
+                }
+                "whatsapp_video" -> {
+                    WhatsAppCallLauncher.launchVideoCall(context, log.number, displayName)
+                }
+                "whatsapp_chat" -> {
+                    WhatsAppCallLauncher.launchChat(context, log.number)
+                }
                 "send_text" -> {
                     if (log.number.isNotBlank()) {
                         try {
@@ -627,20 +645,71 @@ fun CallLogTile(
             enabled = !selectionMode,
             shape = RoundedCornerShape(16.dp)
         ) {
+            val whatsAppMediaTag = if (log.mediaType == "VIDEO") "WhatsApp Video" else "WhatsApp Voice"
+            val supportingText = if (log.isWhatsApp) {
+                if (showNumberOnSupportingLine && log.number.isNotBlank()) "$whatsAppMediaTag • ${log.number}" else whatsAppMediaTag
+            } else {
+                if (showNumberOnSupportingLine) log.number else null
+            }
+
+            val whatsAppAvatarBadge: (@Composable () -> Unit)? = if (log.isWhatsApp) {
+                {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFF25D366),
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.surface),
+                        modifier = Modifier.size(16.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (log.mediaType == "VIDEO") Icons.Default.Videocam else Icons.Default.Call,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(9.dp)
+                            )
+                        }
+                    }
+                }
+            } else null
+
+            val callDirectionContent: (@Composable () -> Unit) = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (showNumberOnSupportingLine && simBadge != null) {
+                        simBadge()
+                        Spacer(Modifier.width(4.dp))
+                    }
+                    val (dirIcon, dirColor) = when (log.type) {
+                        CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade to Color(0xFF4CAF50)
+                        CallLog.Calls.INCOMING_TYPE -> Icons.AutoMirrored.Filled.CallReceived to Color(0xFF2196F3)
+                        CallLog.Calls.MISSED_TYPE -> Icons.AutoMirrored.Filled.CallMissed to Color(0xFFF44336)
+                        CallLog.Calls.BLOCKED_TYPE -> Icons.Default.Block to Color(0xFFF44336)
+                        else -> Icons.Default.Call to MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    Icon(
+                        imageVector = dirIcon,
+                        contentDescription = null,
+                        tint = dirColor,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                }
+            }
+
             RivoListItem(
                 headline = buildString {
                     append(displayName)
                     if (log.count > 1 && !showTotalCallsMade) append(" (${log.count})")
                 },
                 headlineMaxLines = 2,
-                supporting = if (showNumberOnSupportingLine) log.number else null,
+                supporting = supportingText,
                 avatarName  = if (showAvatars) avatarSourceName else null,
+                avatarBadge = whatsAppAvatarBadge,
                 avatarForcePersonIcon = !isContact,
                 photoUri    = if (showAvatars) resolvedPhotoUri else null,
                 avatarObeySolidIcons = false,
                 headlineStartContent = if (!showNumberOnSupportingLine) simBadge else null,
                 headlineEndContent = totalCallsBadge,
-                supportingStartContent = if (showNumberOnSupportingLine) simBadge else null,
+                supportingStartContent = callDirectionContent,
                 trailingText = formatTimeOnly(log.date, use24HourTime),
                 trailingTextColor = if (isMissed || isBlocked) MaterialTheme.colorScheme.error else null,
                 trailingSubText = if (groupCallsByLatest) {
@@ -669,15 +738,16 @@ fun CallLogTile(
                 } else {
                     if (isMissed || isBlocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 },
-                trailingIcon = when (log.type) {
+                trailingIcon = if (log.isWhatsApp) Icons.Default.Call else when (log.type) {
                     CallLog.Calls.MISSED_TYPE   -> Icons.AutoMirrored.Filled.CallMissed
                     CallLog.Calls.BLOCKED_TYPE  -> Icons.Default.Block
                     CallLog.Calls.INCOMING_TYPE -> Icons.AutoMirrored.Filled.CallReceived
                     CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade
                     else                        -> Icons.Default.Call
                 },
-                trailingIconTint = trailingTint,
-                trailingIconContainerColor = trailingContainerColor,
+                trailingIconTint = if (log.isWhatsApp) Color.White else trailingTint,
+                trailingIconContainerColor = if (log.isWhatsApp) Color(0xFF25D366) else trailingContainerColor,
+                onTrailingIconClick = { onButtonClick(log) },
                 onAvatarClick = if (showAvatars && onAvatarClick != null) ({ onAvatarClick(log.copy(contactId = matchedContact?.id ?: log.contactId, photoUri = resolvedPhotoUri)) }) else null,
                 onLongClick = {
                     if (selectionMode) onSelectToggle?.invoke(log)

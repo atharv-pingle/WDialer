@@ -1391,9 +1391,18 @@ fun CallLogFullContent(
                                                             val key = "${log.number}|${log.date}"
                                                             onSelectedLogsChange(if (selectedLogs.contains(key)) selectedLogs - key else selectedLogs + key)
                                                         } else if (directCall) {
-                                                            val recentSlot = if (log.simSlot in 0..1) log.simSlot else null
-                                                            placeCallHonoringContactSim(context, prefs, log.contactId ?: log.number, log.number, recentSlot) {
-                                                                pendingNumber = log.number; showSimPicker = true
+                                                            if (log.isWhatsApp) {
+                                                                com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.launchVoiceCall(context, log.number, log.name)
+                                                            } else {
+                                                                val defaultCallMethod = prefs.getString(com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager.KEY_DEFAULT_CALLING_METHOD, "whatsapp")
+                                                                if (defaultCallMethod == "whatsapp" && com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.isWhatsAppInstalled(context)) {
+                                                                    com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.launchVoiceCall(context, log.number, log.name)
+                                                                } else {
+                                                                    val recentSlot = if (log.simSlot in 0..1) log.simSlot else null
+                                                                    placeCallHonoringContactSim(context, prefs, log.contactId ?: log.number, log.number, recentSlot) {
+                                                                        pendingNumber = log.number; showSimPicker = true
+                                                                    }
+                                                                }
                                                             }
                                                         } else {
                                                             navigator.navigate(ContactDetailsScreenDestination(contactId = log.contactId ?: "null", phoneNumber = log.number))
@@ -1403,9 +1412,22 @@ fun CallLogFullContent(
                                                         navigator.navigate(ContactDetailsScreenDestination(contactId = log.contactId ?: "null", phoneNumber = log.number))
                                                     },
                                                     onButtonClick = { log ->
-                                                        val recentSlot = if (log.simSlot in 0..1) log.simSlot else null
-                                                        placeCallHonoringContactSim(context, prefs, log.contactId ?: log.number, log.number, recentSlot) {
-                                                            pendingNumber = log.number; showSimPicker = true
+                                                        if (log.isWhatsApp) {
+                                                            if (log.mediaType == "VIDEO") {
+                                                                com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.launchVideoCall(context, log.number, log.name)
+                                                            } else {
+                                                                com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.launchVoiceCall(context, log.number, log.name)
+                                                            }
+                                                        } else {
+                                                            val defaultCallMethod = prefs.getString(com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager.KEY_DEFAULT_CALLING_METHOD, "whatsapp")
+                                                            if (defaultCallMethod == "whatsapp" && com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.isWhatsAppInstalled(context)) {
+                                                                com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.launchVoiceCall(context, log.number, log.name)
+                                                            } else {
+                                                                val recentSlot = if (log.simSlot in 0..1) log.simSlot else null
+                                                                placeCallHonoringContactSim(context, prefs, log.contactId ?: log.number, log.number, recentSlot) {
+                                                                    pendingNumber = log.number; showSimPicker = true
+                                                                }
+                                                            }
                                                         }
                                                     },
                                                     onDelete = { viewModel.refreshLogs() }

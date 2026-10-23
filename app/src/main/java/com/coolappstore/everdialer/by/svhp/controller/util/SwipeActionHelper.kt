@@ -30,6 +30,22 @@ object SwipeActionHelper {
                 contentColor = colorScheme.onPrimary,
                 isDestructive = false
             )
+            "whatsapp_call" -> SwipeActionItem(
+                key = actionKey,
+                label = "WhatsApp Call",
+                icon = Icons.Default.Call,
+                backgroundColor = androidx.compose.ui.graphics.Color(0xFF25D366),
+                contentColor = androidx.compose.ui.graphics.Color.White,
+                isDestructive = false
+            )
+            "whatsapp_chat" -> SwipeActionItem(
+                key = actionKey,
+                label = "WhatsApp Chat",
+                icon = Icons.AutoMirrored.Filled.Chat,
+                backgroundColor = androidx.compose.ui.graphics.Color(0xFF128C7E),
+                contentColor = androidx.compose.ui.graphics.Color.White,
+                isDestructive = false
+            )
             "send_text" -> SwipeActionItem(
                 key = actionKey,
                 label = "Message",

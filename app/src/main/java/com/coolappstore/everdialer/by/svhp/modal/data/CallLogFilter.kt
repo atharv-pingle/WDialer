@@ -4,10 +4,11 @@ import com.coolappstore.everdialer.by.svhp.controller.util.formatDateHeader
 
 enum class CallLogFilter(val displayName: String) {
     All("All"),
+    WhatsApp("WhatsApp"),
+    Missed("Missed"),
     Contacts("Known"),
     Favourites("Favourites"),
     Unknown("Unknown"),
-    Missed("Missed"),
     Incoming("Incoming"),
     Outgoing("Outgoing");
 
@@ -15,6 +16,7 @@ enum class CallLogFilter(val displayName: String) {
         public fun filter(logs: List<CallLogEntry>, type: CallLogFilter): List<List<CallLogEntry>> {
             val filteredList = when (type) {
                 All -> logs
+                WhatsApp -> logs.filter { it.isWhatsApp }
                 Contacts -> logs.filter { it.name != null && it.name.isNotEmpty() && it.name != it.number && !it.isCallerIdName }
                 Favourites -> emptyList()
                 Unknown -> logs.filter { it.contactId.isNullOrBlank() || it.name.isNullOrEmpty() || it.name == it.number || it.isCallerIdName }

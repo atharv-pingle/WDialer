@@ -154,6 +154,17 @@ class CallLogViewModel(
             }
         }
 
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                com.coolappstore.everdialer.by.svhp.modal.data.AppDatabase.getInstance(application)
+                    .unifiedCallLogDao()
+                    .getAllCallLogsFlow()
+                    .collect {
+                        fetchLogsInternal()
+                    }
+            } catch (_: Throwable) {}
+        }
+
         // Watching CallService's call-session state means we refetch both when a call starts
         // and when it ends (both incoming and outgoing, including call waiting).
         viewModelScope.launch {

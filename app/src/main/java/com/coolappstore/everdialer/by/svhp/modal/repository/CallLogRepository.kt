@@ -12,6 +12,8 @@ import com.coolappstore.everdialer.by.svhp.controller.util.normalizeNumberDigits
 import com.coolappstore.everdialer.by.svhp.controller.util.numbersLikelyMatch
 import com.coolappstore.everdialer.by.svhp.modal.`interface`.ICallLogRepository
 import com.coolappstore.everdialer.by.svhp.modal.data.CallLogEntry
+import com.coolappstore.everdialer.by.svhp.modal.data.AppDatabase
+import com.coolappstore.everdialer.by.svhp.modal.data.CallType
 
 /**
  * Rebuilt from scratch to fix three separate classes of bugs that were all previously living in
@@ -66,7 +68,9 @@ class CallLogRepository(
         val date: Long,
         val duration: Long,
         val simSlot: Int,
-        val callIds: List<Long> = if (id > 0) listOf(id) else emptyList()
+        val callIds: List<Long> = if (id > 0) listOf(id) else emptyList(),
+        val isWhatsApp: Boolean = false,
+        val mediaType: String = "VOICE"
     )
 
     // The suffix length used to bucket saved numbers for fast lookup. Must match
@@ -243,7 +247,9 @@ class CallLogRepository(
                         isCallerIdName = isCallerIdName,
                         simSlot = raw.simSlot,
                         callIds = raw.callIds,
-                        dates = listOf(raw.date)
+                        dates = listOf(raw.date),
+                        isWhatsApp = raw.isWhatsApp,
+                        mediaType = raw.mediaType
                     )
                 )
             }
@@ -335,7 +341,38 @@ class CallLogRepository(
                 )
             }
         }
-        return rows
+
+        try {
+            val unifiedDao = AppDatabase.getInstance(context).unifiedCallLogDao()
+            val unifiedLogs = unifiedDao.getAllCallLogsSync()
+            for (u in unifiedLogs) {
+                val digits = u.phoneNumber.filter { it.isDigit() }
+                val callTypeInt = when (u.callType) {
+                    CallType.INCOMING -> CallLog.Calls.INCOMING_TYPE
+                    CallType.OUTGOING -> CallLog.Calls.OUTGOING_TYPE
+                    CallType.MISSED -> CallLog.Calls.MISSED_TYPE
+                    CallType.REJECTED -> CallLog.Calls.REJECTED_TYPE
+                }
+                rows.add(
+                    RawCall(
+                        id = -u.id,
+                        number = u.phoneNumber,
+                        digits = digits,
+                        cachedName = u.displayName,
+                        type = callTypeInt,
+                        date = u.timestamp,
+                        duration = u.durationSeconds,
+                        simSlot = -1,
+                        callIds = listOf(-u.id),
+                        isWhatsApp = true,
+                        mediaType = u.mediaType.name
+                    )
+                )
+            }
+        } catch (_: Exception) {}
+
+        rows.sortByDescending { it.date }
+        return if (limit != null && rows.size > limit) rows.take(limit) else rows
     }
 
     /**
@@ -576,6 +613,21 @@ class CallLogRepository(
                     )
                 }
             }
+            // Also delete any WhatsApp call logs from the local database
+            try {
+                val unifiedDao = AppDatabase.getInstance(context).unifiedCallLogDao()
+                for (entry in entries) {
+                    if (entry.isWhatsApp || entry.callIds.any { it < 0 }) {
+                        unifiedDao.deleteByNumber(entry.number)
+                        for (cid in entry.callIds) {
+                            if (cid < 0) {
+                                unifiedDao.deleteById(-cid)
+                            }
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+
             true
         } catch (_: Exception) {
             false

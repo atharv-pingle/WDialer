@@ -25,6 +25,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "WDialer"
 include ':app'
-include ':recorder'
-include ':networkswitch'
-include ':hiddenapi'

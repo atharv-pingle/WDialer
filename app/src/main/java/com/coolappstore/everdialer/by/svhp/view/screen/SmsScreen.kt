@@ -62,8 +62,8 @@ import com.coolappstore.everdialer.by.svhp.controller.util.BlockedNumbersManager
 import com.coolappstore.everdialer.by.svhp.controller.util.DefaultSmsManager
 import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
 import com.coolappstore.everdialer.by.svhp.controller.util.makeCall
-import com.coolappstore.evercallrecorder.by.svhp.ui.common.SwipeableItemContainer
-import com.coolappstore.evercallrecorder.by.svhp.ui.common.SwipeActionItem
+import com.coolappstore.everdialer.by.svhp.view.components.SwipeableItemContainer
+import com.coolappstore.everdialer.by.svhp.view.components.SwipeActionItem
 import com.coolappstore.everdialer.by.svhp.controller.FloatingSmsService
 import com.coolappstore.everdialer.by.svhp.controller.util.SwipeActionHelper
 import com.coolappstore.everdialer.by.svhp.modal.data.Contact

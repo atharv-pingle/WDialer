@@ -594,8 +594,6 @@ class CallService : InCallService() {
                 if (state == Call.STATE_ACTIVE) {
                     callAnsweredSet.add(call)
                     callConnectTimes.getOrPut(call) { System.currentTimeMillis() }
-                    com.coolappstore.evercallrecorder.by.svhp.services.call.CallSessionManager.getInstance(this@CallService)
-                        .notifyCallAnsweredInDialer()
                 }
                 applyDefaultAudioRouting(call)
             }

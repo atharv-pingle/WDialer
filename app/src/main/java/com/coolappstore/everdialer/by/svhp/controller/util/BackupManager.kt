@@ -286,31 +286,7 @@ object BackupManager {
                         }
                     }
 
-                    // A) App private storage recordings
-                    val privateDir = com.coolappstore.evercallrecorder.by.svhp.system.storage.SafHelper.getPrivateStorageDir(context)
-                    val authority = com.coolappstore.evercallrecorder.by.svhp.system.storage.SafHelper.getPrivateStorageAuthority(context)
-                    privateDir.listFiles()?.filter { it.isFile }?.forEach { file ->
-                        val uriStr = try {
-                            androidx.core.content.FileProvider.getUriForFile(context, authority, file).toString()
-                        } catch (_: Exception) { null }
-                        archiveRecording(file.name, { FileInputStream(file) }, uriStr)
-                    }
-
-                    // B) SAF folder recordings if configured
-                    val appPrefs = com.coolappstore.evercallrecorder.by.svhp.data.AppPreferences(context)
-                    val folderUri = appPrefs.getRecordingFolderUri()
-                    if (folderUri != null) {
-                        try {
-                            val dir = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, folderUri)
-                            if (dir != null && dir.exists() && dir.canRead()) {
-                                dir.listFiles().filter { it.isFile && it.name != null }.forEach { docFile ->
-                                    val fileName = docFile.name!!
-                                    val uriStr = docFile.uri.toString()
-                                    archiveRecording(fileName, { context.contentResolver.openInputStream(docFile.uri) ?: throw java.io.FileNotFoundException() }, uriStr)
-                                }
-                            }
-                        } catch (_: Exception) {}
-                    }
+                    // Recordings backup omitted in slim build
 
                     // Write recordings_meta.json
                     if (recordingsMetaArray.length() > 0) {
@@ -563,7 +539,7 @@ object BackupManager {
             var recordingsRestoredCount = 0
             var restoredMetaJson: String? = null
 
-            val privateRecDir = com.coolappstore.evercallrecorder.by.svhp.system.storage.SafHelper.getPrivateStorageDir(context)
+            val privateRecDir = File(context.filesDir, "call_recordings")
 
             ZipInputStream(FileInputStream(backupFile)).use { zip ->
                 var entry = zip.nextEntry
@@ -992,62 +968,10 @@ object BackupManager {
                 }
             }
 
-            // If recordings were restored and recorder storage mode was unset, set it to PRIVATE so they show immediately
-            if (recordingsRestoredCount > 0) {
-                val appPrefs = com.coolappstore.evercallrecorder.by.svhp.data.AppPreferences(context)
-                if (appPrefs.getStorageMode() == null) {
-                    appPrefs.setStorageMode(com.coolappstore.evercallrecorder.by.svhp.data.AppPreferences.StorageMode.PRIVATE)
-                }
-            }
-
-            // Restore recordings metadata (favourites and notes) re-keyed to current URIs
-            if (!restoredMetaJson.isNullOrBlank()) {
-                try {
-                    val metaArray = JSONArray(restoredMetaJson)
-                    val favPrefs = context.getSharedPreferences(PREFS_RECORDER_FAV, Context.MODE_PRIVATE)
-                    val notesPrefs = context.getSharedPreferences(PREFS_RECORDER_NOTES, Context.MODE_PRIVATE)
-                    val favEditor = favPrefs.edit()
-                    val notesEditor = notesPrefs.edit()
-
-                    val authority = com.coolappstore.evercallrecorder.by.svhp.system.storage.SafHelper.getPrivateStorageAuthority(context)
-
-                    for (i in 0 until metaArray.length()) {
-                        val item = metaArray.getJSONObject(i)
-                        val fileName = item.optString("fileName", "")
-                        val isFav = item.optBoolean("isFavourite", false)
-                        val note = item.optString("noteText", "")
-
-                        if (fileName.isNotEmpty()) {
-                            val localFile = File(privateRecDir, fileName)
-                            if (localFile.exists()) {
-                                val uri = androidx.core.content.FileProvider.getUriForFile(context, authority, localFile).toString()
-                                if (isFav) favEditor.putBoolean(uri, true)
-                                if (note.isNotEmpty()) notesEditor.putString(uri, note)
-                            }
-                        }
-                    }
-                    favEditor.apply()
-                    notesEditor.apply()
-                } catch (_: Exception) {}
-            }
-
             // Fix and validate all background paths after restore so they point to current device directories
             if (restoreCallingCards || restoreSettings) {
                 fixBackgroundPathsAfterRestore(context)
             }
-
-            // Sync services and stores after restore
-            try {
-                com.supernova.networkswitch.util.MasterSwitchStore.reload(context)
-            } catch (_: Throwable) {}
-
-            try {
-                com.supernova.networkswitch.util.AutomationSwitchStore.reload(context)
-            } catch (_: Throwable) {}
-
-            try {
-                com.coolappstore.evercallrecorder.by.svhp.services.call.CallRecordingComponentGuard.sync(context)
-            } catch (_: Throwable) {}
 
             try {
                 val prefMgr = org.koin.java.KoinJavaComponent.getKoin().getOrNull<PreferenceManager>()

@@ -597,22 +597,7 @@ fun AppSettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = 
                     AppSettingsSectionLabel("More Settings")
                     RivoExpressiveCard {
                         RivoListItem(
-                            headline = "4G/5G Switcher",
-                            supporting = "Quickly toggle your network mode",
-                            leadingIcon = Icons.Outlined.SignalCellularAlt,
-                            iconContainerColor = Color(0xFF00897B),
-                            trailingIcon = Icons.Default.ChevronRight,
-                            modifier = Modifier.settingsSearchHighlight("network_switcher", highlightedKey) { highlightedKey = null },
-                            onClick = {
-                                try {
-                                    context.startActivity(
-                                        Intent(context, com.supernova.networkswitch.presentation.ui.activity.MainActivity::class.java)
-                                    )
-                                } catch (_: Exception) {}
-                            }
-                        )
-                        CardDivider()
-                        RivoListItem(
+
                             headline = "Volume DND",
                             supporting = "Toggle Do Not Disturb using a volume button sequence",
                             leadingIcon = Icons.Outlined.DoNotDisturbOn,

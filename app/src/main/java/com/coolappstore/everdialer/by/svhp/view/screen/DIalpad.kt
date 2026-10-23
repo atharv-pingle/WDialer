@@ -128,8 +128,8 @@ import com.coolappstore.everdialer.by.svhp.view.components.SearchHistorySection
 import com.coolappstore.everdialer.by.svhp.view.screen.settings.AddMode
 import com.coolappstore.everdialer.by.svhp.view.screen.settings.FakeCallAddSheet
 import com.coolappstore.everdialer.by.svhp.controller.UssdRepository
-import com.coolappstore.evercallrecorder.by.svhp.ui.viewmodels.HomeViewModel
-import com.coolappstore.evercallrecorder.by.svhp.ui.viewmodels.RecordingItem
+import com.coolappstore.everdialer.by.svhp.controller.HomeViewModel
+import com.coolappstore.everdialer.by.svhp.modal.data.RecordingItem
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph

@@ -1,4 +1,4 @@
-package com.coolappstore.evercallrecorder.by.svhp.ui.common
+package com.coolappstore.everdialer.by.svhp.view.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -173,8 +173,6 @@ fun SwipeableItemContainer(
     ) {
         val currentX = offsetX.value
 
-        // currentX > 0: user dragged rightwards -> reveals left side of container -> rightAction
-        // currentX < 0: user dragged leftwards  -> reveals right side of container -> leftAction
         val isRevealingRightAction = currentX > 0
         val isRevealingLeftAction = currentX < 0
 
@@ -185,7 +183,6 @@ fun SwipeableItemContainer(
             val progress = (currentDisplacement / threshold).coerceIn(0f, 1f)
             val slowVisibility = (progress * progress).coerceIn(0f, 1f)
 
-            // Slowly visible background tint that smoothly activates to full dynamic color when swiped farther
             val targetBgColor = if (isTriggered) {
                 rightAction.backgroundColor
             } else {
@@ -215,7 +212,6 @@ fun SwipeableItemContainer(
                 label = "rightScale"
             )
 
-            // Revealed on the physical left of the container (Absolute Alignment)
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -281,7 +277,6 @@ fun SwipeableItemContainer(
                 label = "leftScale"
             )
 
-            // Revealed on the physical right of the container (Absolute Alignment)
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -314,7 +309,7 @@ fun SwipeableItemContainer(
             }
         }
 
-        // Foreground content container (physically moves with swipe)
+        // Foreground content container
         Box(
             modifier = Modifier
                 .fillMaxWidth()

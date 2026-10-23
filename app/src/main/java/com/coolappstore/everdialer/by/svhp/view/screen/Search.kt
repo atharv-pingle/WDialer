@@ -61,8 +61,8 @@ import com.coolappstore.everdialer.by.svhp.modal.data.CallLogEntry
 import com.coolappstore.everdialer.by.svhp.modal.data.Contact
 import com.coolappstore.everdialer.by.svhp.view.components.*
 import com.coolappstore.everdialer.by.svhp.view.components.tiles.SingleTile
-import com.coolappstore.evercallrecorder.by.svhp.ui.viewmodels.HomeViewModel
-import com.coolappstore.evercallrecorder.by.svhp.ui.viewmodels.RecordingItem
+import com.coolappstore.everdialer.by.svhp.controller.HomeViewModel
+import com.coolappstore.everdialer.by.svhp.modal.data.RecordingItem
 import com.coolappstore.everdialer.by.svhp.controller.SmsViewModel
 import com.coolappstore.everdialer.by.svhp.modal.data.SmsConversation
 import com.ramcosta.composedestinations.annotation.Destination

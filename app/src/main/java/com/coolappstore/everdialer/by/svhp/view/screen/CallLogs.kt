@@ -44,7 +44,7 @@ import java.util.Locale
 import com.coolappstore.everdialer.by.svhp.controller.ContactsViewModel
 import com.coolappstore.everdialer.by.svhp.controller.util.numbersLikelyMatch
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.coolappstore.evercallrecorder.by.svhp.ui.viewmodels.HomeViewModel
+import com.coolappstore.everdialer.by.svhp.controller.HomeViewModel
 import com.ramcosta.composedestinations.generated.destinations.RecordingsScreenDestination
 
 @Destination<RootGraph>(route = "call_log_detail_screen", style = SettingsTransitionStyle::class)

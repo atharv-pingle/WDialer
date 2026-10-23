@@ -58,7 +58,7 @@ import com.ramcosta.composedestinations.generated.destinations.CustomBackgroundP
 import com.ramcosta.composedestinations.generated.destinations.RecordingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SmsChatScreenDestination
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.coolappstore.evercallrecorder.by.svhp.ui.viewmodels.HomeViewModel
+import com.coolappstore.everdialer.by.svhp.controller.HomeViewModel
 import com.coolappstore.everdialer.by.svhp.view.components.findMatchingRecording
 import com.coolappstore.everdialer.by.svhp.view.components.NavBarVisibilityState
 import androidx.compose.ui.draw.alpha
@@ -2375,7 +2375,7 @@ fun ContactDetailsScreen(
                                         TextButton(
                                             onClick = {
                                                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                                                    val launch = Intent(context, com.coolappstore.evercallrecorder.by.svhp.MainActivity::class.java)
+                                                    // Call recording not supported
                                                     try { context.startActivity(launch) } catch (_: Exception) {}
                                                 } else {
                                                     android.widget.Toast.makeText(context, "Call Recording requires Android 11 or newer", android.widget.Toast.LENGTH_SHORT).show()

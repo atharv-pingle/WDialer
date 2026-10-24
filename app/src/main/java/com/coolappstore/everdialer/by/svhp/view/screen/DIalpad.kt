@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.media.AudioAttributes
 import android.media.SoundPool
+import android.net.Uri
 import android.os.Build
 import android.provider.ContactsContract
 import com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher
@@ -21,6 +22,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap

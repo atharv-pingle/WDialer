@@ -264,23 +264,7 @@
         </provider>
 
 
-        <service
-            android:name=".controller.CallService"
-            android:permission="android.permission.BIND_INCALL_SERVICE"
-            android:foregroundServiceType="phoneCall"
-            android:exported="true"
-            android:directBootAware="true"
-            tools:targetApi="29">
-            <meta-data
-                android:name="android.telecom.IN_CALL_SERVICE_UI"
-                android:value="true" />
-            <meta-data
-                android:name="android.telecom.INCLUDE_SELF_MANAGED_CALLS"
-                android:value="true" />
-            <intent-filter>
-                <action android:name="android.telecom.InCallService" />
-            </intent-filter>
-        </service>
+
 
 
         <!-- Recent Calls Home Screen Widget -->
@@ -396,11 +380,6 @@
         <receiver
             android:name=".controller.util.MissedCallDismissReceiver"
             android:exported="false" />
-
-        <service
-            android:name=".controller.PcSyncService"
-            android:exported="false"
-            android:foregroundServiceType="connectedDevice" />
 
     </application>
 

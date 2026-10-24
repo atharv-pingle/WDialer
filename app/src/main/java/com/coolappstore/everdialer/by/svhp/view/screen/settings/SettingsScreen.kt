@@ -959,132 +959,6 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                 }
             }
 
-            // ── Default Dialer Warning Banner ──────────────────────────────────
-            if (!isDefaultDialer) {
-                item {
-                    RivoAnimatedSection(delayMs = 0L) {
-                        Surface(
-                            onClick = {
-                                DefaultDialerManager.requestDefaultDialer(defaultDialerLauncher, context)
-                            },
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color(0xFFD32F2F),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Icon(Icons.Default.Error, null, tint = Color.White, modifier = Modifier.size(24.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("Set as Default Dialer", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color.White)
-                                    Text("Required for calls and call log access", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.85f))
-                                }
-                                Icon(Icons.Default.ChevronRight, null, tint = Color.White)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // ── Updates ──────────────────────────────────────────────────────
-            item {
-                RivoAnimatedSection(delayMs = 0L) {
-                    Column {
-                        SectionLabel("Updates")
-                        RivoExpressiveCard {
-                            RivoListItem(
-                                headline  = "Check For Updates",
-                                supporting = "Current version: v$APP_VERSION",
-                                leadingIcon = Icons.Default.SystemUpdate,
-                                iconContainerColor = ColorAmber,
-                                trailingIcon = Icons.Default.ChevronRight,
-                                modifier = Modifier.settingsSearchHighlight("check_for_updates", highlightedSettingKey) { highlightedSettingKey = null },
-                                onClick = {
-                                    navigator.navigate(com.ramcosta.composedestinations.generated.destinations.UpdatesScreenDestination)
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            // ── Call Recording (moved here via "Show Recording Menu Below Updates") ──
-            if (showRecordingMenuBelowUpdates) item {
-                RivoAnimatedSection(delayMs = 10L) {
-                    Column {
-                        SectionLabel("Call Recording")
-                        RivoExpressiveCard {
-                            RivoListItem(
-                                headline = "Call Recording",
-                                supporting = "Open Ever Call Recorder",
-                                leadingIcon = Icons.Default.FiberManualRecord,
-                                iconContainerColor = Color(0xFFE53935),
-                                trailingIcon = Icons.Default.ChevronRight,
-                                modifier = Modifier.settingsSearchHighlight("call_recording", highlightedSettingKey) { highlightedSettingKey = null },
-                                onClick = {
-                                    NavBarVisibilityState.hideForSettingsEntry = true
-                                    navigator.navigate(com.ramcosta.composedestinations.generated.destinations.RecordingsScreenDestination(openedFromSettings = true))
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            // ── Rate And Review ───────────────────────────────────────────────
-            if (!hideRateAndReview) item {
-                RivoAnimatedSection(delayMs = 30L) {
-                    Column {
-                        SectionLabel("Rate And Review")
-                        RivoExpressiveCard {
-                            RivoListItem(
-                                headline = "Rate and Review",
-                                supporting = "Share your feedback about WDialer",
-                                leadingIcon = Icons.Default.Star,
-                                iconContainerColor = ColorCyan,
-                                trailingIcon = Icons.Default.ChevronRight,
-                                modifier = Modifier.settingsSearchHighlight("rate_and_review", highlightedSettingKey) { highlightedSettingKey = null },
-                                onClick = {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://docs.google.com/forms/d/e/1FAIpQLSdY2WYWDFfvLScsBBxfCWzozyA_4sHUCzfR1JycfzJKASvbfQ/viewform?usp=header"))
-                                    context.startActivity(intent)
-                                }
-                            )
-                            CardDivider()
-                            RivoListItem(
-                                headline = "Check Ratings and Reviews",
-                                supporting = "See what others are saying about WDialer",
-                                leadingIcon = Icons.Default.Reviews,
-                                iconContainerColor = ColorGreen,
-                                trailingIcon = Icons.Default.ChevronRight,
-                                modifier = Modifier.settingsSearchHighlight("check_ratings", highlightedSettingKey) { highlightedSettingKey = null },
-                                onClick = { navigator.navigate(RatingsWebViewScreenDestination) }
-                            )
-                            CardDivider()
-                            RivoListItem(
-                                headline = "More Apps",
-                                supporting = "Check out other apps from the developer",
-                                leadingIcon = Icons.Default.Apps,
-                                iconContainerColor = ColorIndigo,
-                                trailingIcon = Icons.Default.ChevronRight,
-                                modifier = Modifier.settingsSearchHighlight("more_apps", highlightedSettingKey) { highlightedSettingKey = null },
-                                onClick = { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.MoreAppsWebViewScreenDestination) }
-                            )
-                            CardDivider()
-                            RivoListItem(
-                                headline = "Donate",
-                                supporting = "Support this open source project",
-                                leadingIcon = Icons.Default.Favorite,
-                                iconContainerColor = ColorRed,
-                                trailingIcon = Icons.Default.OpenInNew,
-                                modifier = Modifier.settingsSearchHighlight("donate", highlightedSettingKey) { highlightedSettingKey = null },
-                                onClick = { showDonateDialog = true }
-                            )
-                        }
-                    }
-                }
-            }
 
 
             // ── Appearance ───────────────────────────────────────────────────
@@ -1240,26 +1114,6 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                 }
             }
 
-            // ── Message ───────────────────────────────────────────────────────
-            item {
-                RivoAnimatedSection(delayMs = 125L) {
-                    Column {
-                        SectionLabel("Message")
-                        RivoExpressiveCard {
-                            RivoListItem(
-                                headline = "SMS",
-                                supporting = "Quik SMS settings, appearance, sending, and gestures",
-                                leadingIcon = Icons.Outlined.Sms,
-                                iconContainerColor = ColorPurple,
-                                trailingIcon = Icons.Default.ChevronRight,
-                                modifier = Modifier.settingsSearchHighlight("sms_settings_link", highlightedSettingKey) { highlightedSettingKey = null },
-                                onClick = { navigator.navigate(SmsSettingsScreenDestination()) }
-                            )
-                        }
-                    }
-                }
-            }
-
             // ── Calls & System ───────────────────────────────────────────────
             item {
                 RivoAnimatedSection(delayMs = 140L) {
@@ -1280,17 +1134,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        RivoExpressiveCard {
-                            RivoListItem(
-                                headline = "PC Connect",
-                                supporting = "Connect and sync with WDialer PC over Bluetooth",
-                                leadingIcon = Icons.Outlined.Devices,
-                                iconContainerColor = Color(0xFF1E88E5),
-                                trailingIcon = Icons.Default.ChevronRight,
-                                modifier = Modifier.settingsSearchHighlight("pc_connect", highlightedSettingKey) { highlightedSettingKey = null },
-                                onClick = { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.PcConnectScreenDestination()) }
-                            )
-                        }
+                        
 
                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -1337,27 +1181,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // ── Call Recording (bundled Ever Call Recorder app) ────
-                        if (!showRecordingMenuBelowUpdates) {
-                        RivoExpressiveCard {
-                            RivoListItem(
-                                headline = "Call Recording",
-                                supporting = "Open Ever Call Recorder",
-                                leadingIcon = Icons.Default.FiberManualRecord,
-                                iconContainerColor = Color(0xFFE53935),
-                                trailingIcon = Icons.Default.ChevronRight,
-                                modifier = Modifier.settingsSearchHighlight("call_recording", highlightedSettingKey) { highlightedSettingKey = null },
-                                onClick = {
-                                    // Flip this before navigating (not inside RecordingsScreen's own
-                                    // effect) so BottomBar never sees a frame where the destination
-                                    // looks like a disabled tab it should redirect away from — even
-                                    // when the "Recordings" tab has been hidden via Tab Sections.
-                                    NavBarVisibilityState.hideForSettingsEntry = true
-                                    navigator.navigate(com.ramcosta.composedestinations.generated.destinations.RecordingsScreenDestination(openedFromSettings = true))
-                                }
-                            )
-                        }
-                        }
+                        
                     }
                 }
             }
@@ -1458,28 +1282,6 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                         }
                     }
                 }
-            }
-
-            // ── Debug ────────────────────────────────────────────────────────
-            item {
-                RivoAnimatedSection(delayMs = 320L) {
-                    Column {
-                        SectionLabel("Debug")
-                        RivoExpressiveCard {
-                            RivoListItem(
-                                headline = "Debug",
-                                supporting = "Developer & experimental options",
-                                leadingIcon = Icons.Outlined.BugReport,
-                                iconContainerColor = ColorOrange,
-                                trailingIcon = Icons.Default.ChevronRight,
-                                modifier = Modifier.settingsSearchHighlight("debug_settings", highlightedSettingKey) { highlightedSettingKey = null },
-                                onClick = { navigator.navigate(DebugSettingsScreenDestination()) }
-                            )
-                        }
-                    }
-                }
-            }
-
             }
 
             item { Spacer(modifier = Modifier.height(80.dp)) }

@@ -24,6 +24,10 @@ import androidx.compose.material.icons.automirrored.filled.CallReceived
 import androidx.compose.material.icons.filled.*
 import android.content.Intent
 import androidx.compose.material3.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.shape.CircleShape
+
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -945,17 +949,21 @@ fun CallLogFullContent(
                     }
                 }
 
+                val favoriteContacts = remember(contactsList) { contactsList.filter { it.isFavorite } }
+                var favoritesExpanded by remember { mutableStateOf(true) }
+
                 @Composable
                 fun StatCardItem(cardKey: String, delayMs: Long) {
+                    val cardModifier = Modifier.width(96.dp).height(64.dp)
                     when (cardKey) {
-                        "today" -> AnimatedStatCard(delayMs, com.coolappstore.everdialer.by.svhp.controller.util.tr("Today"), totalToday.toString(), Icons.AutoMirrored.Filled.CallReceived, ColorBlue, Modifier.size(110.dp)) { viewModel.setFilter(CallLogFilter.All) }
+                        "today" -> AnimatedStatCard(delayMs, com.coolappstore.everdialer.by.svhp.controller.util.tr("Today"), totalToday.toString(), Icons.AutoMirrored.Filled.CallReceived, ColorBlue, cardModifier) { viewModel.setFilter(CallLogFilter.All) }
                         "missed" -> AnimatedStatCard(
                             delayMs = delayMs,
                             label = com.coolappstore.everdialer.by.svhp.controller.util.tr("Missed"),
                             value = missedToday.toString(),
                             icon = Icons.AutoMirrored.Filled.CallMissed,
                             iconTint = ColorRed,
-                            modifier = Modifier.size(110.dp),
+                            modifier = cardModifier,
                             containerColor = if (missedToday > 0) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surfaceContainerLow,
                             onClick = { viewModel.setFilter(CallLogFilter.Missed) },
                             onLongClick = {
@@ -966,16 +974,16 @@ fun CallLogFullContent(
                                 com.coolappstore.everdialer.by.svhp.controller.util.MissedCallBadgeManager.markMissedCallsAsRead(context)
                             }
                         )
-                        "outgoing" -> AnimatedStatCard(delayMs, com.coolappstore.everdialer.by.svhp.controller.util.tr("Outgoing"), outgoingToday.toString(), Icons.AutoMirrored.Filled.CallMade, ColorGreen, Modifier.size(110.dp)) { viewModel.setFilter(CallLogFilter.Outgoing) }
-                        "call_time" -> AnimatedStatCard(delayMs, com.coolappstore.everdialer.by.svhp.controller.util.tr("Call Time"), if (totalDurationToday > 0) formatDuration(totalDurationToday) else "0s", Icons.Default.Timer, ColorOrange, Modifier.size(110.dp)) { viewModel.setFilter(CallLogFilter.Incoming) }
-                        "contacts" -> AnimatedStatCard(delayMs, com.coolappstore.everdialer.by.svhp.controller.util.tr("Contacts"), if (contactsCount > 0) contactsCount.toString() else "Open", Icons.Default.People, ColorPurple, Modifier.size(110.dp)) {
+                        "outgoing" -> AnimatedStatCard(delayMs, com.coolappstore.everdialer.by.svhp.controller.util.tr("Outgoing"), outgoingToday.toString(), Icons.AutoMirrored.Filled.CallMade, ColorGreen, cardModifier) { viewModel.setFilter(CallLogFilter.Outgoing) }
+                        "call_time" -> AnimatedStatCard(delayMs, com.coolappstore.everdialer.by.svhp.controller.util.tr("Call Time"), if (totalDurationToday > 0) formatDuration(totalDurationToday) else "0s", Icons.Default.Timer, ColorOrange, cardModifier) { viewModel.setFilter(CallLogFilter.Incoming) }
+                        "contacts" -> AnimatedStatCard(delayMs, com.coolappstore.everdialer.by.svhp.controller.util.tr("Contacts"), if (contactsCount > 0) contactsCount.toString() else "Open", Icons.Default.People, ColorPurple, cardModifier) {
                             navController.navigate(ContactScreenDestination.route) {
                                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
                             }
                         }
-                        "groups" -> AnimatedStatCard(delayMs, com.coolappstore.everdialer.by.svhp.controller.util.tr("Groups"), if (groupsCount > 0) groupsCount.toString() else "Open", Icons.Default.Group, Color(0xFF00897B), Modifier.size(110.dp)) {
+                        "groups" -> AnimatedStatCard(delayMs, com.coolappstore.everdialer.by.svhp.controller.util.tr("Groups"), if (groupsCount > 0) groupsCount.toString() else "Open", Icons.Default.Group, Color(0xFF00897B), cardModifier) {
                             navController.navigate(GroupsScreenDestination.route) {
                                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
@@ -1309,6 +1317,159 @@ fun CallLogFullContent(
                                                         }
                                                     )
                                                 }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // ── Google Phone Style Favorites Row ──
+                        item(key = "favorites_section", contentType = "favorites") {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 20.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.clickable { favoritesExpanded = !favoritesExpanded }
+                                    ) {
+                                        Text(
+                                            text = "Favorites",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Icon(
+                                            imageVector = if (favoritesExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(18.dp).padding(start = 2.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "View contacts",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.clickable {
+                                            navController.navigate(ContactScreenDestination.route) {
+                                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        }
+                                    )
+                                }
+
+                                AnimatedVisibility(
+                                    visible = favoritesExpanded,
+                                    enter = expandVertically() + fadeIn(),
+                                    exit = shrinkVertically() + fadeOut()
+                                ) {
+                                    LazyRow(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp),
+                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                                    ) {
+                                        items(favoriteContacts, key = { it.id }) { contact ->
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                modifier = Modifier
+                                                    .width(64.dp)
+                                                    .clickable {
+                                                        val phone = contact.phoneNumbers.firstOrNull().orEmpty()
+                                                        if (phone.isNotBlank()) {
+                                                            val defaultMethod = prefs.getString(PreferenceManager.KEY_DEFAULT_CALLING_METHOD, "whatsapp")
+                                                            if (defaultMethod == "whatsapp" && WhatsAppCallLauncher.isWhatsAppInstalled(context)) {
+                                                                WhatsAppCallLauncher.launchVoiceCall(context, phone, contact.name)
+                                                            } else {
+                                                                placeCallHonoringContactSim(context, prefs, phone, contact.id)
+                                                            }
+                                                        } else {
+                                                            navigator.navigate(ContactDetailsScreenDestination(contactId = contact.id))
+                                                        }
+                                                    }
+                                            ) {
+                                                Box(modifier = Modifier.size(54.dp)) {
+                                                    RivoAvatar(
+                                                        name = contact.name,
+                                                        photoUri = contact.photoUri,
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        shape = CircleShape
+                                                    )
+                                                    Surface(
+                                                        shape = CircleShape,
+                                                        color = Color(0xFF25D366),
+                                                        modifier = Modifier
+                                                            .size(18.dp)
+                                                            .align(Alignment.BottomEnd)
+                                                    ) {
+                                                        Box(contentAlignment = Alignment.Center) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Call,
+                                                                contentDescription = "WhatsApp Call",
+                                                                tint = Color.White,
+                                                                modifier = Modifier.size(10.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = contact.name.split(" ").firstOrNull() ?: contact.name,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                )
+                                            }
+                                        }
+
+                                        // Add favorite button
+                                        item(key = "add_favorite_button") {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                modifier = Modifier
+                                                    .width(64.dp)
+                                                    .clickable {
+                                                        navController.navigate(ContactScreenDestination.route) {
+                                                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                                            launchSingleTop = true
+                                                            restoreState = true
+                                                        }
+                                                    }
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(54.dp)
+                                                        .clip(CircleShape)
+                                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Add,
+                                                        contentDescription = "Add favorite",
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(22.dp)
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "Add",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    maxLines = 1
+                                                )
                                             }
                                         }
                                     }

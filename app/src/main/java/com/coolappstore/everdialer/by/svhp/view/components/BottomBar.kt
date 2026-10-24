@@ -40,6 +40,8 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dialpad
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Group
@@ -147,14 +149,14 @@ fun BottomBar(navController: NavController) {
     val lgBottomNav  = remember(settingsState) { prefs.getBoolean(PreferenceManager.KEY_LG_BOTTOM_NAV, false) }
     val blurEffects  = remember(settingsState) { prefs.getBoolean(PreferenceManager.KEY_BLUR_EFFECTS, false) }
     val blurBottomNav = remember(settingsState) { prefs.getBoolean(PreferenceManager.KEY_BLUR_BOTTOM_NAV, false) }
-    val showFavoritesTab  = remember(settingsState) { prefs.getBoolean(PreferenceManager.KEY_TAB_SHOW_FAVORITES,  true) }
+    val showFavoritesTab  = remember(settingsState) { prefs.getBoolean(PreferenceManager.KEY_TAB_SHOW_FAVORITES,  false) }
     val showCallsTab      = remember(settingsState) { prefs.getBoolean(PreferenceManager.KEY_TAB_SHOW_CALLS,      true) }
     val showContactsTab   = remember(settingsState) { prefs.getBoolean(PreferenceManager.KEY_TAB_SHOW_CONTACTS,   true) }
     val showSmsTab        = false
-    val showGroupsTab     = remember(settingsState) { prefs.getBoolean(PreferenceManager.KEY_TAB_SHOW_GROUPS,     false) }
+    val showGroupsTab     = false
     val showRecordingsTab = false
-    val showNotesTab      = remember(settingsState) { prefs.getBoolean(PreferenceManager.KEY_TAB_SHOW_NOTES,      true) }
-    val showDialpadTab    = remember(settingsState) { prefs.getBoolean(PreferenceManager.KEY_TAB_SHOW_DIALPAD,    false) }
+    val showNotesTab      = false
+    val showDialpadTab    = remember(settingsState) { prefs.getBoolean(PreferenceManager.KEY_TAB_SHOW_DIALPAD,    true) }
     val tabOrder          = remember(settingsState) { parseTabOrder(prefs.getString(PreferenceManager.KEY_TAB_ORDER, null)) }
     val labelStyle: TextStyle = MaterialTheme.typography.labelMedium
 
@@ -279,13 +281,13 @@ fun BottomBar(navController: NavController) {
                     onClick = { doHaptic(); navigate(FavoritesScreenDestination.route) }
                 ) else null
                 "calls" -> if (showCallsTab) TabSpec(
-                    key = key, route = RecentScreenDestination.route, label = com.coolappstore.everdialer.by.svhp.controller.util.AppStrings.get("Calls", appLang),
-                    selectedIcon = Icons.Filled.History, unselectedIcon = Icons.Outlined.History,
+                    key = key, route = RecentScreenDestination.route, label = "Home",
+                    selectedIcon = Icons.Filled.Home, unselectedIcon = Icons.Outlined.Home,
                     selected = isRecentsSelected,
                     onClick = { doHaptic(); navigate(RecentScreenDestination.route) }
                 ) else null
                 "contacts" -> if (showContactsTab) TabSpec(
-                    key = key, route = ContactScreenDestination.route, label = com.coolappstore.everdialer.by.svhp.controller.util.AppStrings.get("Contacts", appLang),
+                    key = key, route = ContactScreenDestination.route, label = "Contacts",
                     selectedIcon = Icons.Filled.Person, unselectedIcon = Icons.Outlined.Person,
                     selected = isContactsSelected,
                     onClick = { doHaptic(); navigate(ContactScreenDestination.route) }
@@ -315,7 +317,7 @@ fun BottomBar(navController: NavController) {
                     onClick = { doHaptic(); navigate(NotesScreenDestination.route) }
                 ) else null
                 "dialpad" -> if (showDialpadTab) TabSpec(
-                    key = key, route = DialPadScreenDestination.route, label = com.coolappstore.everdialer.by.svhp.controller.util.AppStrings.get("Dialpad", appLang),
+                    key = key, route = DialPadScreenDestination.route, label = "Keypad",
                     selectedIcon = Icons.Filled.Dialpad, unselectedIcon = Icons.Outlined.Dialpad,
                     selected = isDialpadSelected,
                     onClick = {

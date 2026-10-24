@@ -658,7 +658,7 @@ class PreferenceManager(context: Context) {
         const val KEY_MISSED_CALL_RESET_TIME   = "missed_call_reset_time"
         const val KEY_NEW_CALL_LOGS_LOGIC      = "new_call_logs_logic"
         const val KEY_NEW_CONTACTS_LOGIC       = "new_contacts_logic"
-        const val DEFAULT_TAB_ORDER            = "favorites,calls,contacts,sms,groups,recordings,notes,dialpad"
+        const val DEFAULT_TAB_ORDER            = "calls,dialpad,contacts"
         // Biometrics
         const val KEY_BIOMETRICS_TYPE          = "biometrics_type"         // "system" | "pin" | "password" | ""
         const val KEY_BIOMETRICS_PIN           = "biometrics_pin"

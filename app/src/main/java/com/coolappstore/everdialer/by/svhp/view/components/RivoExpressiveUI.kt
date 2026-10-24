@@ -586,22 +586,22 @@ fun RivoStatCard(
     }
 
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         color = actualContainerColor,
         modifier = modifier
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp)
+                .padding(horizontal = 10.dp, vertical = 7.dp)
         ) {
             // Icon placed in the top right corner
-            val badgeShape = if (circleIcons) CircleShape else RoundedCornerShape(11.dp)
+            val badgeShape = if (circleIcons) CircleShape else RoundedCornerShape(8.dp)
             Surface(
                 shape = badgeShape,
                 color = iconBgColor,
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(24.dp)
                     .align(Alignment.TopEnd)
             ) {
                 Box(
@@ -611,7 +611,7 @@ fun RivoStatCard(
                         imageVector = icon,
                         contentDescription = null,
                         tint = iconContentColor,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(14.dp)
                     )
                 }
             }
@@ -621,12 +621,12 @@ fun RivoStatCard(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.spacedBy(1.dp)
             ) {
                 val valueStyle = when {
-                    value.length > 7 -> MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    value.length > 5 -> MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    else -> MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                    value.length > 7 -> MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    value.length > 5 -> MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    else -> MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 17.sp)
                 }
                 Text(
                     text = value,
@@ -637,7 +637,7 @@ fun RivoStatCard(
                 )
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                     fontWeight = FontWeight.Medium,
                     color = labelTextColor,
                     maxLines = 1,

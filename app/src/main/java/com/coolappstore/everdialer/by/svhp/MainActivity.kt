@@ -213,12 +213,12 @@ class MainActivity : FragmentActivity() {
             ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
 
         val isFirstLaunch = !prefs.getBoolean(PreferenceManager.KEY_FIRST_LAUNCH_DONE, false)
-        val needsWelcome = !DefaultDialerManager.isDefaultDialer(this) && (isFirstLaunch || Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+        if (isFirstLaunch) {
+            prefs.setBoolean(PreferenceManager.KEY_FIRST_LAUNCH_DONE, true)
+        }
 
         if (!hasBasicPermissions) {
             requestRequiredPermissions()
-        } else if (!DefaultDialerManager.isDefaultDialer(this) && !needsWelcome) {
-            requestDefaultDialer()
         }
 
         // Auto refresh system wallpaper if enabled
@@ -290,202 +290,6 @@ class MainActivity : FragmentActivity() {
                     }
                 }
 
-                val isFirstLaunch = remember {
-                    !prefs.getBoolean(PreferenceManager.KEY_FIRST_LAUNCH_DONE, false)
-                }
-                val needsWelcomeDialog = remember {
-                    !DefaultDialerManager.isDefaultDialer(this@MainActivity) &&
-                    (isFirstLaunch || Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-                }
-
-                // ── First Launch / Android 14 Welcome Dialog ─────────────────
-                var showWelcomeDialog by remember { mutableStateOf(false) }
-                var showTelegramDialog by remember { mutableStateOf(false) }
-                var showFullScreenIntentDialog by remember { mutableStateOf(false) }
-                LaunchedEffect(Unit) {
-                    if (needsWelcomeDialog) {
-                        kotlinx.coroutines.delay(400)
-                        showWelcomeDialog = true
-                    } else if (!prefs.getBoolean(PreferenceManager.KEY_TELEGRAM_SHOWN, false)) {
-                        // Welcome already done but Telegram dialog not yet shown — show it
-                        kotlinx.coroutines.delay(800)
-                        showTelegramDialog = true
-                    } else if (needsFullScreenIntentPermission()) {
-                        kotlinx.coroutines.delay(800)
-                        showFullScreenIntentDialog = true
-                    }
-                }
-
-                if (showWelcomeDialog) {
-                    Android14WelcomeDialog(
-                        onAppInfo = {
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.fromParts("package", packageName, null)
-                            }
-                            startActivity(intent)
-                        },
-                        onContinue = {
-                            prefs.setBoolean(PreferenceManager.KEY_FIRST_LAUNCH_DONE, true)
-                            showWelcomeDialog = false
-                            requestDefaultDialer()
-                            if (!prefs.getBoolean(PreferenceManager.KEY_TELEGRAM_SHOWN, false)) {
-                                showTelegramDialog = true
-                            } else if (needsFullScreenIntentPermission()) {
-                                showFullScreenIntentDialog = true
-                            }
-                        }
-                    )
-                }
-
-
-
-                // On subsequent launches, requestDefaultDialer is called in onCreate
-
-                // ── Telegram Support Dialog ─────────────────────────────────
-                if (showTelegramDialog) {
-                    TelegramJoinDialog(
-                        onJoin = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/EverlastingAndroidTweak"))
-                            startActivity(intent)
-                            prefs.setBoolean(PreferenceManager.KEY_TELEGRAM_SHOWN, true)
-                            showTelegramDialog = false
-                            if (needsFullScreenIntentPermission()) {
-                                showFullScreenIntentDialog = true
-                            }
-                        },
-                        onSkip = {
-                            prefs.setBoolean(PreferenceManager.KEY_TELEGRAM_SHOWN, true)
-                            showTelegramDialog = false
-                            if (needsFullScreenIntentPermission()) {
-                                showFullScreenIntentDialog = true
-                            }
-                        }
-                    )
-                }
-
-                // ── Full-Screen Intent Permission Dialog ─────────────────────
-                if (showFullScreenIntentDialog) {
-                    FullScreenIntentDialog(
-                        onEnable = {
-                            showFullScreenIntentDialog = false
-                            val intent = Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
-                                data = Uri.fromParts("package", packageName, null)
-                            }
-                            try {
-                                startActivity(intent)
-                            } catch (_: Exception) {
-                                val fallback = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                    data = Uri.fromParts("package", packageName, null)
-                                }
-                                startActivity(fallback)
-                            }
-                        },
-                        onSkip = { showFullScreenIntentDialog = false }
-                    )
-                }
-
-                var autoUpdateVersion by remember { mutableStateOf<String?>(null) }
-                var autoUpdateApkUrl by remember { mutableStateOf<String?>(null) }
-                var showAutoUpdateDialog by remember { mutableStateOf(false) }
-                var autoDownloadId by remember { mutableStateOf<Long?>(null) }
-                var autoDownloadProgress by remember { mutableFloatStateOf(0f) }
-                var showAutoDownloadProgress by remember { mutableStateOf(false) }
-
-                LaunchedEffect(Unit) {
-                    val autoCheck = prefs.getBoolean(PreferenceManager.KEY_AUTO_UPDATE_CHECK, true)
-                    if (autoCheck) {
-                        val release = fetchLatestRelease(GITHUB_API_RELEASES)
-                        if (release != null && isNewerVersion(release.tagName, APP_VERSION)) {
-                            autoUpdateVersion = release.tagName
-                            autoUpdateApkUrl = release.apkUrl
-                            showAutoUpdateDialog = true
-                        }
-                    }
-                }
-
-                if (showAutoDownloadProgress) {
-                    val dlId = autoDownloadId
-                    if (dlId != null) {
-                        LaunchedEffect(dlId) {
-                            val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                            while (true) {
-                                delay(300)
-                                val query = DownloadManager.Query().setFilterById(dlId)
-                                val cursor = dm.query(query)
-                                if (!cursor.moveToFirst()) { cursor.close(); break }
-                                val dmStatus = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-                                val downloaded = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                                val total = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
-                                cursor.close()
-                                when (dmStatus) {
-                                    DownloadManager.STATUS_SUCCESSFUL -> {
-                                        showAutoDownloadProgress = false
-                                        autoDownloadId = null
-                                        val file = getApkDestinationFile()
-                                        installApkAndScheduleDelete(this@MainActivity, file)
-                                        break
-                                    }
-                                    DownloadManager.STATUS_FAILED -> {
-                                        showAutoDownloadProgress = false
-                                        autoDownloadId = null
-                                        break
-                                    }
-                                    else -> {
-                                        autoDownloadProgress = if (total > 0L)
-                                            (downloaded.toFloat() / total.toFloat()).coerceIn(0f, 1f) else 0f
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (showAutoUpdateDialog) {
-                    com.coolappstore.everdialer.by.svhp.view.components.UpdateAvailableDialog(
-                        currentVersion = com.coolappstore.everdialer.by.svhp.APP_VERSION,
-                        latestVersion = autoUpdateVersion ?: "",
-                        readyToInstall = false,
-                        onAction = {
-                            showAutoUpdateDialog = false
-                            navController.navigate(UpdatesScreenDestination.route)
-                        },
-                        onDismiss = { showAutoUpdateDialog = false }
-                    )
-                }
-
-                if (showAutoDownloadProgress) {
-                    com.coolappstore.everdialer.by.svhp.view.components.UpdateDownloadingDialog(
-                        latestVersion = autoUpdateVersion ?: "",
-                        progress = autoDownloadProgress
-                    )
-                }
-
-                // ── Donate popup state ──────────────────────────────────────
-                var showDonateDialog by remember { mutableStateOf(false) }
-
-                LaunchedEffect(Unit) {
-                    val lastVersion = prefs.getString(PreferenceManager.KEY_LAST_APP_VERSION, null)
-                    val openCount = prefs.getInt(PreferenceManager.KEY_APP_OPEN_COUNT, 0) + 1
-                    prefs.setInt(PreferenceManager.KEY_APP_OPEN_COUNT, openCount)
-
-                    if (lastVersion == null) {
-                        // Fresh install
-                        prefs.setString(PreferenceManager.KEY_LAST_APP_VERSION, APP_VERSION)
-                        if (openCount == 4 && !prefs.getBoolean(PreferenceManager.KEY_DONATE_POPUP_SHOWN_INSTALL, false)) {
-                            showDonateDialog = true
-                        }
-                    } else if (lastVersion != APP_VERSION) {
-                        // App update!
-                        prefs.setString(PreferenceManager.KEY_LAST_APP_VERSION, APP_VERSION)
-                        showDonateDialog = true
-                    } else {
-                        // Same version
-                        if (openCount == 4 && !prefs.getBoolean(PreferenceManager.KEY_DONATE_POPUP_SHOWN_INSTALL, false)) {
-                            showDonateDialog = true
-                        }
-                    }
-                }
-
                 // ── Biometric blur + lock ─────────────────────────────────
                 val blurRadius by animateDpAsState(
                     targetValue = if (!isAppUnlocked || callAuthRequired) 22.dp else 0.dp,
@@ -493,30 +297,12 @@ class MainActivity : FragmentActivity() {
                     label = "biometricBlur"
                 )
 
-                // ── Ongoing Call Banner + Main nav host ───────────────────
+                // ── Ongoing Call State ─────────────────────────────────────
                 val callSession by CallService.currentCallSession.collectAsState()
                 val isCallActive = callSession != null &&
                     callSession?.state != android.telecom.Call.STATE_SELECT_PHONE_ACCOUNT &&
                     callSession?.state != android.telecom.Call.STATE_DISCONNECTED
                 val hasOngoingCall = isCallActive && callSession?.state != android.telecom.Call.STATE_RINGING
-
-                // ── Donate Popup Dialog (shows on update or 4th launch; if in call, waits until call ends) ──
-                if (showDonateDialog && !isCallActive && !showWelcomeDialog && !showTelegramDialog && !showFullScreenIntentDialog) {
-                    com.coolappstore.everdialer.by.svhp.view.components.DonateDialog(
-                        onDonate = {
-                            prefs.setBoolean(PreferenceManager.KEY_DONATE_POPUP_SHOWN_INSTALL, true)
-                            showDonateDialog = false
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://hariprabhu.com/Ever-Dialer/#donate")).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            startActivity(intent)
-                        },
-                        onLater = {
-                            prefs.setBoolean(PreferenceManager.KEY_DONATE_POPUP_SHOWN_INSTALL, true)
-                            showDonateDialog = false
-                        }
-                    )
-                }
 
                 Box(modifier = Modifier.fillMaxSize()) {
 

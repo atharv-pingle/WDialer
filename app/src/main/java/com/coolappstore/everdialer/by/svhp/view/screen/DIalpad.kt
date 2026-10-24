@@ -283,168 +283,40 @@ fun DialPadScreen(
     navigator: DestinationsNavigator,
     initialNumber: String? = null
 ) {
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true,
-        confirmValueChange = { true }
-    )
-    val sheetScope = rememberCoroutineScope()
+    val prefs = koinInject<PreferenceManager>()
 
-    // See DialPadContent's `closing` param doc — flipping this (rather than clearing focus from
-    // out here) is what actually reaches the search field's real focus manager, since the sheet
-    // renders in its own separate Dialog window.
-    var dialpadClosing by remember { mutableStateOf(false) }
-    // Catch a swipe-down or scrim-tap dismiss the moment the drag/tap decides to close the sheet
-    // (sheetState.targetValue flips to Hidden), not only once onDismissRequest fires after the
-    // sheet's own hide animation has already finished playing — otherwise the search field keeps
-    // its focus and the keyboard stays up for that whole animation before finally hiding, which is
-    // exactly the "sometimes" glitch (X button / back already set dialpadClosing immediately and
-    // don't have this gap; only swipe/scrim-tap went through the delayed onDismissRequest path).
-    //
-    // sheetState.targetValue actually starts at Hidden too, for the single frame before the sheet's
-    // own internal LaunchedEffect calls show() to open it — so naively treating "target == Hidden"
-    // as "closing" misfired on that very first frame and permanently blocked the search field from
-    // ever focusing (via DialPadContent's `closing`-gated focusProperties) even on a fresh open.
-    // hasOpenedOnce guards against that: we only start treating a Hidden target as a real close
-    // once the sheet has actually reached a non-Hidden target at least once first.
-    var hasOpenedOnce by remember { mutableStateOf(false) }
-    LaunchedEffect(sheetState) {
-        snapshotFlow { sheetState.targetValue }.collect { target ->
-            if (target != SheetValue.Hidden) {
-                hasOpenedOnce = true
-            } else if (hasOpenedOnce) {
-                dialpadClosing = true
-            }
+    BackHandler {
+        if (!navigator.navigateUp()) {
+            com.coolappstore.everdialer.by.svhp.view.components.TabNavigationHelper.navigateToTab(
+                navController,
+                com.ramcosta.composedestinations.generated.destinations.RecentScreenDestination.route
+            )
         }
     }
 
-    // Lock the window so the keyboard never pushes the bottom sheet up.
-    // WindowCompat.setDecorFitsSystemWindows(false) in MainActivity normally causes
-    // the sheet to resize with the IME; overriding softInputMode here prevents that.
-    val view = LocalView.current
-    DisposableEffect(Unit) {
-        val window = (view.context as? android.app.Activity)?.window
-        val prevMode = window?.attributes?.softInputMode ?: 0
-        window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
-        onDispose {
-            window?.setSoftInputMode(prevMode)
-        }
-    }
-
-    // ModalBottomSheet.animateTo(targetValue, animationSpec) is internal, so we can't hand it a
-    // custom spec to slow down its own animation. Instead we drive a manual slide + scrim fade
-    // over the sheet content ourselves — slow and smooth — then finish the real dismiss/
-    // navigation once that completes. Animating the scrim's alpha down alongside the slide (not
-    // just translating the content) avoids the dim background cutting out abruptly the instant
-    // the Dialog is torn down at the end, leaving the same (quicker) swipe-to-dismiss untouched.
-    val closeProgress = remember { Animatable(0f) }
-    val slowSlideSpec = tween<Float>(durationMillis = 650, easing = FastOutSlowInEasing)
-    // Fixed dp offsets don't clear the screen on taller devices, so the sheet gets torn down
-    // mid-slide and appears to vanish abruptly. Basing it on the actual screen height (plus a
-    // buffer for the status/nav bars) guarantees it's fully off-screen before removal.
-    val dialpadConfiguration = LocalConfiguration.current
-    val slideDistance = dialpadConfiguration.screenHeightDp.dp + 150.dp
-
-    // ModalBottomSheet fires onDismissRequest itself once sheetState reaches Hidden (e.g. after
-    // a swipe-down completes). Without this guard, that auto-fire would also call navigateUp()
-    // right after we navigate forward to Contact Info, popping DialPadScreen off the back stack —
-    // so pressing back from Contact Info would skip past the dialpad entirely instead of
-    // returning to it.
-    var didNavigateAway by remember { mutableStateOf(false) }
-
-    fun finishDismiss() {
-        if (!didNavigateAway) {
-            didNavigateAway = true
-            if (navController.currentDestination?.route?.contains("dial_pad_screen") == true) {
-                navigator.navigateUp()
-            }
-        }
-    }
-
-    // Used by swipe-down / scrim tap / predictive back — sheetState has already played its own
-    // (quicker) hide animation by the time onDismissRequest fires, so just finish up.
-    fun animateDismiss() {
-        if (didNavigateAway) return
-        dialpadClosing = true
-        finishDismiss()
-    }
-
-    // Used by the X button — plays our own slow, smooth slide-down instead of relying on the
-    // sheet's quicker default.
-    fun closeWithSlowAnimation() {
-        if (didNavigateAway) return
-        dialpadClosing = true
-        sheetScope.launch {
-            closeProgress.animateTo(1f, slowSlideSpec)
-        }.invokeOnCompletion {
-            finishDismiss()
-        }
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = { animateDismiss() },
-        sheetState = sheetState,
-        // The default containerColor/shape/dragHandle paint their own background surface that
-        // sits BEHIND whatever we put in the content slot below. Animating only our content with
-        // Modifier.offset moved the buttons/text but left that background surface fixed in
-        // place, so the background appeared static while only the elements slid down. Making the
-        // sheet itself fully transparent and drawing our own background + handle inside the
-        // offset Box (below) means the background now moves together with the content as one
-        // unit during the slide.
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = Color.Transparent,
-        tonalElevation = 0.dp,
-        // No dim behind the sheet.
-        scrimColor = Color.Transparent,
-        // Stop the sheet from reserving its own system-bar inset padding around the content —
-        // that reserved space stayed transparent once containerColor became Transparent, showing
-        // as a gap between the sheet's visible bottom and the actual screen edge. We apply the
-        // navigation-bar inset ourselves inside the Surface below instead, so the background
-        // extends all the way to the screen edge and only the content is padded above it.
-        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
-        dragHandle = null
-    ) {
-        val prefs = koinInject<PreferenceManager>()
-        com.coolappstore.everdialer.by.svhp.view.theme.ProvideScaledDensity(prefs = prefs) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset(y = slideDistance * closeProgress.value),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 4.dp
-            ) {
-                BackHandler(enabled = !dialpadClosing && !didNavigateAway) {
-                    closeWithSlowAnimation()
-                }
-                Column(modifier = Modifier.statusBarsPadding().navigationBarsPadding()) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(3.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                            modifier = Modifier.size(width = 36.dp, height = 4.dp)
-                        ) {}
+    com.coolappstore.everdialer.by.svhp.view.theme.ProvideScaledDensity(prefs = prefs) {
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding(),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            DialPadContent(
+                initialNumber = initialNumber,
+                navigator = navigator,
+                onDismiss = {
+                    if (!navigator.navigateUp()) {
+                        com.coolappstore.everdialer.by.svhp.view.components.TabNavigationHelper.navigateToTab(
+                            navController,
+                            com.ramcosta.composedestinations.generated.destinations.RecentScreenDestination.route
+                        )
                     }
-                    DialPadContent(
-                        initialNumber = initialNumber,
-                        navigator = navigator,
-                        onDismiss = { closeWithSlowAnimation() },
-                        closing = dialpadClosing,
-                        // Because this screen's content is a ModalBottomSheet (its own Dialog window), the
-                        // NavHost's normal slide/fade destination transition can't visually animate it — a
-                        // Dialog window ignores the parent's transition offsets. So instead of navigating
-                        // immediately (which just swapped destinations with no visible motion), we play our
-                        // own slow, smooth slide-down first, then navigate once it's finished — giving
-                        // Contact Info a gentle reveal instead of popping in instantly.
-                        onNavigateToContact = { contactId, phoneNumber ->
-                            didNavigateAway = true
-                            navigator.navigate(ContactDetailsScreenDestination(contactId = contactId, phoneNumber = phoneNumber))
-                        }
-                    )
+                },
+                closing = false,
+                onNavigateToContact = { contactId, phoneNumber ->
+                    navigator.navigate(ContactDetailsScreenDestination(contactId = contactId, phoneNumber = phoneNumber))
                 }
-            }
+            )
         }
     }
 }
@@ -1073,7 +945,7 @@ fun DialPadContent(
                         // guarantees the keyboard can't be re-triggered by window refocus or
                         // any other later event during the close animation/teardown.
                         .focusProperties { canFocus = !closing },
-                    placeholder = { Text("Search contacts...", color = dialpadSearchBarPlaceholder) },
+                    placeholder = { Text("Search contacts & places", color = dialpadSearchBarPlaceholder) },
                     leadingIcon = { Icon(Icons.Default.Search, null, tint = dialpadSearchBarPlaceholder) },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
@@ -1474,7 +1346,7 @@ fun DialPadContent(
                         // during the close animation/teardown.
                         .focusProperties { canFocus = !closing }
                         .onFocusChanged { focusState -> searchFieldFocused = focusState.isFocused },
-                    placeholder = { Text("Search contacts...", color = dialpadSearchBarPlaceholder) },
+                    placeholder = { Text("Search contacts & places", color = dialpadSearchBarPlaceholder) },
                     leadingIcon = { Icon(Icons.Default.Search, null, tint = dialpadSearchBarPlaceholder) },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
@@ -1515,23 +1387,6 @@ fun DialPadContent(
                         }
                     )
                 )
-
-                if (onDismiss != null) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape)
-                    ) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Close dialpad",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
             }
         }
 
@@ -1944,7 +1799,10 @@ fun DialPadContent(
 
         // ── Dialpad card — always at bottom, never moves ───────────────
         BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 2.dp)
+                .padding(bottom = 80.dp)
         ) {
             // Scale based on the SMALLER of width-derived and height-derived factors
             // so the dialpad always fits on screen regardless of device size.
@@ -1984,6 +1842,19 @@ fun DialPadContent(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
+                    IconButton(
+                        onClick = { showOverflowMenu = true },
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .size((44 * scaleFactor).coerceIn(38f, 48f).dp)
+                    ) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Options",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
                     val backspaceSpace by animateDpAsState(
                         targetValue = if (number.isNotEmpty()) (56 * scaleFactor).coerceIn(44f, 60f).dp else 0.dp,
                         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
@@ -1992,7 +1863,7 @@ fun DialPadContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(end = backspaceSpace)
+                            .padding(start = (48 * scaleFactor).coerceIn(40f, 52f).dp, end = backspaceSpace)
                     ) {
                         Box(
                             modifier = Modifier
@@ -2126,24 +1997,11 @@ fun DialPadContent(
                 }
 
                 Spacer(modifier = Modifier.height(2.dp))
-                val simBtnW = (70 * scaleFactor).dp
-                val sideBtnW = if (showSimButtons) simBtnW else keyWidth
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    DialerActionExpressive(
-                        onClick = {
-                            showAddContactChoiceDialog = true
-                        },
-                        icon = Icons.Default.PersonAdd,
-                        contentDescription = "Add Contact",
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        modifier = Modifier.width(sideBtnW).height(callH),
-                        isLarge = true
-                    )
-
                     val lgBackdrop = LocalLiquidGlassBackdrop.current
                     val lgDialpadEnabled = remember(settingsState) {
                         prefs.getBoolean(PreferenceManager.KEY_LIQUID_GLASS, false) &&
@@ -2156,7 +2014,7 @@ fun DialPadContent(
                     }
                     if (showSimButtons) {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy((8 * scaleFactor).dp),
+                            horizontalArrangement = Arrangement.spacedBy((12 * scaleFactor).dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             DialerActionExpressive(
@@ -2177,7 +2035,7 @@ fun DialPadContent(
                                 containerColor = sim1Color,
                                 customColor = sim1Color,
                                 contentColor = Color.White,
-                                modifier = Modifier.width(simBtnW).height(callH),
+                                modifier = Modifier.width((100 * scaleFactor).dp).height(callH),
                                 isLarge = true,
                                 liquidGlassBackdrop = lgBackdrop,
                                 liquidGlassEnabled = lgDialpadEnabled,
@@ -2202,7 +2060,7 @@ fun DialPadContent(
                                 containerColor = sim2Color,
                                 customColor = sim2Color,
                                 contentColor = Color.White,
-                                modifier = Modifier.width(simBtnW).height(callH),
+                                modifier = Modifier.width((100 * scaleFactor).dp).height(callH),
                                 isLarge = true,
                                 liquidGlassBackdrop = lgBackdrop,
                                 liquidGlassEnabled = lgDialpadEnabled,
@@ -2225,9 +2083,9 @@ fun DialPadContent(
                             onLongClick = if (number.isNotEmpty()) ({ showAppPicker = true }) else null,
                             icon = Icons.Default.Call,
                             contentDescription = "Call",
-                            containerColor = Color(0xFF34A853),
+                            containerColor = Color(0xFF1E8E3E), // Google Phone green
                             contentColor = Color.White,
-                            modifier = Modifier.width(callW).height(callH),
+                            modifier = Modifier.width((140 * scaleFactor).dp).height(callH),
                             isLarge = true,
                             liquidGlassBackdrop = lgBackdrop,
                             liquidGlassEnabled = lgDialpadEnabled,
@@ -2235,8 +2093,6 @@ fun DialPadContent(
                             isCallButton = true
                         )
                     }
-
-                    Spacer(modifier = Modifier.width(sideBtnW))
                 }
                 }
             }
@@ -2546,8 +2402,10 @@ fun DialPadKey(
 
     val restingBgColor = if (isSaturatedActive && isSaturatedContainer) {
         androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primary, 0.35f)
+    } else if (isDark) {
+        MaterialTheme.colorScheme.surfaceContainerHighest
     } else {
-        MaterialTheme.colorScheme.primaryContainer
+        Color.White
     }
 
     val targetBgColor = if (isVisuallyPressed) MaterialTheme.colorScheme.primary else restingBgColor
@@ -2558,16 +2416,20 @@ fun DialPadKey(
 
     val restingMainTextColor = if (isSaturatedActive) {
         MaterialTheme.colorScheme.onPrimaryContainer
+    } else if (isDark) {
+        MaterialTheme.colorScheme.onSurface
     } else {
-        MaterialTheme.colorScheme.onPrimaryContainer
+        Color(0xFF191C1D)
     }
     val targetMainTextColor = if (isVisuallyPressed) pressedTextColor else restingMainTextColor
     val mainTextColor by animateColorAsState(targetMainTextColor, spring(stiffness = Spring.StiffnessMedium), "DialKeyTextColor")
 
     val restingSubTextColor = if (isSaturatedActive) {
         MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.80f)
+    } else if (isDark) {
+        MaterialTheme.colorScheme.onSurfaceVariant
     } else {
-        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+        Color(0xFF5D6764)
     }
     val targetSubTextColor = if (isVisuallyPressed) pressedTextColor.copy(alpha = 0.85f) else restingSubTextColor
     val subTextColor by animateColorAsState(targetSubTextColor, spring(stiffness = Spring.StiffnessMedium), "DialKeySubTextColor")

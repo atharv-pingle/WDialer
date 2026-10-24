@@ -117,7 +117,6 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
     val prefs = koinInject<com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager>()
     val pillNav = remember { prefs.getBoolean(com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager.KEY_PILL_NAV, true) }
 
-    var showDialpad by remember { mutableStateOf(false) }
     var fabVisible by remember { mutableStateOf(false) }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -134,65 +133,6 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
         selectedLogs = emptySet()
     }
 
-    var fabCenter by remember { mutableStateOf<Offset?>(null) }
-    var dialpadClosing by remember { mutableStateOf(false) }
-    val dialpadProgress = remember { Animatable(0f) }
-
-    LaunchedEffect(showDialpad) {
-        NavBarVisibilityState.hideForDialpad = showDialpad
-        if (showDialpad) {
-            dialpadClosing = false
-            dialpadProgress.snapTo(0f)
-            dialpadProgress.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = 680, easing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f))
-            )
-        } else {
-            dialpadProgress.snapTo(0f)
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            NavBarVisibilityState.hideForDialpad = false
-        }
-    }
-
-    val closeDialpad: ((() -> Unit)?) -> Unit = { onClosed ->
-        if (showDialpad && !dialpadClosing) {
-            dialpadClosing = true
-            NavBarVisibilityState.hideForDialpad = false
-            scope.launch {
-                dialpadProgress.animateTo(
-                    targetValue = 0f,
-                    animationSpec = tween(durationMillis = 520, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
-                )
-                showDialpad = false
-                dialpadClosing = false
-                onClosed?.invoke()
-            }
-        }
-    }
-
-    BackHandler(enabled = showDialpad && !dialpadClosing) {
-        closeDialpad(null)
-    }
-
-    val isDialpadOpen = showDialpad && !dialpadClosing
-    val dialpadExpandScale by animateFloatAsState(
-        targetValue = if (isDialpadOpen) 2.6f else 1f,
-        animationSpec = tween(
-            durationMillis = if (isDialpadOpen) 680 else 520,
-            easing = if (isDialpadOpen) CubicBezierEasing(0.16f, 1f, 0.3f, 1f) else CubicBezierEasing(0.2f, 0f, 0f, 1f)
-        ),
-        label = "dialpadExpandScale"
-    )
-    val dialpadFabElevation by animateDpAsState(
-        targetValue = if (isDialpadOpen) 12.dp else 6.dp,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "dialpadFabElevation"
-    )
-
     val fabScale by animateFloatAsState(
         targetValue = if (fabVisible) 1f else 0f,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
@@ -201,7 +141,10 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
     LaunchedEffect(Unit) {
         fabVisible = true
         if (prefs.getBoolean(com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager.KEY_OPEN_DIALPAD_DEFAULT, false)) {
-            showDialpad = true
+            com.coolappstore.everdialer.by.svhp.view.components.TabNavigationHelper.navigateToTab(
+                navController,
+                com.ramcosta.composedestinations.generated.destinations.DialPadScreenDestination().route
+            )
         }
     }
 
@@ -351,14 +294,13 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
                     prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light",
                     prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f)
                 )
-                dialpadClosing = false
-                showDialpad = true
+                com.coolappstore.everdialer.by.svhp.view.components.TabNavigationHelper.navigateToTab(
+                    navController,
+                    com.ramcosta.composedestinations.generated.destinations.DialPadScreenDestination().route
+                )
             }
             val baseModifier = Modifier
-                .onGloballyPositioned { coordinates ->
-                    fabCenter = coordinates.boundsInRoot().center
-                }
-                .scale(fabScale * dialpadExpandScale)
+                .scale(fabScale)
                 .then(if (pillNav) Modifier.navigationBarsPadding().padding(bottom = 92.dp) else Modifier.navigationBarsPadding().padding(bottom = 80.dp))
                 .then(if (isLandscape) Modifier.navigationBarsPadding().padding(bottom = 8.dp) else Modifier)
             if (useLiquidGlass && globalBackdrop != null) {
@@ -498,97 +440,6 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
             }
         }
 
-        val p = dialpadProgress.value
-        if (p > 0.001f || showDialpad) {
-            // Scrim
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .zIndex(20f)
-                    .background(Color.Black.copy(alpha = 0.45f * p))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { closeDialpad(null) }
-            )
-
-            // Expanding Dialpad Container originating at the FAB
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .zIndex(21f)
-            ) {
-                val density = LocalDensity.current
-                val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
-                val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
-                val pivotX = (fabCenter?.x ?: (screenWidthPx * 0.88f)) / screenWidthPx.coerceAtLeast(1f)
-                val pivotY = (fabCenter?.y ?: (screenHeightPx * 0.92f)) / screenHeightPx.coerceAtLeast(1f)
-
-                Surface(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            val scale = lerp(0.10f, 1f, p)
-                            scaleX = scale
-                            scaleY = scale
-                            transformOrigin = TransformOrigin(pivotX, pivotY)
-                            this.alpha = ((p - 0.03f) / 0.97f).coerceIn(0f, 1f)
-                        },
-                    shape = RoundedCornerShape(
-                        topStart = if (p < 0.96f) 28.dp else 0.dp,
-                        topEnd = if (p < 0.96f) 28.dp else 0.dp,
-                        bottomStart = if (p < 0.96f) 28.dp else 0.dp,
-                        bottomEnd = if (p < 0.96f) 28.dp else 0.dp
-                    ),
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 4.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .statusBarsPadding()
-                            .navigationBarsPadding()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 12.dp, bottom = 4.dp)
-                                .pointerInput(Unit) {
-                                    detectVerticalDragGestures { _, dragAmount ->
-                                        if (dragAmount > 15f) {
-                                            closeDialpad(null)
-                                        }
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(3.dp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                                modifier = Modifier.size(width = 36.dp, height = 4.dp)
-                            ) {}
-                        }
-                        com.coolappstore.everdialer.by.svhp.view.theme.ProvideScaledDensity(prefs = prefs) {
-                            DialPadContent(
-                                navigator = navigator,
-                                onDismiss = { closeDialpad(null) },
-                                closing = dialpadClosing,
-                                onNavigateToContact = { contactId, phoneNumber ->
-                                    closeDialpad {
-                                        navigator.navigate(
-                                            ContactDetailsScreenDestination(
-                                                contactId = contactId,
-                                                phoneNumber = phoneNumber
-                                            )
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
     }
 
 private fun formatDuration(totalSeconds: Long): String {

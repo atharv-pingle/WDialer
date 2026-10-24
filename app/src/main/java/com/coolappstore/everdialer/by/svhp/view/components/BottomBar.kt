@@ -199,8 +199,7 @@ fun BottomBar(navController: NavController) {
         !NavBarVisibilityState.hideForOnboarding &&
         !NavBarVisibilityState.hideForSelectionMode &&
         !NavBarVisibilityState.hideForSettingsEntry &&
-        !NavBarVisibilityState.hideForSearchResult &&
-        !NavBarVisibilityState.hideForDialpad
+        !NavBarVisibilityState.hideForSearchResult
 
     // If current tab is now hidden, redirect to first visible tab. This must only fire for
     // tabs the user actually disabled in Settings > Tab Sections — not for a visible tab that's
@@ -317,7 +316,7 @@ fun BottomBar(navController: NavController) {
                     onClick = { doHaptic(); navigate(NotesScreenDestination.route) }
                 ) else null
                 "dialpad" -> if (showDialpadTab) TabSpec(
-                    key = key, route = DialPadScreenDestination.route, label = "Keypad",
+                    key = key, route = DialPadScreenDestination.route, label = "Dialpad",
                     selectedIcon = Icons.Filled.Dialpad, unselectedIcon = Icons.Outlined.Dialpad,
                     selected = isDialpadSelected,
                     onClick = {

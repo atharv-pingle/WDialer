@@ -69,6 +69,7 @@ import com.coolappstore.everdialer.by.svhp.controller.CallLogViewModel
 import com.coolappstore.everdialer.by.svhp.modal.data.CallLogEntry
 import com.coolappstore.everdialer.by.svhp.controller.util.formatDateHeader
 import com.coolappstore.everdialer.by.svhp.controller.util.makeCall
+import com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher
 import com.coolappstore.everdialer.by.svhp.controller.util.placeCallHonoringContactSim
 import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
 import com.coolappstore.everdialer.by.svhp.modal.data.CallLogFilter
@@ -1389,10 +1390,10 @@ fun CallLogFullContent(
                                                         val phone = contact.phoneNumbers.firstOrNull().orEmpty()
                                                         if (phone.isNotBlank()) {
                                                             val defaultMethod = prefs.getString(PreferenceManager.KEY_DEFAULT_CALLING_METHOD, "whatsapp")
-                                                            if (defaultMethod == "whatsapp" && WhatsAppCallLauncher.isWhatsAppInstalled(context)) {
-                                                                WhatsAppCallLauncher.launchVoiceCall(context, phone, contact.name)
+                                                            if (defaultMethod == "whatsapp" && com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.isWhatsAppInstalled(context)) {
+                                                                com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.launchVoiceCall(context, phone, contact.name)
                                                             } else {
-                                                                placeCallHonoringContactSim(context, prefs, phone, contact.id)
+                                                                makeCall(context, phone)
                                                             }
                                                         } else {
                                                             navigator.navigate(ContactDetailsScreenDestination(contactId = contact.id))

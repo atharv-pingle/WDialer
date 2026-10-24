@@ -322,10 +322,10 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
                         contentColor = fabFg,
                         shape = fabShape,
                         elevation = FloatingActionButtonDefaults.elevation(
-                            defaultElevation = dialpadFabElevation,
-                            pressedElevation = dialpadFabElevation,
-                            focusedElevation = dialpadFabElevation,
-                            hoveredElevation = dialpadFabElevation
+                            defaultElevation = 6.dp,
+                            pressedElevation = 12.dp,
+                            focusedElevation = 8.dp,
+                            hoveredElevation = 8.dp
                         ),
                     ) { Icon(Icons.Default.Dialpad, "Dialpad") }
                 }
@@ -339,10 +339,10 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
                     contentColor = fabFg,
                     shape = fabShape,
                     elevation = FloatingActionButtonDefaults.elevation(
-                        defaultElevation = dialpadFabElevation,
-                        pressedElevation = dialpadFabElevation,
-                        focusedElevation = dialpadFabElevation,
-                        hoveredElevation = dialpadFabElevation
+                        defaultElevation = 6.dp,
+                        pressedElevation = 12.dp,
+                        focusedElevation = 8.dp,
+                        hoveredElevation = 8.dp
                     ),
                     modifier = baseModifier
                 ) { Icon(Icons.Default.Dialpad, "Dialpad") }

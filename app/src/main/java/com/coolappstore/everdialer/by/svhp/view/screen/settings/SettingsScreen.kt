@@ -1289,6 +1289,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
     }
     }
 }
+}
 
 private sealed class BackupDialogState {
     object Idle : BackupDialogState()

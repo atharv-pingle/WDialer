@@ -315,7 +315,7 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
                 }
             }
 
-            // Default App Status Card (only shown when Ever Dialer is not default)
+            // Default App Status Card (only shown when WDialer is not default)
             if (!isDefaultSms) {
                 item {
                     RivoAnimatedSection(delayMs = 0L) {
@@ -798,7 +798,7 @@ fun SmsSettingsScreen(navigator: DestinationsNavigator) {
                         OutlinedTextField(
                             value = tempSignature,
                             onValueChange = { tempSignature = it },
-                            placeholder = { Text("e.g. Sent via Ever Dialer") },
+                            placeholder = { Text("e.g. Sent via WDialer") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )

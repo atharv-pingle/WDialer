@@ -246,7 +246,7 @@ class SmsReceiver : BroadcastReceiver() {
         val notifId = if (threadId > 0) threadId.toInt() else sender.hashCode()
         val displayName = contactName ?: sender
 
-        // 1. Content PendingIntent -> Opens conversation in Ever Dialer
+        // 1. Content PendingIntent -> Opens conversation in WDialer
         val launchIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("sms_address", sender)

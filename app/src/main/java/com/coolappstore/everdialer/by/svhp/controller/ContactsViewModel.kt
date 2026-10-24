@@ -256,9 +256,9 @@ class ContactsViewModel(
     }
 
     private fun isLegitimateUserGroup(group: com.coolappstore.everdialer.by.svhp.modal.data.ContactGroup, order: List<String>): Boolean {
-        // 1. All groups created in Ever Dialer locally have UUID IDs (never start with sys_group_)
+        // 1. All groups created in WDialer locally have UUID IDs (never start with sys_group_)
         if (!group.id.startsWith("sys_group_")) return true
-        // 2. Groups created via Ever Dialer UI are tracked in display order
+        // 2. Groups created via WDialer UI are tracked in display order
         if ("group_${group.id}" in order) return true
         // 3. Keep user groups from Gmail/Google Contacts or OEM system provider if eligible
         return isSystemGroupEligible(group)

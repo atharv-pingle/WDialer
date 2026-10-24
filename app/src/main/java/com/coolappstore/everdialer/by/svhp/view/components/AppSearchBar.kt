@@ -51,7 +51,7 @@ fun AppSearchBar(
     isEditable: Boolean = false,
     query: TextFieldValue = TextFieldValue(""),
     onQueryChange: (TextFieldValue) -> Unit = {},
-    placeholderText: String = tr("Search in Ever Dialer"),
+    placeholderText: String = tr("Search contacts & places"),
     onSearchBarClick: (() -> Unit)? = null,
     onBackClick: (() -> Unit)? = null,
     onClearClick: (() -> Unit)? = null,
@@ -189,7 +189,7 @@ fun AppSearchBar(
                         ) {
                             if (query.text.isEmpty()) {
                                 Text(
-                                    text = if (animProgress < 0.35f) placeholderText else tr("Search in Ever Dialer"),
+                                    text = if (animProgress < 0.35f) placeholderText else tr("Search contacts & places"),
                                     color = searchBarPlaceholder,
                                     style = MaterialTheme.typography.bodyLarge.copy(
                                         platformStyle = PlatformTextStyle(includeFontPadding = false)

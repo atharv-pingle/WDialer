@@ -1604,7 +1604,7 @@ fun ExpressiveCallScreen(
                     try {
                         call.hold()
                     } catch (e: Exception) {
-                        android.util.Log.e("EverDialerCall", "Add call: hold() on current call threw", e)
+                        android.util.Log.e("WDialerCall", "Add call: hold() on current call threw", e)
                     }
                     var actuallyHeld = call.state == Call.STATE_HOLDING
                     if (!actuallyHeld) {
@@ -1617,10 +1617,10 @@ fun ExpressiveCallScreen(
                     }
                     try {
                         val accountHandle = call.details?.accountHandle
-                        android.util.Log.d("EverDialerCall", "Add call: placing second call to $number with account=$accountHandle")
+                        android.util.Log.d("WDialerCall", "Add call: placing second call to $number with account=$accountHandle")
                         makeCall(context, number, accountHandle)
                     } catch (e: Exception) {
-                        android.util.Log.e("EverDialerCall", "Add call: makeCall() for second party threw", e)
+                        android.util.Log.e("WDialerCall", "Add call: makeCall() for second party threw", e)
                         try { call.unhold() } catch (_: Exception) {}
                         android.widget.Toast.makeText(context, "Couldn't place the second call", android.widget.Toast.LENGTH_SHORT).show()
                     }
@@ -2376,7 +2376,7 @@ fun ExpressiveCallScreen(
                         )
                         prompt.authenticate(
                             androidx.biometric.BiometricPrompt.PromptInfo.Builder()
-                                .setTitle("Ever Dialer")
+                                .setTitle("WDialer")
                                 .setSubtitle("Verify your identity to access this call")
                                 .setNegativeButtonText("Cancel")
                                 .setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK)

@@ -288,7 +288,7 @@ fun CustomFontScreen(
                         ) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
-                                    text = "Sphinx of black quartz, judge my vow. Ever Dialer pairs Material You expressive typography with dynamic color theming across all screens.",
+                                    text = "Sphinx of black quartz, judge my vow. WDialer pairs Material You expressive typography with dynamic color theming across all screens.",
                                     fontFamily = activePreviewFamily,
                                     fontSize = (14 * fontSizeScale * fontHeightScale).sp,
                                     fontWeight = previewBodyWeight,

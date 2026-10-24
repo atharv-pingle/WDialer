@@ -11,7 +11,7 @@ import androidx.activity.result.ActivityResultLauncher
 object DefaultSmsManager {
 
     /**
-     * Checks whether Ever Dialer is currently the default SMS app.
+     * Checks whether WDialer is currently the default SMS app.
      * Guaranteed to never throw an exception or crash.
      */
     fun isDefaultSms(context: Context): Boolean {
@@ -29,7 +29,7 @@ object DefaultSmsManager {
     }
 
     /**
-     * Creates an intent to request that Ever Dialer be set as the default SMS app.
+     * Creates an intent to request that WDialer be set as the default SMS app.
      * Returns null if no valid intent could be constructed.
      */
     fun createDefaultSmsIntent(context: Context): Intent? {
@@ -55,7 +55,7 @@ object DefaultSmsManager {
     }
 
     /**
-     * Safely prompts the user to make Ever Dialer the default SMS app using an ActivityResultLauncher.
+     * Safely prompts the user to make WDialer the default SMS app using an ActivityResultLauncher.
      * Returns true if an intent was successfully launched.
      */
     fun requestDefaultSms(launcher: ActivityResultLauncher<Intent>, context: Context): Boolean {

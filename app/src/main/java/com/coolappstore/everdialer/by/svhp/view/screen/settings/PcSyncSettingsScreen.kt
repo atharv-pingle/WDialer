@@ -129,7 +129,7 @@ fun PcSyncSettingsScreen(navigator: DestinationsNavigator) {
                             )
                         }
                         Text(
-                            text = "Ever Dialer requires Bluetooth connect permission to link and sync data with Ever Dialer PC.",
+                            text = "WDialer requires Bluetooth connect permission to link and sync data with WDialer PC.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -159,7 +159,7 @@ fun PcSyncSettingsScreen(navigator: DestinationsNavigator) {
                     RivoExpressiveCard {
                         RivoSwitchListItem(
                             headline = "Bluetooth PC Sync",
-                            supporting = "Synchronize data and enable the desktop landscape view in Ever Dialer PC",
+                            supporting = "Synchronize data and enable the desktop landscape view in WDialer PC",
                             leadingIcon = Icons.Outlined.BluetoothSearching,
                             iconContainerColor = Color(0xFF1E88E5),
                             checked = bluetoothSyncEnabled,
@@ -199,7 +199,7 @@ fun PcSyncSettingsScreen(navigator: DestinationsNavigator) {
                                         PcSyncStatus.CONNECTED -> Triple(
                                             Icons.Outlined.BluetoothConnected,
                                             Color(0xFF4CAF50),
-                                            "Connected to ${connectedDevice ?: "Ever Dialer PC"}"
+                                            "Connected to ${connectedDevice ?: "WDialer PC"}"
                                         )
                                         PcSyncStatus.SYNCING -> Triple(
                                             Icons.Outlined.Sync,
@@ -209,7 +209,7 @@ fun PcSyncSettingsScreen(navigator: DestinationsNavigator) {
                                         PcSyncStatus.CONNECTING -> Triple(
                                             Icons.Outlined.BluetoothSearching,
                                             Color(0xFF2196F3),
-                                            "Connecting to Ever Dialer PC..."
+                                            "Connecting to WDialer PC..."
                                         )
                                         PcSyncStatus.ERROR -> Triple(
                                             Icons.Outlined.ErrorOutline,
@@ -219,7 +219,7 @@ fun PcSyncSettingsScreen(navigator: DestinationsNavigator) {
                                         else -> Triple(
                                             Icons.Outlined.BluetoothSearching,
                                             MaterialTheme.colorScheme.outline,
-                                            "Waiting for Ever Dialer PC..."
+                                            "Waiting for WDialer PC..."
                                         )
                                     }
 

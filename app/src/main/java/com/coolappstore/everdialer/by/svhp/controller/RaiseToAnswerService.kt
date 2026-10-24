@@ -33,7 +33,7 @@ import kotlin.math.sqrt
  * Foreground service that listens to the proximity, accelerometer and (when available)
  * magnetometer sensors while a call is ringing, and automatically answers the call once
  * the device is raised to the user's ear — ported from the open-source "Raise To Answer"
- * project and adapted to drive Ever Dialer's own [CallService] instead of TelecomManager.
+ * project and adapted to drive WDialer's own [CallService] instead of TelecomManager.
  *
  * The service is started and stopped exclusively by [RaiseToAnswerManager], which is the
  * single source of truth for whether the feature is enabled and supported on this device.
@@ -158,7 +158,7 @@ class RaiseToAnswerService : Service(), SensorEventListener {
     }
 
     private fun evaluateTick(hasMagnetometer: Boolean) {
-        // Only act if Ever Dialer still has an actual ringing call — guards against the
+        // Only act if WDialer still has an actual ringing call — guards against the
         // brief window between the call leaving the ringing state and this service
         // receiving its stop command.
         if (CallService.currentCallSession.value?.call?.state != android.telecom.Call.STATE_RINGING) {

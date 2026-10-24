@@ -411,25 +411,8 @@ fun DialPadScreen(
                 color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 4.dp
             ) {
-                val predictiveBackEnabled = remember(prefs.settingsChanged.collectAsState().value) {
-                    prefs.getBoolean(PreferenceManager.KEY_PREDICTIVE_BACK_GESTURE, true)
-                }
-                if (predictiveBackEnabled) {
-                    PredictiveBackHandler(enabled = !dialpadClosing && !didNavigateAway) { progressFlow ->
-                        try {
-                            progressFlow.collect { backEvent ->
-                                closeProgress.snapTo(backEvent.progress * 0.45f)
-                            }
-                            dialpadClosing = true
-                            closeProgress.animateTo(1f, slowSlideSpec)
-                            finishDismiss()
-                        } catch (e: CancellationException) {
-                            dialpadClosing = false
-                            closeProgress.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
-                        }
-                    }
-                } else {
-                    BackHandler(enabled = !dialpadClosing && !didNavigateAway) { closeWithSlowAnimation() }
+                BackHandler(enabled = !dialpadClosing && !didNavigateAway) {
+                    closeWithSlowAnimation()
                 }
                 Column(modifier = Modifier.statusBarsPadding().navigationBarsPadding()) {
                     Box(
@@ -1343,7 +1326,7 @@ fun DialPadContent(
                     verticalArrangement = Arrangement.SpaceEvenly
                 ) {
                     val keys = listOf(listOf("1","2","3"), listOf("4","5","6"), listOf("7","8","9"), listOf("*","0","#"))
-                    val subKeys = mapOf("1" to "   ","2" to "ABC","3" to "DEF","4" to "GHI","5" to "JKL","6" to "MNO","7" to "PQRS","8" to "TUV","9" to "WXYZ","0" to "+")
+                    val subKeys = mapOf("1" to "➿","2" to "ABC","3" to "DEF","4" to "GHI","5" to "JKL","6" to "MNO","7" to "PQRS","8" to "TUV","9" to "WXYZ","0" to "+")
                     keys.forEach { row ->
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                             row.forEach { key ->
@@ -1776,51 +1759,133 @@ fun DialPadContent(
             enter = fadeIn(tween(200)) + expandVertically(tween(220)),
             exit = fadeOut(tween(160)) + shrinkVertically(tween(180))
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Surface(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        val intent = Intent(Intent.ACTION_INSERT).apply {
-                            type = ContactsContract.RawContacts.CONTENT_TYPE
-                            putExtra(ContactsContract.Intents.Insert.PHONE, number)
+                // 1. Create new contact
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            val intent = Intent(Intent.ACTION_INSERT).apply {
+                                type = ContactsContract.RawContacts.CONTENT_TYPE
+                                putExtra(ContactsContract.Intents.Insert.PHONE, number)
+                            }
+                            context.startActivity(intent)
                         }
-                        context.startActivity(intent)
-                    },
-                    shape = RoundedCornerShape(50.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.weight(1f)
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(Icons.Default.PersonAdd, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Create contact", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    }
+                    Icon(
+                        Icons.Default.PersonAdd,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        "Create new contact",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
-                Surface(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        showSelectExistingContactDialog = true
-                    },
-                    shape = RoundedCornerShape(50.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier.weight(1f)
+
+                // 2. Add to a contact
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            showSelectExistingContactDialog = true
+                        }
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(Icons.Default.Person, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Add to contact", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                    }
+                    Icon(
+                        Icons.Default.GroupAdd,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        "Add to a contact",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // 3. Video call
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            if (com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.isWhatsAppInstalled(context)) {
+                                com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.launchVideoCall(context, number)
+                            } else {
+                                initiateCall(number)
+                            }
+                        }
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Videocam,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        "Video call",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // 4. Send a message
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            if (com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.isWhatsAppInstalled(context)) {
+                                com.coolappstore.everdialer.by.svhp.controller.util.WhatsAppCallLauncher.launchChat(context, number)
+                            } else {
+                                try {
+                                    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$number"))
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {}
+                            }
+                        }
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Chat,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        "Send a message",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         }
@@ -1898,7 +1963,7 @@ fun DialPadContent(
             val keyWidth: Dp  = (98 * scaleFactor).dp
             val keyHeight: Dp = (62 * scaleFactor).dp
             val actionSize: Dp = (58 * scaleFactor).dp
-            val callW: Dp  = (102 * scaleFactor).dp
+            val callW: Dp  = (122 * scaleFactor).dp
             val callH: Dp  = (66 * scaleFactor).dp
             val keySpacing: Dp = (7 * scaleFactor).dp
 
@@ -2036,7 +2101,7 @@ fun DialPadContent(
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 // Dialpad keys
                 val keys = listOf(listOf("1","2","3"), listOf("4","5","6"), listOf("7","8","9"), listOf("*","0","#"))
-                val subKeys = mapOf("1" to "   ","2" to "ABC","3" to "DEF","4" to "GHI","5" to "JKL","6" to "MNO","7" to "PQRS","8" to "TUV","9" to "WXYZ","0" to "+")
+                val subKeys = mapOf("1" to "➿","2" to "ABC","3" to "DEF","4" to "GHI","5" to "JKL","6" to "MNO","7" to "PQRS","8" to "TUV","9" to "WXYZ","0" to "+")
 
                 keys.forEach { row ->
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -2351,6 +2416,21 @@ fun DialerActionExpressive(
                     tint = animatedContentColor,
                     isLarge = isLarge
                 )
+            } else if (isCallButton) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                ) {
+                    Icon(icon, contentDescription, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Call",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                        color = animatedContentColor
+                    )
+                }
             } else {
                 Icon(icon, contentDescription, modifier = Modifier.size(if (isLarge) 32.dp else 24.dp))
             }

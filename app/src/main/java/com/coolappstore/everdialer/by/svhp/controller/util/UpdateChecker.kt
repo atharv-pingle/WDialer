@@ -98,7 +98,7 @@ fun isNewerVersion(latest: String, current: String): Boolean {
     return false
 }
 
-private const val APK_FILE_NAME = "EverDialer_update.apk"
+private const val APK_FILE_NAME = "WDialer_update.apk"
 
 /** Public Downloads folder — visible in Files/Downloads app. */
 fun getApkDestinationFile(): File =

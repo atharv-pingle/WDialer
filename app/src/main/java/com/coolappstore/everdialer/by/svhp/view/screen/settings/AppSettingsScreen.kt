@@ -167,7 +167,7 @@ fun AppSettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = 
             icon = { Icon(Icons.AutoMirrored.Filled.CallMissed, null, tint = ColorAmber) },
             title = { Text("Display Over Other Apps") },
             text = {
-                Text("To display the missed call popup over other apps when an incoming call is missed, Ever Dialer requires the 'Display over other apps' permission.")
+                Text("To display the missed call popup over other apps when an incoming call is missed, WDialer requires the 'Display over other apps' permission.")
             },
             confirmButton = {
                 Button(

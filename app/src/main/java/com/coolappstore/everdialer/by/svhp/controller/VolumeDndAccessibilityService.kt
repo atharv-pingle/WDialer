@@ -58,7 +58,7 @@ class VolumeDndAccessibilityService : AccessibilityService() {
     private fun initMediaSession() {
         try {
             if (mediaSession == null) {
-                mediaSession = MediaSession(this, "EverDialerVolumeDnd").apply {
+                mediaSession = MediaSession(this, "WDialerVolumeDnd").apply {
                     setFlags(
                         MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or
                                 MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS
@@ -213,7 +213,7 @@ class VolumeDndAccessibilityService : AccessibilityService() {
 
                 // Acquire brief partial wake lock for smooth execution if screen is off
                 try {
-                    val wakeLock = powerManager?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "EverDialer:VolumeDndWakeLock")
+                    val wakeLock = powerManager?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WDialer:VolumeDndWakeLock")
                     wakeLock?.acquire(3000L)
                 } catch (_: Exception) {}
 

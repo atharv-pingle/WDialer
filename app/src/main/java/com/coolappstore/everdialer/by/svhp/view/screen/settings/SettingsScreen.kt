@@ -259,7 +259,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
         if (uri != null) {
             scope.launch(Dispatchers.IO) {
                 try {
-                    val tmpFile = File(context.cacheDir, "restore_tmp.everdialer")
+                    val tmpFile = File(context.cacheDir, "restore_tmp.wdialer")
                     context.contentResolver.openInputStream(uri)?.use { input ->
                         tmpFile.outputStream().use { output -> input.copyTo(output) }
                     }
@@ -583,7 +583,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
                 pendingBackupCallLogs = backupCallLogs
                 pendingBackupSms = backupSms
                 val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-                saveBackupLauncher.launch("EverDialer_Backup_$timestamp.everdialer")
+                saveBackupLauncher.launch("WDialer_Backup_$timestamp.wdialer")
             }
         )
     }
@@ -690,7 +690,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, highlightKey: String? = nul
     // Seeded from the `highlightKey` nav arg when arriving here from a search result tapped
     // on a different settings page (see SettingsSearchEntryPoint).
     var highlightedSettingKey by remember { mutableStateOf(highlightKey) }
-    // The main settings list below is a LazyColumn: rows far down (e.g. "About Ever Dialer")
+    // The main settings list below is a LazyColumn: rows far down (e.g. "About WDialer")
     // simply aren't composed until scrolled near, so settingsSearchHighlight()'s
     // BringIntoViewRequester silently has nothing to scroll to and a search-result tap on a
     // far-down setting appeared to do nothing. Each `item { }` block below corresponds to one

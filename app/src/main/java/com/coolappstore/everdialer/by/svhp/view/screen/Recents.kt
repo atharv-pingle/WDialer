@@ -174,37 +174,8 @@ fun RecentScreen(navController: NavController, navigator: DestinationsNavigator)
         }
     }
 
-    val predictiveBackEnabled = remember(prefs.settingsChanged.collectAsState().value) {
-        prefs.getBoolean(PreferenceManager.KEY_PREDICTIVE_BACK_GESTURE, true)
-    }
-
-    if (predictiveBackEnabled) {
-        PredictiveBackHandler(enabled = showDialpad && !dialpadClosing) { progressFlow ->
-            try {
-                progressFlow.collect { backEvent ->
-                    // Interactive scrub: scale down smoothly with gesture progress
-                    val p = 1f - (backEvent.progress * 0.45f)
-                    dialpadProgress.snapTo(p)
-                }
-                // When back gesture commits, collapse back into FAB
-                dialpadClosing = true
-                NavBarVisibilityState.hideForDialpad = false
-                dialpadProgress.animateTo(
-                    targetValue = 0f,
-                    animationSpec = tween(durationMillis = 520, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
-                )
-                showDialpad = false
-                dialpadClosing = false
-            } catch (e: CancellationException) {
-                // If user cancels back gesture, snap/animate back to full open state
-                dialpadClosing = false
-                dialpadProgress.animateTo(1f, spring(stiffness = Spring.StiffnessMediumLow))
-            }
-        }
-    } else {
-        BackHandler(enabled = showDialpad && !dialpadClosing) {
-            closeDialpad(null)
-        }
+    BackHandler(enabled = showDialpad && !dialpadClosing) {
+        closeDialpad(null)
     }
 
     val isDialpadOpen = showDialpad && !dialpadClosing
@@ -994,140 +965,7 @@ fun CallLogFullContent(
                     }
                 }
 
-                // In portrait, render stat cards and pills above the list (sticky)
-                // In landscape, they go inside the LazyColumn so they scroll with content
-                if (!isLandscape) {
-                    if (visibleStatCards.isNotEmpty()) {
-                        LazyRow(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            items(visibleStatCards, key = { it }) { cardKey ->
-                                val idx = visibleStatCards.indexOf(cardKey)
-                                StatCardItem(cardKey, (idx * 60).toLong())
-                            }
-                        }
-                    }
 
-                    // ── Filter pills ──────────────────────────────────────────────
-                    val isDark = androidx.core.graphics.ColorUtils.calculateLuminance(MaterialTheme.colorScheme.surface.toArgb()) < 0.5
-                    val isSaturatedActive = remember(settingsVersion, isDark) { prefs.isSaturatedForTheme(isDark) }
-                    val isDynamic = remember(settingsVersion) { prefs.getBoolean(PreferenceManager.KEY_DYNAMIC_COLORS, true) }
-                    val usePrimary = isSaturatedActive || !isDynamic
-                    val solidIcons = remember(settingsVersion) { prefs.getBoolean(PreferenceManager.KEY_SOLID_ICONS, false) }
-                    val solidStyle = remember(settingsVersion, isDark) { prefs.getSolidIconsStyle(isDark) }
-                    val isSaturatedSolidBrightDark = isDark && isSaturatedActive && solidIcons && (solidStyle == PreferenceManager.SOLID_ICONS_STYLE_BRIGHT)
-                    val activeChipBg = if (usePrimary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer
-                    val activeChipFg = if (isSaturatedSolidBrightDark) Color.Black else if (usePrimary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
-
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(CallLogFilter.entries) { filter ->
-                            val isSelected = selectedFilter == filter
-                            val containerColor by animateColorAsState(
-                                targetValue = if (isSelected) activeChipBg
-                                              else MaterialTheme.colorScheme.surfaceContainerLow,
-                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                                label = "chipColor"
-                            )
-                            val labelColor by animateColorAsState(
-                                targetValue = if (isSelected) activeChipFg
-                                              else MaterialTheme.colorScheme.onSurface,
-                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                                label = "chipLabelColor"
-                            )
-                            val scale by animateFloatAsState(
-                                targetValue = if (isSelected) 1.08f else 1f,
-                                animationSpec = spring(stiffness = Spring.StiffnessMedium, dampingRatio = Spring.DampingRatioMediumBouncy),
-                                label = "chipScale"
-                            )
-                            Box {
-                                Surface(
-                                    shape = RoundedCornerShape(50.dp),
-                                    color = containerColor,
-                                    modifier = Modifier
-                                        .scale(scale)
-                                        .clip(RoundedCornerShape(50.dp))
-                                        .combinedClickable(
-                                            onClick = {
-                                                previousFilterIndex = filterEntries.indexOf(selectedFilter)
-                                                viewModel.setFilter(filter)
-                                            },
-                                            onLongClick = if (filter == CallLogFilter.All) {
-                                                {
-                                                    if (prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)) {
-                                                        performAppHaptic(context, prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light", prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f))
-                                                    }
-                                                    showAllGroupMenuPortrait = true
-                                                }
-                                            } else null
-                                        )
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .height(32.dp)
-                                            .padding(horizontal = 16.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            com.coolappstore.everdialer.by.svhp.controller.util.tr(filter.displayName),
-                                            color = labelColor,
-                                            style = MaterialTheme.typography.labelLarge
-                                        )
-                                    }
-                                }
-
-                                if (filter == CallLogFilter.All) {
-                                    DropdownMenu(
-                                        expanded = showAllGroupMenuPortrait,
-                                        onDismissRequest = { showAllGroupMenuPortrait = false },
-                                        shape = RoundedCornerShape(16.dp)
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text("Grouped based on date") },
-                                            onClick = {
-                                                if (prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)) {
-                                                    performAppHaptic(context, prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light", prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f))
-                                                }
-                                                prefs.setBoolean(PreferenceManager.KEY_GROUP_CALLS_BY_LATEST, false)
-                                                prefs.setBoolean(PreferenceManager.KEY_SHOW_TOTAL_CALLS_MADE, false)
-                                                showAllGroupMenuPortrait = false
-                                            },
-                                            leadingIcon = {
-                                                if (!groupCallsByLatest) {
-                                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                } else {
-                                                    Spacer(modifier = Modifier.size(24.dp))
-                                                }
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("Grouped based on number") },
-                                            onClick = {
-                                                if (prefs.getBoolean(PreferenceManager.KEY_APP_HAPTICS, true)) {
-                                                    performAppHaptic(context, prefs.getString(PreferenceManager.KEY_APP_HAPTICS_STRENGTH, "light") ?: "light", prefs.getFloat(PreferenceManager.KEY_HAPTICS_CUSTOM_INTENSITY, 0.5f))
-                                                }
-                                                prefs.setBoolean(PreferenceManager.KEY_GROUP_CALLS_BY_LATEST, true)
-                                                prefs.setBoolean(PreferenceManager.KEY_SHOW_TOTAL_CALLS_MADE, true)
-                                                showAllGroupMenuPortrait = false
-                                            },
-                                            leadingIcon = {
-                                                if (groupCallsByLatest) {
-                                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                } else {
-                                                    Spacer(modifier = Modifier.size(24.dp))
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
 
                 // ── Animated content: slides left/right on filter change ──────
                 // On the very first data load (startup) we use a slow fade-in so the
@@ -1191,7 +1029,8 @@ fun CallLogFullContent(
                                         .padding(horizontal = 16.dp, vertical = 8.dp)
                                 )
                             }
-                            if (visibleStatCards.isNotEmpty()) {
+                        }
+ if (visibleStatCards.isNotEmpty()) {
                                 item(key = "stat_cards", contentType = "statCards") {
                                     LazyRow(
                                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -1323,7 +1162,7 @@ fun CallLogFullContent(
                                     }
                                 }
                             }
-                        }
+                        
 
                         // ── Google Phone Style Favorites Row ──
                         item(key = "favorites_section", contentType = "favorites") {
@@ -1611,7 +1450,7 @@ fun CallLogFullContent(
         PermissionDeniedView(
             icon = Icons.Default.Call,
             title = "Call History",
-            description = "Ever Dialer needs access to your call logs to show your recent activity and missed calls.",
+            description = "WDialer needs access to your call logs to show your recent activity and missed calls.",
             onGrantClick = onRequestPermission
         )
     }

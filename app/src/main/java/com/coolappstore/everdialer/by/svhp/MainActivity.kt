@@ -238,7 +238,7 @@ class MainActivity : FragmentActivity() {
                 // other screen that happens to reference it) is composed. Its init{} block is
                 // what registers the CallLog/Contacts ContentObservers and starts collecting
                 // CallService.currentCallSession — so until it exists, a call placed or received
-                // through EverDialer *or any other app* (any write to the system CallLog
+                // through WDialer *or any other app* (any write to the system CallLog
                 // provider) doesn't trigger a refresh at all; the list only ever catches up the
                 // next time the user happens to open the app or navigate into the call log
                 // section, since that's what was creating the ViewModel for the first time.
@@ -692,7 +692,7 @@ class MainActivity : FragmentActivity() {
                                 )
                                 prompt.authenticate(
                                     androidx.biometric.BiometricPrompt.PromptInfo.Builder()
-                                        .setTitle("Ever Dialer")
+                                        .setTitle("WDialer")
                                         .setSubtitle(if (callAuthRequired) "Verify your identity to place call" else "Verify your identity to continue")
                                         .setNegativeButtonText("Cancel")
                                         .setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK)
@@ -991,7 +991,7 @@ class MainActivity : FragmentActivity() {
 
     private fun handleIntent(intent: Intent?, navController: androidx.navigation.NavController) {
         intent ?: return
-        android.util.Log.d("EverDialerCall", "handleIntent action=${intent.action} data=${intent.data}")
+        android.util.Log.d("WDialerCall", "handleIntent action=${intent.action} data=${intent.data}")
         val data = intent.data
         val action = intent.action
 
@@ -1153,11 +1153,11 @@ class MainActivity : FragmentActivity() {
             }
             Intent.ACTION_CALL, "android.intent.action.CALL_PRIVILEGED" -> {
                 val target = resolveCallTargetFromIntent(this, intent)
-                android.util.Log.d("EverDialerCall", "external call intent action=$action data=$data target=$target")
+                android.util.Log.d("WDialerCall", "external call intent action=$action data=$data target=$target")
                 if (target != null && target.number.isNotBlank()) {
                     placeDirectCall(target.number, target.contactId)
                 } else {
-                    android.util.Log.w("EverDialerCall", "external call intent had no resolvable number, ignoring")
+                    android.util.Log.w("WDialerCall", "external call intent had no resolvable number, ignoring")
                 }
             }
             Intent.ACTION_INSERT -> {

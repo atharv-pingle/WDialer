@@ -54,7 +54,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
 import com.coolappstore.everdialer.by.svhp.view.theme.SettingsClickTracker
 
-/** The pill-shaped, non-editable "Search in Ever Dialer" bar — tapping it opens the single
+/** The pill-shaped, non-editable "Search contacts & places" bar — tapping it opens the single
  *  unified [SearchScreenDestination] (contacts, non-contacts, contact notes, recording notes).
  *  Shown at the top of the main tabs (via [TopBar]) as well as Settings, Notes, and Recordings,
  *  so every entry point into search looks and behaves identically. */

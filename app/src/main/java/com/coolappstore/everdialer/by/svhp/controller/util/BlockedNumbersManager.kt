@@ -7,11 +7,11 @@ import android.os.Build
 import android.provider.BlockedNumberContract
 
 /**
- * Single source of truth for Ever Dialer's number-blocking feature.
+ * Single source of truth for WDialer's number-blocking feature.
  *
  * Fully integrated with Android's system-wide [BlockedNumberContract] provider:
  * - System-wide blocked numbers (from Android settings, Google Phone, Messages, etc.) are read and displayed.
- * - When Ever Dialer blocks a number, it writes to both app preferences and the system-wide BlockedNumberContract.
+ * - When WDialer blocks a number, it writes to both app preferences and the system-wide BlockedNumberContract.
  * - When checking if a number is blocked, [BlockedNumberContract.isBlocked] is queried directly for system-wide accuracy.
  * - CallService and all UI screens automatically reject and reflect blocked numbers system-wide.
  */

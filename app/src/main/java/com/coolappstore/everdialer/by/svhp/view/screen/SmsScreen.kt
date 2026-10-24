@@ -681,7 +681,7 @@ fun SmsScreen(
                                     )
                                     Spacer(Modifier.height(2.dp))
                                     Text(
-                                        "Allow Ever Dialer to send, receive, and manage your text messages seamlessly.",
+                                        "Allow WDialer to send, receive, and manage your text messages seamlessly.",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                                     )
@@ -734,7 +734,7 @@ fun SmsScreen(
                                         color = MaterialTheme.colorScheme.onErrorContainer
                                     )
                                     Text(
-                                        "Tap to grant SMS permissions so Ever Dialer can display your conversations.",
+                                        "Tap to grant SMS permissions so WDialer can display your conversations.",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onErrorContainer
                                     )

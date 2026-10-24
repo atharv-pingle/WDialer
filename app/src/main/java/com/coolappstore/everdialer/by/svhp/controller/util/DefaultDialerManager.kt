@@ -11,7 +11,7 @@ import androidx.activity.result.ActivityResultLauncher
 object DefaultDialerManager {
 
     /**
-     * Checks whether Ever Dialer is currently the default dialer.
+     * Checks whether WDialer is currently the default dialer.
      * Guaranteed to never throw an exception or crash.
      */
     fun isDefaultDialer(context: Context): Boolean {
@@ -30,7 +30,7 @@ object DefaultDialerManager {
     }
 
     /**
-     * Creates an intent to request that Ever Dialer be set as the default dialer.
+     * Creates an intent to request that WDialer be set as the default dialer.
      * Returns null if no valid intent could be constructed.
      */
     fun createDefaultDialerIntent(context: Context): Intent? {
@@ -56,7 +56,7 @@ object DefaultDialerManager {
     }
 
     /**
-     * Safely prompts the user to make Ever Dialer the default dialer using an ActivityResultLauncher.
+     * Safely prompts the user to make WDialer the default dialer using an ActivityResultLauncher.
      * Returns true if an intent was successfully launched.
      */
     fun requestDefaultDialer(launcher: ActivityResultLauncher<Intent>, context: Context): Boolean {

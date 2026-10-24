@@ -284,7 +284,7 @@ class PcBluetoothSyncManager(
             Log.d(TAG, "Direct channel $RFCOMM_CHANNEL connect to $devName failed: ${e.message}")
         }
 
-        // Strategy B: SDP Ever Dialer UUID
+        // Strategy B: SDP WDialer UUID
         try {
             val socket = device.createInsecureRfcommSocketToServiceRecord(EVER_DIALER_SYNC_UUID)
             socket.connect()
@@ -319,7 +319,7 @@ class PcBluetoothSyncManager(
         try {
             Log.d(TAG, "Opening RFCOMM server socket with UUID $EVER_DIALER_SYNC_UUID")
             serverSocket = adapter.listenUsingInsecureRfcommWithServiceRecord(
-                "EverDialerSync",
+                "WDialerSync",
                 EVER_DIALER_SYNC_UUID
             )
 
@@ -339,7 +339,7 @@ class PcBluetoothSyncManager(
             }
 
             if (clientSocket != null) {
-                val clientDevName = clientSocket.remoteDevice?.name ?: "Ever Dialer PC"
+                val clientDevName = clientSocket.remoteDevice?.name ?: "WDialer PC"
                 Log.i(TAG, "Accepted incoming connection from $clientDevName")
                 handleConnection(clientSocket, clientDevName)
             }
@@ -540,7 +540,7 @@ class PcBluetoothSyncManager(
             }
         }
 
-        // 4. Read incoming commands from Ever Dialer PC
+        // 4. Read incoming commands from WDialer PC
         try {
             while (scope.isActive && socket.isConnected) {
                 val line = withContext(Dispatchers.IO) {
@@ -561,7 +561,7 @@ class PcBluetoothSyncManager(
                         }
                         "make_call" -> {
                             val number = cmdObj.optString("number")
-                            Log.i(TAG, "Executing make_call for $number via Ever Dialer")
+                            Log.i(TAG, "Executing make_call for $number via WDialer")
                             if (number.isNotBlank()) {
                                 withContext(Dispatchers.Main) {
                                     val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
@@ -577,7 +577,7 @@ class PcBluetoothSyncManager(
                         "send_sms" -> {
                             val phone = cmdObj.optString("phone").ifBlank { cmdObj.optString("number") }
                             val text = cmdObj.optString("text").ifBlank { cmdObj.optString("body") }
-                            Log.i(TAG, "Executing send_sms via Ever Dialer to $phone: $text")
+                            Log.i(TAG, "Executing send_sms via WDialer to $phone: $text")
                             if (phone.isNotBlank() && text.isNotBlank()) {
                                 val success = smsRepository.sendSms(phone, text)
                                 Log.i(TAG, "send_sms result: $success")

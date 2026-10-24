@@ -60,7 +60,7 @@ internal fun buildIcons(context: android.content.Context) = listOf(
 // combination with whatever icon is currently selected — see aliasNameFor() below, which
 // computes a combined icon+name alias so changing one never resets the other.
 internal fun buildAppNamePresets(context: android.content.Context) = listOf(
-    AppIconEntry("default",          "Ever Dialer (Default)", null, context.resources.getIdentifier("ic_launcher", "mipmap", context.packageName)),
+    AppIconEntry("default",          "WDialer (Default)", null, context.resources.getIdentifier("ic_launcher", "mipmap", context.packageName)),
     AppIconEntry("name_phone",       "Phone",                  null, context.resources.getIdentifier("ic_launcher", "mipmap", context.packageName)),
     AppIconEntry("name_dialer",      "Dialer",                 null, context.resources.getIdentifier("ic_launcher", "mipmap", context.packageName)),
     AppIconEntry("name_call",        "Call",                  null, context.resources.getIdentifier("ic_launcher", "mipmap", context.packageName)),

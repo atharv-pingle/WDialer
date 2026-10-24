@@ -682,7 +682,7 @@ fun ContactContent(
             PermissionDeniedView(
                 icon = Icons.Default.Person,
                 title = "Contacts",
-                description = "Ever Dialer needs access to your contacts to show your contact list and identify incoming calls.",
+                description = "WDialer needs access to your contacts to show your contact list and identify incoming calls.",
                 onGrantClick = onRequestPermission
             )
         }

@@ -148,7 +148,7 @@ fun Android14WelcomeDialog(
 ) {
     LaunchDialogSurface {
         DialogBanner(
-            title = "Welcome to Ever Dialer",
+            title = "Welcome to WDialer",
             subtitle = "One-time setup required"
         )
 
@@ -181,7 +181,7 @@ fun Android14WelcomeDialog(
                 }
             }
 
-            StepRow(number = "1", icon = Icons.Default.TouchApp,     text = "Long-press Ever Dialer icon → tap App info")
+            StepRow(number = "1", icon = Icons.Default.TouchApp,     text = "Long-press WDialer icon → tap App info")
             StepRow(number = "2", icon = Icons.Default.MoreVert,     text = "Tap the ⋮ menu (top-right corner)")
             StepRow(number = "3", icon = Icons.Default.LockOpen,     text = "Tap \"Allow restricted settings\"")
             StepRow(number = "4", icon = Icons.Default.Celebration,  text = "Return here and set as default dialer. Enjoy!")
@@ -487,7 +487,7 @@ fun DonateDialog(
 
     LaunchDialogSurface {
         DialogBanner(
-            title = "Support Ever Dialer",
+            title = "Support WDialer",
             subtitle = "Open Source Project"
         )
 
@@ -525,7 +525,7 @@ fun DonateDialog(
             }
 
             Text(
-                "Your contribution helps keep Ever Dialer completely free, privacy-friendly, and actively maintained.",
+                "Your contribution helps keep WDialer completely free, privacy-friendly, and actively maintained.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

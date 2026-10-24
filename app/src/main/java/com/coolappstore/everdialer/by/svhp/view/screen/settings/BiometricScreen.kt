@@ -163,7 +163,7 @@ fun BiometricScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                     RivoExpressiveCard {
                         RivoSwitchListItem(
                             headline = "Lock App on Open",
-                            supporting = "Require authentication when opening Ever Dialer",
+                            supporting = "Require authentication when opening WDialer",
                             leadingIcon = Icons.Default.LockOpen,
                             iconContainerColor = Color(0xFF2196F3),
                             checked = appLockEnabled,

@@ -1297,7 +1297,7 @@ fun RivoScrollAnimatedItem(
 // ─── Rivo Dropdown Menu ───────────────────────────────────────────────────────
 
 /**
- * Styled context menu that matches Ever Dialer's card-based design.
+ * Styled context menu that matches WDialer's card-based design.
  * Uses a Popup so the menu is statically positioned without jumping on finger release.
  * The shadow is rendered by Compose's draw.shadow (not the window elevation)
  * so it clips correctly to the rounded shape on all API levels.

@@ -71,7 +71,7 @@ class FakeCallConnectionService : ConnectionService() {
             try {
                 val tm = context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager ?: return
                 val handle = phoneAccountHandle(context)
-                val account = PhoneAccount.builder(handle, "Ever Dialer Fake Call")
+                val account = PhoneAccount.builder(handle, "WDialer Fake Call")
                     .setCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)
                     .setShortDescription("Used to simulate incoming calls")
                     .build()

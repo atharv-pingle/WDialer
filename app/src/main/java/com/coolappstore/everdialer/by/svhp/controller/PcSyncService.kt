@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 import org.koin.core.context.GlobalContext
 
 /**
- * Foreground service that keeps Ever Dialer continuously connected to the PC app via Bluetooth
+ * Foreground service that keeps WDialer continuously connected to the PC app via Bluetooth
  * even when the mobile app is in the background or closed.
  */
 class PcSyncService : Service() {
@@ -68,8 +68,8 @@ class PcSyncService : Service() {
         createNotificationChannel()
 
         val notification = buildNotification(
-            title = "Ever Dialer PC Connect",
-            content = "Waiting for Ever Dialer PC..."
+            title = "WDialer PC Connect",
+            content = "Waiting for WDialer PC..."
         )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -108,11 +108,11 @@ class PcSyncService : Service() {
                     }
                     PcSyncStatus.CONNECTING -> {
                         title = "Connecting to PC"
-                        text = "Searching for Ever Dialer PC..."
+                        text = "Searching for WDialer PC..."
                     }
                     else -> {
-                        title = "Ever Dialer PC Connect"
-                        text = "Waiting for Ever Dialer PC..."
+                        title = "WDialer PC Connect"
+                        text = "Waiting for WDialer PC..."
                     }
                 }
                 updateNotification(title, text)
@@ -149,7 +149,7 @@ class PcSyncService : Service() {
                 "PC Connect Sync",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Keeps Ever Dialer connected with Ever Dialer PC in the background"
+                description = "Keeps WDialer connected with WDialer PC in the background"
                 setShowBadge(false)
             }
             nm.createNotificationChannel(channel)

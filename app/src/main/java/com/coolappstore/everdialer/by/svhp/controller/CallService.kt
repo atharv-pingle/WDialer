@@ -173,7 +173,7 @@ class CallService : InCallService() {
     // This used to live entirely inside CallActivity, acquiring/releasing a real
     // PROXIMITY_SCREEN_OFF_WAKE_LOCK from there. That wake lock is only reliably honored by the
     // system while the acquiring app has an actively foregrounded window — so the moment the user
-    // switched away to the main Ever Dialer app during a call (leaving CallActivity backgrounded
+    // switched away to the main WDialer app during a call (leaving CallActivity backgrounded
     // behind it), the near-ear screen-off would silently stop taking effect, even though the
     // sensor readings and gate logic underneath kept ticking along just fine. Re-opening the
     // in-call UI put CallActivity back on top and "fixed" it again — but only by accident.
@@ -337,7 +337,7 @@ class CallService : InCallService() {
         // Third-party apps that register their own voice/video calls as
         // self-managed Telecom connections. Because CallService declares
         // INCLUDE_SELF_MANAGED_CALLS, Telecom hands these to us too — but
-        // Ever Dialer must never touch them (no CallActivity, no notification,
+        // WDialer must never touch them (no CallActivity, no notification,
         // no cellular call side-effects). Snapchat is one such app: without
         // this exclusion its self-managed call was being treated like a real
         // cellular call by this service.
@@ -345,7 +345,7 @@ class CallService : InCallService() {
             "com.snapchat.android"
         )
 
-        /** True if [call] is a self-managed call placed/received by a third-party app (WhatsApp, Snapchat, etc.) that Ever Dialer must not touch. */
+        /** True if [call] is a self-managed call placed/received by a third-party app (WhatsApp, Snapchat, etc.) that WDialer must not touch. */
         private fun isWhatsAppCall(call: Call): Boolean {
             val pkg = call.details?.accountHandle?.componentName?.packageName ?: return false
             return pkg in SELF_MANAGED_THIRD_PARTY_PACKAGES
@@ -559,7 +559,7 @@ class CallService : InCallService() {
             super.onStateChanged(call, state)
 
             android.util.Log.d(
-                "EverDialerCall",
+                "WDialerCall",
                 "call state -> ${stateName(state)} number=${call.details?.handle} account=${call.details?.accountHandle}"
             )
 
@@ -603,7 +603,7 @@ class CallService : InCallService() {
                 recordMissedCallDurationIfNeeded(call)
                 val cause = call.details?.disconnectCause
                 android.util.Log.w(
-                    "EverDialerCall",
+                    "WDialerCall",
                     "call DISCONNECTED number=${call.details?.handle} code=${cause?.code} " +
                         "label=${cause?.label} description=${cause?.description} reason=${cause?.reason}"
                 )
@@ -877,7 +877,7 @@ class CallService : InCallService() {
         instance = this
         val direction = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) call.details?.callDirection else null
         android.util.Log.d(
-            "EverDialerCall",
+            "WDialerCall",
             "onCallAdded number=${call.details?.handle} state=${stateName(call.state)} " +
                 "account=${call.details?.accountHandle} isOutgoing=$direction"
         )
@@ -885,7 +885,7 @@ class CallService : InCallService() {
         // WhatsApp registers its voice/video calls as a self-managed Telecom
         // connection. Because this InCallService declares
         // INCLUDE_SELF_MANAGED_CALLS, Telecom hands those calls to us too —
-        // but Ever Dialer must never touch them: no callback, no notification,
+        // but WDialer must never touch them: no callback, no notification,
         // no CallActivity, no missed-call alert. Bail out immediately so
         // WhatsApp's own call UI is left completely alone.
         if (isWhatsAppCall(call)) return

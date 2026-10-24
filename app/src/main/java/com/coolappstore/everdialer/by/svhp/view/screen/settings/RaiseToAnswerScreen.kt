@@ -44,7 +44,7 @@ private val ColorPink   = Color(0xFFE91E63)
 
 /**
  * Full configuration screen for the Raise to Answer feature, ported from the open-source
- * "Raise to Answer" app and adapted to drive Ever Dialer's own call control instead of
+ * "Raise to Answer" app and adapted to drive WDialer's own call control instead of
  * relying on a separate companion app.
  */
 @OptIn(ExperimentalMaterial3Api::class)

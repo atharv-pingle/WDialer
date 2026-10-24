@@ -30,7 +30,7 @@ fun String.tr(): String {
 }
 
 /**
- * Centralized in-memory translation repository for Ever Dialer UI strings.
+ * Centralized in-memory translation repository for WDialer UI strings.
  * Guarantees zero crashes and complete fallback to English whenever a translation key is missing.
  */
 object AppStrings {
@@ -64,7 +64,7 @@ object AppStrings {
         "Recordings" to "التسجيلات",
         "Notes" to "الملاحظات",
         "Dialpad" to "لوحة الاتصال",
-        "Search in Ever Dialer" to "البحث في إيفر دايلر",
+        "Search contacts & places" to "البحث في إيفر دايلر",
         "Search" to "بحث",
         "Settings" to "الإعدادات",
 
@@ -80,7 +80,7 @@ object AppStrings {
 
         // Settings Items
         "Default Phone App" to "تطبيق الهاتف الافتراضي",
-        "Make Ever Dialer your primary phone application" to "اجعل إيفر دايلر تطبيق الهاتف الأساسي",
+        "Make WDialer your primary phone application" to "اجعل إيفر دايلر تطبيق الهاتف الأساسي",
         "Speed Dial" to "الاتصال السريع",
         "Quick Responses" to "الردود السريعة",
         "Blocked Numbers" to "الأرقام المحظورة",
@@ -92,7 +92,7 @@ object AppStrings {
         "SIM Cards" to "بطاقات SIM",
         "Configure default SIM and preferences" to "ضبط بطاقة SIM الافتراضية والتفضيلات",
         "App language and layout direction" to "لغة التطبيق واتجاه التخطيط",
-        "About Ever Dialer" to "حول إيفر دايلر",
+        "About WDialer" to "حول إيفر دايلر",
         "Version" to "الإصدار",
         "Search settings" to "البحث في الإعدادات",
         "Back" to "رجوع",
@@ -216,7 +216,7 @@ object AppStrings {
         "Recordings" to "रिकॉर्डिंग",
         "Notes" to "नोट्स",
         "Dialpad" to "डायलपैड",
-        "Search in Ever Dialer" to "एवर डायलर में खोजें",
+        "Search contacts & places" to "एवर डायलर में खोजें",
         "Search" to "खोजें",
         "Settings" to "सेटिंग्स",
 
@@ -232,7 +232,7 @@ object AppStrings {
 
         // Settings Items
         "Default Phone App" to "डिफ़ॉल्ट फ़ोन ऐप",
-        "Make Ever Dialer your primary phone application" to "एवर डायलर को अपना मुख्य फ़ोन ऐप बनाएं",
+        "Make WDialer your primary phone application" to "एवर डायलर को अपना मुख्य फ़ोन ऐप बनाएं",
         "Speed Dial" to "स्पीड डायल",
         "Quick Responses" to "त्वरित प्रतिक्रियाएं",
         "Blocked Numbers" to "ब्लॉक किए गए नंबर",
@@ -244,7 +244,7 @@ object AppStrings {
         "SIM Cards" to "सिम कार्ड",
         "Configure default SIM and preferences" to "डिफ़ॉल्ट सिम और प्राथमिकताएं सेट करें",
         "App language and layout direction" to "ऐप भाषा और लेआउट दिशा",
-        "About Ever Dialer" to "एवर डायलर के बारे में",
+        "About WDialer" to "एवर डायलर के बारे में",
         "Version" to "संस्करण",
         "Search settings" to "सेटिंग्स खोजें",
         "Back" to "पीछे",
@@ -368,7 +368,7 @@ object AppStrings {
         "Recordings" to "பதிவுகள்",
         "Notes" to "குறிப்புகள்",
         "Dialpad" to "டயல்பேடு",
-        "Search in Ever Dialer" to "எவர் டயலரில் தேடுக",
+        "Search contacts & places" to "எவர் டயலரில் தேடுக",
         "Search" to "தேடுக",
         "Settings" to "அமைப்புகள்",
 
@@ -384,7 +384,7 @@ object AppStrings {
 
         // Settings Items
         "Default Phone App" to "இயல்புநிலை தொலைபேசி பயன்பாடு",
-        "Make Ever Dialer your primary phone application" to "எவர் டயலரை உங்கள் முதன்மை தொலைபேசி பயன்பாடாக அமைக்கவும்",
+        "Make WDialer your primary phone application" to "எவர் டயலரை உங்கள் முதன்மை தொலைபேசி பயன்பாடாக அமைக்கவும்",
         "Speed Dial" to "விரைவு டயல்",
         "Quick Responses" to "விரைவு பதில்கள்",
         "Blocked Numbers" to "தடுக்கப்பட்ட எண்கள்",
@@ -396,7 +396,7 @@ object AppStrings {
         "SIM Cards" to "சிம் கார்டுகள்",
         "Configure default SIM and preferences" to "இயல்புநிலை சிம் மற்றும் விருப்பங்களை உள்ளமைக்கவும்",
         "App language and layout direction" to "பயன்பாட்டு மொழி மற்றும் தளவமைப்பு திசை",
-        "About Ever Dialer" to "எவர் டயலர் பற்றி",
+        "About WDialer" to "எவர் டயலர் பற்றி",
         "Version" to "பதிப்பு",
         "Search settings" to "அமைப்புகளைத் தேடுக",
         "Back" to "பின்செல்",

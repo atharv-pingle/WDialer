@@ -475,7 +475,7 @@ private fun ExpressiveUpdateHeroCard(checkState: CheckState) {
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "EVER DIALER",
+                    text = "WDIALER",
                     style = MaterialTheme.typography.labelSmall,
                     color = tagColor,
                     fontWeight = FontWeight.Bold,
@@ -495,10 +495,10 @@ private fun ExpressiveUpdateHeroCard(checkState: CheckState) {
                         is CheckState.Done -> if (state.isNewer && state.latest != null) {
                             "Update Available!" to "Version v${state.latest.tagName} is ready to download"
                         } else {
-                            "You're Up to Date" to "Ever Dialer v$APP_VERSION is the latest version"
+                            "You're Up to Date" to "WDialer v$APP_VERSION is the latest version"
                         }
                         is CheckState.Failed -> "Update Check Failed" to "Could not connect to release server"
-                        else -> "Ever Dialer Updates" to "Current installed build v$APP_VERSION"
+                        else -> "WDialer Updates" to "Current installed build v$APP_VERSION"
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -968,7 +968,7 @@ private fun ExpressiveReleaseNotesCard(
                                 )
 
                                 Text(
-                                    "There are no pending updates. You're enjoying the most recent version of Ever Dialer.",
+                                    "There are no pending updates. You're enjoying the most recent version of WDialer.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1419,9 +1419,9 @@ private fun PermissionToDownloadDialog(
         text = {
             Text(
                 if (readyToInstall)
-                    "Ever Dialer v$latestVersion has already been downloaded. Would you like to install it now?"
+                    "WDialer v$latestVersion has already been downloaded. Would you like to install it now?"
                 else
-                    "Ever Dialer v$latestVersion is available (you have v$currentVersion). The APK will be downloaded to your Downloads folder."
+                    "WDialer v$latestVersion is available (you have v$currentVersion). The APK will be downloaded to your Downloads folder."
             )
         },
         confirmButton = {

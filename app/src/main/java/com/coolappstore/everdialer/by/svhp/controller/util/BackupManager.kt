@@ -448,7 +448,7 @@ object BackupManager {
     ): File? {
         return try {
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val backupFile = File(getBackupDir(context), "EverDialer_Backup_$timestamp.everdialer")
+            val backupFile = File(getBackupDir(context), "WDialer_Backup_$timestamp.wdialer")
             val ok = FileOutputStream(backupFile).use { outputStream ->
                 writeBackup(context, outputStream, backupSettings, backupCallingCards, backupNotes, backupContactGroups, backupRecordings, backupContacts, backupCallLogs, backupSms)
             }
@@ -978,7 +978,7 @@ object BackupManager {
                 prefMgr?.notifyChanged()
 
                 if (restoreSettings) {
-                    // Re-apply Ever Dialer launcher icon and app name preset
+                    // Re-apply WDialer launcher icon and app name preset
                     val selectedIcon = prefMgr?.getString("selected_app_icon", "default") ?: "default"
                     val appNamePreset = prefMgr?.getString(PreferenceManager.KEY_APP_NAME_PRESET, "default") ?: "default"
                     val dialerAlias = com.coolappstore.everdialer.by.svhp.view.screen.settings.aliasNameFor(selectedIcon, appNamePreset)
@@ -1332,7 +1332,7 @@ object BackupManager {
 
     fun listBackups(context: Context): List<File> =
         getBackupDir(context).listFiles()
-            ?.filter { it.extension == "everdialer" }
+            ?.filter { it.extension == "wdialer" || it.extension == "everdialer" }
             ?.sortedByDescending { it.lastModified() }
             ?: emptyList()
 }

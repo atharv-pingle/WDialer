@@ -1899,7 +1899,7 @@ fun InterfaceScreen(navigator: DestinationsNavigator, highlightKey: String? = nu
                         RivoExpressiveCard {
                             RivoListItem(
                                 headline = "App Name (Change)",
-                                supporting = "Currently: " + (appNamePresets.firstOrNull { it.key == selectedAppNameKey }?.label ?: "Ever Dialer (Default)"),
+                                supporting = "Currently: " + (appNamePresets.firstOrNull { it.key == selectedAppNameKey }?.label ?: "WDialer (Default)"),
                                 leadingIcon = Icons.Outlined.Badge,
                                 iconContainerColor = ColorTeal,
                                 modifier = Modifier.settingsSearchHighlight("app_name_link", highlightedKey) { highlightedKey = null },

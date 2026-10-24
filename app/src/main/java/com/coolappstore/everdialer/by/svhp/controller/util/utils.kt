@@ -156,7 +156,7 @@ fun getSimSlotForAccountHandle(context: Context, accountHandle: PhoneAccountHand
 fun makeCall(context: Context, number: String, accountHandle: PhoneAccountHandle? = null, skipConfirm: Boolean = false) {
     val sanitized = number.trim().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
     if (sanitized.isEmpty()) {
-        android.util.Log.w("EverDialerCall", "makeCall: empty number after sanitizing '$number', aborting")
+        android.util.Log.w("WDialerCall", "makeCall: empty number after sanitizing '$number', aborting")
         return
     }
 
@@ -174,7 +174,7 @@ fun makeCall(context: Context, number: String, accountHandle: PhoneAccountHandle
                 context.startActivity(intent)
                 return
             } catch (e: Throwable) {
-                android.util.Log.e("EverDialerCall", "Failed to start ConfirmCallActivity", e)
+                android.util.Log.e("WDialerCall", "Failed to start ConfirmCallActivity", e)
             }
         }
     }
@@ -193,16 +193,16 @@ fun makeCall(context: Context, number: String, accountHandle: PhoneAccountHandle
     }
     if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
         try {
-            android.util.Log.d("EverDialerCall", "placeCall uri=$uri account=$accountHandle")
+            android.util.Log.d("WDialerCall", "placeCall uri=$uri account=$accountHandle")
             telecomManager.placeCall(uri, extras)
         } catch (e: Throwable) {
             // placeCall() can throw if appops, per-user restrictions, or stale handle occurs
-            android.util.Log.e("EverDialerCall", "placeCall threw exception, falling back to ACTION_DIAL", e)
+            android.util.Log.e("WDialerCall", "placeCall threw exception, falling back to ACTION_DIAL", e)
             val intent = Intent(Intent.ACTION_DIAL, uri).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
             try { context.startActivity(intent) } catch (_: Throwable) {}
         }
     } else {
-        android.util.Log.w("EverDialerCall", "makeCall: CALL_PHONE not granted, falling back to ACTION_DIAL")
+        android.util.Log.w("WDialerCall", "makeCall: CALL_PHONE not granted, falling back to ACTION_DIAL")
         val intent = Intent(Intent.ACTION_DIAL, uri).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
         try { context.startActivity(intent) } catch (_: Throwable) {}
     }

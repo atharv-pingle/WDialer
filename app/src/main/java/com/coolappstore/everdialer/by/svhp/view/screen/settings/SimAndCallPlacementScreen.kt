@@ -374,7 +374,7 @@ fun SimAndCallPlacementScreen(
                         )
                         RivoSwitchListItem(
                             headline = "Missed Call Notification",
-                            supporting = if (missedCallNotification) "Showing missed call notifications through Ever Dialer" else "Missed call notifications disabled in Ever Dialer",
+                            supporting = if (missedCallNotification) "Showing missed call notifications through WDialer" else "Missed call notifications disabled in WDialer",
                             leadingIcon = Icons.AutoMirrored.Filled.CallMissed,
                             iconContainerColor = ColorRed,
                             checked = missedCallNotification,

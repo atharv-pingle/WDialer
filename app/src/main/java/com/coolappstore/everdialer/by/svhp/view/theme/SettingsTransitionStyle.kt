@@ -112,7 +112,7 @@ object SettingsClickTracker {
     var lastOrigin: TransformOrigin = TransformOrigin.Center
         private set
 
-    // Constant origin reserved specifically for the Ever Dialer Settings button in TopBar
+    // Constant origin reserved specifically for the WDialer Settings button in TopBar
     var settingsIconOrigin: TransformOrigin = TransformOrigin(0.92f, 0.05f)
 
     var isSettingsOpening by mutableStateOf(false)

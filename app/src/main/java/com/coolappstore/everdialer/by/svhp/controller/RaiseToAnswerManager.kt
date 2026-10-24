@@ -14,7 +14,7 @@ import com.coolappstore.everdialer.by.svhp.controller.util.PreferenceManager
  * running, and starts/stops it in lockstep with the ringing state of the active call.
  *
  * This intentionally does NOT use a PHONE_STATE broadcast receiver or TelecomManager:
- * Ever Dialer's [CallService] (the app's own InCallService) already reports ringing/answered/
+ * WDialer's [CallService] (the app's own InCallService) already reports ringing/answered/
  * declined state changes directly and can answer/decline the call itself, so no extra
  * telephony broadcast permission or call-control permission is needed for this feature.
  */

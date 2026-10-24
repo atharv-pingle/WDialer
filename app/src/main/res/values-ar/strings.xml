@@ -6,5 +6,5 @@
     <string name="widget_direct_call_description">اتصل بجهة اتصال بضغطة واحدة</string>
     <string name="widget_contact_info_title">معلومات جهة الاتصال</string>
     <string name="widget_contact_info_description">وصول سريع إلى تفاصيل جهة الاتصال</string>
-    <string name="volume_dnd_accessibility_description">يتيح لـ Ever Dialer اكتشاف تركيبات أزرار الصوت لتبديل وضع عدم الإزعاج (DND).</string>
+    <string name="volume_dnd_accessibility_description">يتيح لـ WDialer اكتشاف تركيبات أزرار الصوت لتبديل وضع عدم الإزعاج (DND).</string>
 </resources>

@@ -168,7 +168,7 @@ fun UpdateUpToDateDialog(currentVersion: String, onDismiss: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("You're Up to Date", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
-                "Ever Dialer v$currentVersion is the latest version available.",
+                "WDialer v$currentVersion is the latest version available.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -229,7 +229,7 @@ fun UpdateAvailableDialog(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "A newer build of Ever Dialer is ready to download & explore.",
+                "A newer build of WDialer is ready to download & explore.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
